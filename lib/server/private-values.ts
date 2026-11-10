@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import type { OperationDocumentCodec, OperationDocumentContext } from "@fracture/paypal-core";
 
 function encryptionKey(): Buffer {
   const secret = process.env.AUTH_SECRET;
@@ -20,3 +21,10 @@ export function openPrivate<T>(value: string, context: string): T {
   decipher.setAuthTag(Buffer.from(tag, "base64url"));
   return JSON.parse(Buffer.concat([decipher.update(Buffer.from(ciphertext, "base64url")), decipher.final()]).toString("utf8")) as T;
 }
+function operationContext(context: OperationDocumentContext): string {
+  return `paycore-operation:${context.scope.tenantId}:${context.scope.projectId}:${context.operationId}`;
+}
+export const paymentOperationCodec: OperationDocumentCodec = {
+  encode: (plaintext, context) => sealPrivate(plaintext, operationContext(context)),
+  decode: (ciphertext, context) => openPrivate<string>(ciphertext, operationContext(context)),
+};

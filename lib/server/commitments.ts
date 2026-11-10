@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { canonicalJson, sha256, type SqlConnection } from "@fracture/paypal-core";
 import type { PaymentTokenResponse, SetupTokenRequest, SetupTokenResponse } from "paypal";
 import { CONDITIONAL_AMOUNTS, CONDITIONAL_PACKAGE, CONDITIONAL_TARGET_MINOR, CONSENT_EXPIRES_AT, conditionalPolicy, consentDigest, providerConsentDescription, safeApprovalUrl, type ConditionalPolicy, type ConsentStatus, type ConsentView } from "../domain/consent";
-import { DomainError } from "../domain/money";
+import { DomainError, formatMoney } from "../domain/money";
 import type { Session } from "./auth";
 import { database, initializeDatabase, query } from "./db";
 import { applicationOrigin } from "./payments";
@@ -22,6 +22,9 @@ export interface ConsentRow {
 export interface PrivateWallet {
   setupId?: string; tokenId?: string; customerId?: string; payerId?: string; approvalUrl?: string;
   setupBodyHash?: string; tokenBodyHash?: string; usageType?: string; usagePattern?: string;
+  setupCustomerId?: string; tokenMerchantCustomerId?: string;
+  candidateToken?: { id?: string; customerId?: string; merchantCustomerId?: string; payerId?: string; bodyHash: string };
+  binding?: { method: "setup_exchange" | "existing_owned_wallet"; sourceConsentId?: string; approvedSetupBodyHash: string; tokenBodyHash: string; observedAt: string };
 }
 export function walletContext(row: Pick<ConsentRow, "id" | "tenant_id" | "actor_id">): string { return `conditional-wallet:${row.tenant_id}:${row.actor_id}:${row.id}`; }
 export function ownedWallet(row: ConsentRow): PrivateWallet { return row.encrypted_wallet ? openPrivate<PrivateWallet>(row.encrypted_wallet, walletContext(row)) : {}; }
@@ -44,9 +47,9 @@ export async function getOwnedConsent(session: Session, id: string, tx: SqlConne
   if (!row) throw new DomainError("CONSENT_NOT_FOUND", "That commitment does not belong to your account.", 404);
   return row;
 }
-function assertOpenConsent(row: ConsentRow): void {
+function assertOpenConsent(row: ConsentRow, allowExpired = false): void {
   if (row.withdrawn_at || row.status === "withdrawn") throw new DomainError("CONSENT_WITHDRAWN", "This commitment has been withdrawn.");
-  if (row.expires_at.getTime() <= Date.now()) throw new DomainError("CONSENT_EXPIRED", "This commitment expired. A new commitment needs your approval.");
+  if (!allowExpired && row.expires_at.getTime() <= Date.now()) throw new DomainError("CONSENT_EXPIRED", "This commitment expired. A new commitment needs your approval.");
   if (row.round_id) throw new DomainError("COLLECTION_ALREADY_STARTED", "Collection has started. Follow the payment and recovery record for this commitment.");
   const expected = conditionalPolicy(row.slot_index, row.package_version);
   const digest = consentDigest({ tenantId: row.tenant_id, projectId: row.project_id, actorId: row.actor_id, obligationId: row.obligation_id, version: row.version, policy: expected });
@@ -118,10 +121,10 @@ function setupBody(row: ConsentRow): SetupTokenRequest {
     experienceContext: { brandName: "Fieldproof", shippingPreference: "NO_SHIPPING", returnUrl: `${route}&wallet=returned`, cancelUrl: `${route}&wallet=cancelled` },
   } } };
 }
-async function recordFailure(session: Session, row: ConsentRow, operation: ExternalOperation, result: Exclude<VaultResult<unknown>, { outcome: "succeeded" }>): Promise<void> {
+async function recordFailure(session: Session, row: ConsentRow, operation: ExternalOperation, result: Exclude<VaultResult<unknown>, { outcome: "succeeded" }>, observation: Record<string, unknown> = {}): Promise<void> {
   await database().transaction(async tx => {
     await getOwnedConsent(session, row.id, tx, true);
-    await finishExternalOperation(tx, operation.id, result.outcome, { code: result.code, httpStatus: result.httpStatus });
+    await finishExternalOperation(tx, operation.id, result.outcome, { code: result.code, httpStatus: result.httpStatus, observation: { ...observation, ...(result.debugId ? { debugId: result.debugId } : {}), ...(result.diagnostics ? { diagnostics: result.diagnostics } : {}) } });
     await tx.query("UPDATE fp_conditional_consents SET status=$2,last_code=$3 WHERE id=$1 AND withdrawn_at IS NULL", [row.id, result.outcome === "unknown" ? "review_required" : "unavailable", result.code]);
     await appendEvent(tx, session, "wallet.connection_issue", result.outcome === "unknown" ? "Wallet status needs a check" : "PayPal could not save this wallet", "No contribution has been charged. The provider operation is recorded; an uncertain response will not be repeated blindly.");
   });
@@ -135,7 +138,15 @@ export async function beginWalletApproval(session: Session, id: string, gateway:
     await assertCurrentPackage(tx, row);
     if (ownedWallet(row).setupId || row.status === "ready") return null;
     const body = setupBody(row);
-    const operation = await claimExternalOperation(tx, { tenantId: session.tenantId, projectId: session.projectId, actorId: session.actorId, resourceId: id, kind: "vault.setup", businessKey: `vault:setup:${id}:v${row.version}`, payload: body });
+    const [previous] = await query<ExternalOperation>("SELECT * FROM fp_provider_operations WHERE resource_id=$1 AND tenant_id=$2 AND kind='vault.setup' ORDER BY created_at DESC,id DESC LIMIT 1 FOR UPDATE", [id,session.tenantId], tx);
+    let businessKey = previous?.business_key ?? `vault:setup:${id}:v${row.version}:body2`;
+    if (previous && previous.payload_hash !== sha256(canonicalJson(body))) {
+      const oldBody: SetupTokenRequest = { ...body, paymentSource: { paypal: { ...body.paymentSource.paypal, description: `${formatMoney(row.policy.amountMinor)} for Electronics Benches only if $960 is pledged by 31 Dec 2026. 48-hour collection; incomplete collection refunded. No charge to save wallet.` } } };
+      if (previous.status !== "refused" || previous.http_status !== 400 || previous.diagnostic_code !== "INVALID_REQUEST" || previous.payload_hash !== sha256(canonicalJson(oldBody))) throw new DomainError("OPERATION_CONFLICT", "The existing provider request must be resolved before its payload can change.");
+      businessKey = `vault:setup:${id}:v${row.version}:body2`;
+      await appendEvent(tx, session, "wallet.request_corrected", "The same commitment has a corrected approval request", "The original request was definitively refused. The provider description now fits its documented limit; your amount, policy and obligation are unchanged.");
+    }
+    const operation = await claimExternalOperation(tx, { tenantId: session.tenantId, projectId: session.projectId, actorId: session.actorId, resourceId: id, kind: "vault.setup", businessKey, payload: body });
     const dispatch = await dispatchExternalOperation(tx, operation);
     return dispatch ? { row, body, operation } : null;
   });
@@ -151,7 +162,7 @@ export async function beginWalletApproval(session: Session, id: string, gateway:
       await tx.query("UPDATE fp_conditional_consents SET status=CASE WHEN withdrawn_at IS NULL THEN 'review_required' ELSE status END,last_code='SETUP_IDENTITY_UNPROVEN' WHERE id=$1", [id]);
       return;
     }
-    const wallet: PrivateWallet = { setupId: setup.id, ...(setup.customer?.id ? { customerId: setup.customer.id } : {}), ...(approval ? { approvalUrl: approval } : {}), setupBodyHash: result.bodyHash };
+    const wallet: PrivateWallet = { setupId: setup.id, ...(setup.customer?.id ? { customerId: setup.customer.id, setupCustomerId: setup.customer.id } : {}), ...(approval ? { approvalUrl: approval } : {}), setupBodyHash: result.bodyHash };
     await tx.query("UPDATE fp_conditional_consents SET encrypted_wallet=$2,provider_status=$3,status=CASE WHEN withdrawn_at IS NULL THEN 'wallet_pending' ELSE status END,last_code=$4 WHERE id=$1", [id, sealPrivate(wallet, walletContext(row)), setup.status, !approval && setup.status !== "APPROVED" ? "APPROVAL_LINK_UNAVAILABLE" : null]);
     await finishExternalOperation(tx, claim.operation.id, "succeeded", { httpStatus: result.httpStatus, observation: { bodyHash: result.bodyHash, providerStatus: setup.status, approvalLinkAvailable: !!approval } });
     await appendEvent(tx, session, "wallet.approval_requested", "Your PayPal approval is ready", "Saving this wallet does not move money. The consent applies to this exact contribution only.");
@@ -163,19 +174,83 @@ function tokenMatches(token: PaymentTokenResponse, wallet: PrivateWallet, id: st
     && (!token.paymentSource.paypal.usageType || token.paymentSource.paypal.usageType === "MERCHANT")
     && (!token.paymentSource.paypal.usagePattern || token.paymentSource.paypal.usagePattern === "UNSCHEDULED_PREPAID");
 }
+function merchantMatches(token: PaymentTokenResponse, wallet: PrivateWallet, row: ConsentRow): boolean {
+  return !token.customer?.merchantCustomerId || token.customer.merchantCustomerId === (wallet.tokenMerchantCustomerId ?? `fp-${row.id}`);
+}
+function approvedSetupMatches(row: ConsentRow, wallet: PrivateWallet, setup: SetupTokenResponse): boolean {
+  const paypal = setup.paymentSource?.paypal;
+  return setup.id === wallet.setupId && setup.status === "VAULTED"
+    && setup.customer?.id === (wallet.setupCustomerId ?? wallet.customerId)
+    && setup.customer?.merchantCustomerId === `fp-${row.id}`
+    && paypal?.description === providerConsentDescription(row.policy)
+    && paypal.usageType === "MERCHANT" && paypal.usagePattern === "UNSCHEDULED_PREPAID" && resourceId(paypal.payerId);
+}
+async function bindExistingOwnedWallet(session: Session, row: ConsentRow, wallet: PrivateWallet, setup: Extract<VaultResult<SetupTokenResponse>, { outcome: "succeeded" }>, gateway: VaultGateway): Promise<boolean> {
+  if (!approvedSetupMatches(row, wallet, setup.value)) return false;
+  const sources = await query<ConsentRow>(`SELECT * FROM fp_conditional_consents
+    WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 AND id<>$4 AND withdrawn_at IS NULL
+      AND status IN ('ready','collecting','collected') AND wallet_observed_at IS NOT NULL
+    ORDER BY created_at,id`, [row.tenant_id, row.project_id, row.actor_id, row.id]);
+  const candidates = new Map<string, { row: ConsentRow; wallet: PrivateWallet }>();
+  for (const source of sources) {
+    const owned = ownedWallet(source);
+    if (owned.tokenId) candidates.set(owned.tokenId, candidates.get(owned.tokenId) ?? { row: source, wallet: owned });
+  }
+  // A prior wallet is authority only within this participant's existing ownership, never a search result.
+  if (candidates.size !== 1) return false;
+  const source = [...candidates.values()][0], sourceWallet = source.wallet;
+  const payerId = setup.value.paymentSource!.paypal!.payerId!;
+  if (!resourceId(sourceWallet.tokenId) || !resourceId(sourceWallet.payerId) || sourceWallet.payerId !== payerId) return false;
+  if (wallet.candidateToken && (wallet.candidateToken.id !== sourceWallet.tokenId
+    || (wallet.candidateToken.customerId && wallet.candidateToken.customerId !== sourceWallet.customerId)
+    || (wallet.candidateToken.payerId && wallet.candidateToken.payerId !== payerId)
+    || (wallet.candidateToken.merchantCustomerId && wallet.candidateToken.merchantCustomerId !== (sourceWallet.tokenMerchantCustomerId ?? `fp-${source.row.id}`)))) return false;
+  const token = await gateway.readToken(sourceWallet.tokenId);
+  if (token.outcome !== "succeeded" || !tokenMatches(token.value, sourceWallet, sourceWallet.tokenId)
+    || !merchantMatches(token.value, sourceWallet, source.row) || token.value.paymentSource?.paypal?.payerId !== payerId
+    || token.value.paymentSource.paypal.usageType !== "MERCHANT") return false;
+  return database().transaction(async tx => {
+    await requireCurrentConsentSession(tx, session);
+    const current = await getOwnedConsent(session, row.id, tx, true);
+    assertOpenConsent(current);
+    await assertCurrentPackage(tx, current);
+    const currentSources = await query<ConsentRow>(`SELECT * FROM fp_conditional_consents WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 AND id<>$4
+      AND withdrawn_at IS NULL AND status IN ('ready','collecting','collected') AND wallet_observed_at IS NOT NULL`, [row.tenant_id, row.project_id, row.actor_id, row.id], tx);
+    const currentTokens = new Set(currentSources.map(item => ownedWallet(item).tokenId).filter(Boolean));
+    if (currentTokens.size !== 1 || !currentTokens.has(sourceWallet.tokenId)) return false;
+    const original = await getOwnedConsent(session, source.row.id, tx, true), originalWallet = ownedWallet(original);
+    if (original.withdrawn_at || !["ready", "collecting", "collected"].includes(original.status)
+      || originalWallet.tokenId !== sourceWallet.tokenId || originalWallet.customerId !== sourceWallet.customerId
+      || originalWallet.payerId !== payerId || !approvedSetupMatches(current, ownedWallet(current), setup.value)) return false;
+    const confirmed: PrivateWallet = { ...ownedWallet(current), setupCustomerId: setup.value.customer!.id,
+      tokenId: sourceWallet.tokenId, customerId: sourceWallet.customerId, payerId,
+      tokenMerchantCustomerId: token.value.customer?.merchantCustomerId ?? sourceWallet.tokenMerchantCustomerId ?? `fp-${source.row.id}`,
+      usageType: token.value.paymentSource!.paypal!.usageType,
+      ...(token.value.paymentSource!.paypal!.usagePattern ? { usagePattern: token.value.paymentSource!.paypal!.usagePattern } : {}),
+      tokenBodyHash: token.bodyHash,
+      binding: { method: "existing_owned_wallet", sourceConsentId: original.id, approvedSetupBodyHash: setup.bodyHash, tokenBodyHash: token.bodyHash, observedAt: new Date().toISOString() } };
+    delete confirmed.approvalUrl;
+    await tx.query("UPDATE fp_conditional_consents SET status='ready',encrypted_wallet=$2,wallet_label=$3,wallet_observed_at=now(),provider_status='VAULTED',last_code=NULL WHERE id=$1", [current.id, sealPrivate(confirmed, walletContext(current)), original.wallet_label]);
+    await tx.query("UPDATE fp_obligations SET data=jsonb_set(data,'{eligible}','true'::jsonb) WHERE id=$1", [current.obligation_id]);
+    if (current.status !== "ready") await appendEvent(tx, session, "wallet.existing_owned_bound", "Your verified wallet is bound to this contribution", "The original approved setup and a fresh read identify the same participant's previously saved wallet. This separate binding preserves the earlier unproven exchange. No contribution was charged.");
+    return true;
+  });
+}
 async function confirmWallet(session: Session, row: ConsentRow, wallet: PrivateWallet, gateway: VaultGateway): Promise<void> {
   const result = await gateway.readToken(wallet.tokenId!);
   await database().transaction(async tx => {
+    await requireCurrentConsentSession(tx, session);
     const current = await getOwnedConsent(session, row.id, tx, true);
     if (current.withdrawn_at || current.round_id) return;
     assertOpenConsent(current);
     await assertCurrentPackage(tx, current);
-    if (result.outcome !== "succeeded" || !tokenMatches(result.value, wallet, wallet.tokenId!) || (result.value.customer?.merchantCustomerId && result.value.customer.merchantCustomerId !== `fp-${row.id}`)) {
+    if (result.outcome !== "succeeded" || !tokenMatches(result.value, wallet, wallet.tokenId!) || !merchantMatches(result.value, wallet, row)
+      || (wallet.payerId && result.value.paymentSource?.paypal?.payerId !== wallet.payerId)) {
       await tx.query("UPDATE fp_conditional_consents SET status='review_required',last_code=$2 WHERE id=$1", [row.id, result.outcome === "succeeded" ? "TOKEN_IDENTITY_UNPROVEN" : result.code]);
       return;
     }
     const token = result.value, paypal = token.paymentSource!.paypal!;
-    const confirmed: PrivateWallet = { ...wallet, ...(token.customer?.id ? { customerId: token.customer.id } : {}), ...(paypal.payerId ? { payerId: paypal.payerId } : {}), ...(paypal.usageType ? { usageType: paypal.usageType } : {}), ...(paypal.usagePattern ? { usagePattern: paypal.usagePattern } : {}), tokenBodyHash: result.bodyHash };
+    const confirmed: PrivateWallet = { ...wallet, ...(token.customer?.id ? { customerId: token.customer.id } : {}), ...(token.customer?.merchantCustomerId ? { tokenMerchantCustomerId: token.customer.merchantCustomerId } : {}), ...(paypal.payerId ? { payerId: paypal.payerId } : {}), ...(paypal.usageType ? { usageType: paypal.usageType } : {}), ...(paypal.usagePattern ? { usagePattern: paypal.usagePattern } : {}), tokenBodyHash: result.bodyHash };
     delete confirmed.approvalUrl;
     const label = paypal.emailAddress && /^[^@]+@[^@]+$/.test(paypal.emailAddress) ? `${paypal.emailAddress[0]}•••@${paypal.emailAddress.split("@")[1]}` : `PayPal wallet ··${wallet.tokenId!.slice(-4)}`;
     await tx.query("UPDATE fp_conditional_consents SET status='ready',encrypted_wallet=$2,wallet_label=$3,wallet_observed_at=now(),last_code=NULL,provider_status='VAULTED' WHERE id=$1", [row.id, sealPrivate(confirmed, walletContext(row)), label]);
@@ -187,15 +262,17 @@ export async function completeWalletApproval(session: Session, id: string, gatew
   assertSession(session);
   let row = await getOwnedConsent(session, id);
   assertOpenConsent(row);
-  const wallet = ownedWallet(row);
+  let wallet = ownedWallet(row);
   if (wallet.tokenId) { await confirmWallet(session, row, wallet, gateway); return commitmentView(session, id); }
   if (!wallet.setupId) return commitmentView(session, id);
   const setup = await gateway.readSetup(wallet.setupId);
-  if (setup.outcome !== "succeeded" || setup.value.id !== wallet.setupId || (wallet.customerId && setup.value.customer?.id && wallet.customerId !== setup.value.customer.id)) {
+  const setupCustomerId = wallet.setupCustomerId ?? wallet.customerId;
+  if (setup.outcome !== "succeeded" || setup.value.id !== wallet.setupId || (setupCustomerId && setup.value.customer?.id && setupCustomerId !== setup.value.customer.id)) {
     await query("UPDATE fp_conditional_consents SET last_code=$2 WHERE id=$1", [id, setup.outcome === "succeeded" ? "SETUP_IDENTITY_UNPROVEN" : setup.code]);
     return commitmentView(session, id);
   }
   if (setup.value.status !== "APPROVED") {
+    if (await bindExistingOwnedWallet(session, row, wallet, setup, gateway)) return commitmentView(session, id);
     await query("UPDATE fp_conditional_consents SET provider_status=$2,last_code=$3 WHERE id=$1", [id, setup.value.status ?? "UNKNOWN", ["CREATED", "PAYER_ACTION_REQUIRED"].includes(setup.value.status ?? "") ? "BUYER_APPROVAL_PENDING" : "SETUP_STATE_UNPROVEN"]);
     return commitmentView(session, id);
   }
@@ -210,11 +287,25 @@ export async function completeWalletApproval(session: Session, id: string, gatew
   if (!claim) return commitmentView(session, id);
   const result = await gateway.exchangeSetup(wallet.setupId, claim.request_id);
   if (result.outcome !== "succeeded") { await recordFailure(session, row, claim, result); return commitmentView(session, id); }
+  // A successful transport can still return an unexpected identity. Keep the exact candidate encrypted before interpreting it.
+  wallet = { ...wallet, setupCustomerId, candidateToken: {
+    ...(resourceId(result.value.id) ? { id: result.value.id } : {}),
+    ...(result.value.customer?.id ? { customerId: result.value.customer.id } : {}),
+    ...(result.value.customer?.merchantCustomerId ? { merchantCustomerId: result.value.customer.merchantCustomerId } : {}),
+    ...(result.value.paymentSource?.paypal?.payerId ? { payerId: result.value.paymentSource.paypal.payerId } : {}), bodyHash: result.bodyHash,
+  } };
+  await database().transaction(async tx => {
+    const current = await getOwnedConsent(session, id, tx, true);
+    await tx.query("UPDATE fp_conditional_consents SET encrypted_wallet=$2 WHERE id=$1", [id, sealPrivate(wallet, walletContext(current))]);
+  });
   if (!resourceId(result.value.id) || !tokenMatches(result.value, wallet, result.value.id) || (result.value.customer?.merchantCustomerId && result.value.customer.merchantCustomerId !== `fp-${id}`)) {
-    await recordFailure(session, row, claim, { outcome: "unknown", code: "TOKEN_IDENTITY_UNPROVEN", httpStatus: result.httpStatus });
+    await recordFailure(session, row, claim, { outcome: "unknown", code: "TOKEN_IDENTITY_UNPROVEN", httpStatus: result.httpStatus }, { bodyHash: result.bodyHash });
+    const currentSetup = await gateway.readSetup(wallet.setupId!);
+    if (currentSetup.outcome === "succeeded") await bindExistingOwnedWallet(session, row, wallet, currentSetup, gateway);
     return commitmentView(session, id);
   }
-  const saved: PrivateWallet = { ...wallet, tokenId: result.value.id, ...(result.value.customer?.id ? { customerId: result.value.customer.id } : {}), tokenBodyHash: result.bodyHash };
+  const saved: PrivateWallet = { ...wallet, tokenId: result.value.id, ...(result.value.customer?.id ? { customerId: result.value.customer.id } : {}), ...(result.value.customer?.merchantCustomerId ? { tokenMerchantCustomerId: result.value.customer.merchantCustomerId } : {}), tokenBodyHash: result.bodyHash,
+    binding: { method: "setup_exchange", approvedSetupBodyHash: setup.bodyHash, tokenBodyHash: result.bodyHash, observedAt: new Date().toISOString() } };
   await database().transaction(async tx => {
     row = await getOwnedConsent(session, id, tx, true);
     await tx.query("UPDATE fp_conditional_consents SET encrypted_wallet=$2,last_code=NULL WHERE id=$1", [id, sealPrivate(saved, walletContext(row))]);
@@ -229,7 +320,7 @@ export async function withdrawCommitment(session: Session, id: string): Promise<
     await requireCurrentConsentSession(tx, session);
     const row = await getOwnedConsent(session, id, tx, true);
     if (row.withdrawn_at) return;
-    assertOpenConsent(row);
+    assertOpenConsent(row, true);
     await tx.query("UPDATE fp_conditional_consents SET status='withdrawn',withdrawn_at=now(),version=version+1 WHERE id=$1", [id]);
     await tx.query("UPDATE fp_obligations SET version=version+1,data=jsonb_set(data,'{eligible}','false'::jsonb) WHERE id=$1", [row.obligation_id]);
     await tx.query("UPDATE fp_approval_records SET revoked_at=now() WHERE resource_id=$1 AND revoked_at IS NULL", [row.obligation_id]);

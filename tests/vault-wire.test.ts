@@ -69,4 +69,10 @@ describe("APIMatic Vault wire contract — fake fetch, no live requests", () => 
     assert.deepEqual(result, { outcome: "refused", code: "NOT_AUTHORIZED", httpStatus: 403 });
     assert.ok(!JSON.stringify(result).includes("private fixture"));
   });
+  it("retains bounded field diagnostics without rejected values or free text", async () => {
+    const gateway=fixtureGateway(async()=>Response.json({name:"INVALID_REQUEST",message:"private description",debug_id:"fixture",details:[{issue:"INVALID_STRING_LENGTH",field:"/payment_source/paypal/description",value:"private rejected value",description:"private explanation"},{issue:"hostile prose with spaces",field:"private"}]},{status:400,headers:{"paypal-debug-id":"fixture-debug"}}));
+    const result=await gateway.exchangeSetup("FIXTURESETUP0001","fixture-request");
+    assert.deepEqual(result,{outcome:"refused",code:"INVALID_REQUEST",httpStatus:400,debugId:"fixture-debug",diagnostics:[{issue:"INVALID_STRING_LENGTH",field:"/payment_source/paypal/description"}]});
+    assert.ok(!JSON.stringify(result).includes("private"));
+  });
 });

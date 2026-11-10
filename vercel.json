@@ -12,6 +12,22 @@
     {
       "path": "/api/cron/webhooks",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/collection",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/compensation",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/invoices",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/refunds",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

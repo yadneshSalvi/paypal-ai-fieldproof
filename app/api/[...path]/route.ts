@@ -1,14 +1,18 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { PaymentError, SqlPaymentStore } from "@fracture/paypal-core";
+import { PaymentError } from "@fracture/paypal-core";
 import { z, ZodError } from "zod";
 import { assertSameOrigin, getSession, requireSession, setRole, startSession } from "@/lib/server/auth";
 import { projectSnapshot, addSamplePledge, advanceTour } from "@/lib/server/repository";
-import { applicationOrigin, captureCheckout, checkCheckoutIntent, createCheckout, ingestPaymentOperation, ownedPayment, paymentCore } from "@/lib/server/payments";
+import { applicationOrigin, captureCheckout, checkCheckoutIntent, createCheckout, ingestPaymentOperation, ownedPayment, paymentCore, paymentStore } from "@/lib/server/payments";
 import { completeIdentity, identityStart, recipientView } from "@/lib/server/identity";
 import { DomainError } from "@/lib/domain/money";
 import { database, initializeDatabase, query } from "@/lib/server/db";
 import { beginWalletApproval, commitmentOverview, commitmentView, completeWalletApproval, createCommitment, withdrawCommitment } from "@/lib/server/commitments";
+import { advanceCollection, collectionReview, collectionView, freezeCollection, runCollectionJobs } from "@/lib/server/collections";
+import { cancelRecoveryInvoice, checkRecoveryInvoice, createRecoveryInvoice, recoveryInvoiceViews, reconcileRecoveryInvoices, shareRecoveryInvoice } from "@/lib/server/recovery-invoices";
+import { checkRefund, reconcileRefunds, refundViews, requestRefund } from "@/lib/server/refunds";
+import { cancelUnspentCollection, processCompensation, reconcileCollectionPayments, runCompensationJobs } from "@/lib/server/compensation";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -37,6 +41,11 @@ export async function GET(request:Request,context:Context){
     if(path==="paypal/config") {await requireSession(["donor"]);return json({clientId:process.env.PAYPAL_CLIENT_ID??null,currency:"USD",environment:"sandbox"});}
     if(path==="recipient") return json({recipient:await recipientView(await requireSession())});
     if(path==="commitments") return json(await commitmentOverview(await requireSession()));
+    if(path==="collection") {
+      const session=await requireSession(),review=await collectionReview(session);
+      const [invoices,refunds]=await Promise.all([recoveryInvoiceViews(session),refundViews(session)]);
+      return json({...review,invoices,refunds});
+    }
     if(path.startsWith("commitments/")) return json(await commitmentView(await requireSession(),z.uuid().parse(path.slice("commitments/".length))));
     if(path==="auth/paypal"){
       if(request.headers.get("sec-fetch-site")==="cross-site") throw new DomainError("ORIGIN_DENIED","Start account linking from Fieldproof.",403);
@@ -50,6 +59,15 @@ export async function GET(request:Request,context:Context){
       catch(error){const reason=error instanceof DomainError?error.code:"IDENTITY_UNAVAILABLE";return NextResponse.redirect(new URL(`/my-expenses?identity=${encodeURIComponent(reason)}`,applicationOrigin()));}
     }
     if(path.startsWith("payments/"))return json(await ownedPayment(await requireSession(),path.slice("payments/".length)));
+    if(["cron/collection","cron/compensation","cron/invoices","cron/refunds"].includes(path)) {
+      const supplied=request.headers.get("authorization")??"",expected=`Bearer ${process.env.CRON_SECRET??""}`;
+      if(!process.env.CRON_SECRET||supplied.length!==expected.length||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))throw new DomainError("FORBIDDEN","Scheduler authorization is required.",403);
+      await initializeDatabase();
+      if(path==="cron/collection")return json(await runCollectionJobs(1));
+      if(path==="cron/compensation")return json(await runCompensationJobs(1));
+      if(path==="cron/invoices")return json({observed:await reconcileRecoveryInvoices(1)});
+      return json({observed:await reconcileRefunds(1)});
+    }
     if(path==="cron/reconcile"){
       const supplied=request.headers.get("authorization")??"",expected=`Bearer ${process.env.CRON_SECRET??""}`;
       if(!process.env.CRON_SECRET || supplied.length!==expected.length || !timingSafeEqual(Buffer.from(supplied),Buffer.from(expected))) throw new DomainError("FORBIDDEN","Scheduler authorization is required.",403);
@@ -60,7 +78,7 @@ export async function GET(request:Request,context:Context){
         const ownedScope={tenantId:scope.tenant_id,projectId:scope.project_id};
         await paymentCore().recover(ownedScope);
         // Reapply persisted completed receipts too: the request may have died between provider persistence and domain projection.
-        for(const operation of await new SqlPaymentStore(database()).list(ownedScope)){await ingestPaymentOperation(operation);observed++;}
+        for(const operation of await paymentStore().list(ownedScope)){await ingestPaymentOperation(operation);observed++;}
       }
       return json({scopes:scopes.length,observed});
     }
@@ -86,6 +104,45 @@ export async function POST(request:Request,context:Context){
     if(path==="commitments"){
       const data=z.object({slotIndex:z.number().int().min(0).max(7),expectedVersion:z.number().int().positive(),intentId:z.uuid(),accepted:z.literal(true),policyVersion:z.literal(1)}).strict().parse(body);
       return json(await createCommitment(await requireSession(["donor"]),data),201);
+    }
+    if(path==="collection/start") {
+      const data=z.object({expectedVersion:z.number().int().positive(),intentId:z.uuid(),acknowledged:z.literal(true),automatic:z.boolean().default(false)}).strict().parse(body);
+      return json(await freezeCollection(await requireSession(["organizer"]),data),201);
+    }
+    if(path==="collection/advance") {
+      const data=z.object({roundId:z.uuid(),consentId:z.uuid()}).strict().parse(body);
+      return json(await advanceCollection(await requireSession(["organizer"]),data.roundId,data.consentId));
+    }
+    if(path==="collection/check") {
+      const {roundId}=z.object({roundId:z.uuid()}).strict().parse(body),session=await requireSession(["organizer","auditor","donor"]);
+      await collectionView(session,roundId);
+      await reconcileCollectionPayments(session,roundId);
+      return json(await collectionView(session,roundId));
+    }
+    if(path==="collection/cancel") {
+      const data=z.object({roundId:z.uuid(),expectedVersion:z.number().int().positive(),acknowledged:z.literal(true)}).strict().parse(body);
+      return json(await cancelUnspentCollection(await requireSession(["organizer"]),data));
+    }
+    if(path==="collection/compensate") {
+      const {roundId}=z.object({roundId:z.uuid()}).strict().parse(body),session=await requireSession(["organizer"]);
+      await collectionView(session,roundId);
+      return json(await processCompensation(session,roundId));
+    }
+    if(path==="recovery/create") {
+      const data=z.object({consentId:z.uuid(),expectedVersion:z.number().int().positive(),acknowledged:z.literal(true)}).strict().parse(body);
+      return json(await createRecoveryInvoice(await requireSession(["organizer","donor"]),data),201);
+    }
+    if(["recovery/share","recovery/check","recovery/cancel"].includes(path)) {
+      const {invoiceId}=z.object({invoiceId:z.uuid()}).strict().parse(body),session=await requireSession(path==="recovery/check"?["organizer","donor","auditor"]:["organizer","donor"]);
+      return json(path==="recovery/share"?await shareRecoveryInvoice(session,invoiceId):path==="recovery/check"?await checkRecoveryInvoice(session,invoiceId):await cancelRecoveryInvoice(session,invoiceId));
+    }
+    if(path==="refunds/request") {
+      const data=z.object({receiptId:z.uuid(),intentId:z.uuid(),amountMinor:z.number().int().min(1).max(96000),acknowledged:z.literal(true)}).strict().parse(body);
+      return json(await requestRefund(await requireSession(["organizer","donor"]),data),201);
+    }
+    if(path==="refunds/check"||path==="refunds/retry") {
+      const data=(path==="refunds/retry"?z.object({refundId:z.uuid(),acknowledged:z.literal(true)}):z.object({refundId:z.uuid()})).strict().parse(body);
+      return json(await checkRefund(await requireSession(path==="refunds/retry"?["organizer","donor"]:["organizer","donor","auditor"]),data.refundId,path==="refunds/retry"));
     }
     if(["commitments/wallet","commitments/check","commitments/withdraw"].includes(path)){
       const {consentId}=z.object({consentId:z.uuid()}).strict().parse(body),session=await requireSession(["donor"]);

@@ -6,7 +6,7 @@ export const CONDITIONAL_TARGET_MINOR = 96000;
 export const CONSENT_EXPIRES_AT = "2027-01-01T00:00:00.000Z";
 export const CONDITIONAL_PACKAGE = "electronics";
 export const CONDITIONAL_PACKAGE_TITLE = "Electronics Benches";
-export type ConsentStatus = "awaiting_wallet" | "wallet_pending" | "ready" | "review_required" | "unavailable" | "withdrawn" | "collecting" | "collected";
+export type ConsentStatus = "awaiting_wallet" | "wallet_pending" | "ready" | "review_required" | "unavailable" | "withdrawn" | "collecting" | "collected" | "refunding" | "refunded" | "cancelled";
 
 export interface ConditionalPolicy {
   version: 1;
@@ -58,7 +58,9 @@ export function consentDigest(input: { tenantId: string; projectId: string; acto
   return sha256(canonicalJson(input));
 }
 export function providerConsentDescription(policy: ConditionalPolicy): string {
-  return `${formatMoney(policy.amountMinor)} for Electronics Benches only if $960 is pledged by 31 Dec 2026. 48-hour collection; incomplete collection refunded. No charge to save wallet.`;
+  const description = `${formatMoney(policy.amountMinor)} if Electronics Benches reaches $960 in pledges by 31 Dec 2026. 48h collection or refund. No charge to save.`;
+  if (description.length > 128) throw new DomainError("PROVIDER_DESCRIPTION_LENGTH", "The wallet approval description exceeds PayPal's limit.");
+  return description;
 }
 export function safeApprovalUrl(value: string | undefined): string | null {
   if (!value) return null;

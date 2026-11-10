@@ -8,6 +8,11 @@ import { assertBalanced, DomainError, splitSettlement, validateReceipt } from ".
 import type { Session } from "./auth";
 import { database, initializeDatabase, query } from "./db";
 import { appendEvent } from "./repository";
+import { authorizeConditionalPayment } from "./collection-policy";
+import { refreshRoundFunding } from "./collection-projection";
+import { readPaymentCommand } from "./stored-commands";
+import { paymentOperationCodec } from "./private-values";
+import { authorizeRefund } from "./refund-policy";
 
 export const CHECKOUT_TEST_MINOR = 100;
 const GLOBAL_TEST_CEILING_MINOR = 5000;
@@ -29,6 +34,8 @@ function deny(command:PaymentCommand, reason:string):AuthorizationDecision {
   return {allowed:false,reason,resourceIds:[],currency:"USD",maximumMinor:0,approvalId:command.approval.id,approvalVersion:command.approval.version,approvalDigest:command.approval.digest};
 }
 export async function authorizePayment(command: PaymentCommand): Promise<AuthorizationDecision> {
+  if(command.businessKey.startsWith("refund:")) return authorizeRefund(command);
+  if(command.businessKey.startsWith("conditional:"))return authorizeConditionalPayment(command);
   const [row] = await query<{
     command:PaymentCommand;session_role:string;session_expires:Date;session_revoked:Date|null;
     actor_id:string;tenant_id:string;project_id:string;obligation_version:number;amount_minor:string;
@@ -52,7 +59,8 @@ export async function authorizePayment(command: PaymentCommand): Promise<Authori
   } else if(command.action.kind!=="create_order") return deny(command,"This approval does not authorize that financial operation.");
   return {allowed:true,reason:"Current exact donor approval",resourceIds,currency:"USD",maximumMinor:CHECKOUT_TEST_MINOR,approvalId:approval.id,approvalVersion:approval.resourceVersion,approvalDigest:approval.digest,checkoutOrigins:[applicationOrigin()]};
 }
-export function paymentCore(): PaymentCore { return new PaymentCore({store:new SqlPaymentStore(database()),provider:paypalProvider(),policy:{authorize:authorizePayment}}); }
+export function paymentStore(): SqlPaymentStore { return new SqlPaymentStore(database(),{operationDocumentCodec:paymentOperationCodec}); }
+export function paymentCore(): PaymentCore { return new PaymentCore({store:paymentStore(),provider:paypalProvider(),policy:{authorize:authorizePayment}}); }
 
 export async function commandFor(session:Session, intentId:string, kind:"create"|"capture", orderId?:string):Promise<PaymentCommand> {
   if(session.mode!=="live_sandbox" || session.role!=="donor") throw new DomainError("ROLE_DENIED","A donor in a live sandbox workspace must approve this test payment.",403);
@@ -87,6 +95,10 @@ export async function commandFor(session:Session, intentId:string, kind:"create"
 }
 
 export async function ingestPaymentOperation(operation:PaymentOperation):Promise<void> {
+  if(operation.command.action.kind==="refund_capture") {
+    const {ingestRefundOperation}=await import("./refunds");
+    return ingestRefundOperation(operation);
+  }
   const command=operation.command;
   await ingestOwnedResources(command,operation.receipt?.resources??[],["claimed","dispatching","pending_reconciliation"].includes(operation.status));
 }
@@ -100,36 +112,58 @@ export async function ingestOwnedOrderRead(orderId:string,resources:ProviderReso
   if(!owned)throw new DomainError("ORDER_NOT_OWNED","The observed order has no exact project owner.",409);
   const orders=resources.filter(r=>r.kind==="order");
   if(orders.length!==1||orders[0].id!==orderId||resources.some(r=>r.source!=="live_sandbox"))throw new DomainError("READ_IDENTITY_MISMATCH","The current provider observation does not match the owned order.",409);
-  await ingestOwnedResources(owned.command,resources,false);
+  await ingestOwnedResources(readPaymentCommand(owned.command),resources,false);
 }
 
 async function ingestOwnedResources(command:PaymentCommand,resources:ProviderResource[],pending:boolean):Promise<void> {
   const [owner]=await query<{obligation_id:string;session_id:string;package_id:string;amount_minor:string;command:PaymentCommand}>(`SELECT c.obligation_id,c.session_id,o.package_id,o.amount_minor,c.command
     FROM fp_payment_commands c JOIN fp_obligations o ON o.id=c.obligation_id AND o.tenant_id=c.tenant_id AND o.project_id=c.project_id
     WHERE c.operation_id=$1 AND c.tenant_id=$2 AND c.project_id=$3`,[command.operationId,command.scope.tenantId,command.scope.projectId]);
-  if(!owner||canonicalJson(owner.command)!==canonicalJson(command))throw new DomainError("COMMAND_NOT_FOUND","The payment has no exact domain owner.");
+  if(!owner||canonicalJson(readPaymentCommand(owner.command))!==canonicalJson(command))throw new DomainError("COMMAND_NOT_FOUND","The payment has no exact domain owner.");
   await database().transaction(async tx=>{
+    const [collection]=await query<{round_id:string}>("SELECT round_id FROM fp_collection_items WHERE obligation_id=$1",[owner.obligation_id],tx);
+    const [round] = collection ? await query<{state:string;recovery_ends_at:Date}>("SELECT state,recovery_ends_at FROM fp_collection_rounds WHERE id=$1 FOR UPDATE",[collection.round_id],tx) : [];
+    const compensate = !!round && (["compensating","cancelled"].includes(round.state) || ["collecting","recovering"].includes(round.state) && round.recovery_ends_at.getTime()<=Date.now());
     await tx.query("SELECT id FROM fp_obligations WHERE id=$1 FOR UPDATE",[owner.obligation_id]);
     for(const resource of resources){
       if(resource.kind==="order") await tx.query("INSERT INTO fp_provider_orders(order_id,tenant_id,project_id,obligation_id,operation_id,observed_state) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(order_id) DO UPDATE SET observed_state=CASE WHEN fp_provider_orders.observed_state='COMPLETED' THEN fp_provider_orders.observed_state ELSE EXCLUDED.observed_state END WHERE fp_provider_orders.obligation_id=EXCLUDED.obligation_id",[resource.id,command.scope.tenantId,command.scope.projectId,owner.obligation_id,command.operationId,resource.status]);
       if(resource.kind!=="capture" || resource.status!=="COMPLETED" || resource.source!=="live_sandbox") continue;
       if(!resource.money || resource.money.currency!=="USD") throw new DomainError("PAYMENT_AMOUNT_UNPROVEN","The payment currency could not be confirmed.");
       const merchantScope=sha256(providerConfiguration().clientId), alias=`paypal:capture:${resource.id}`;
-      if((await query("SELECT receipt_id FROM fp_economic_aliases WHERE merchant_scope=$1 AND alias=$2",[merchantScope,alias],tx)).length) continue;
+      const [existing] = await query<{obligation_id:string;data:SettlementReceipt}>("SELECT r.obligation_id,r.data FROM fp_economic_aliases a JOIN fp_settlement_receipts r ON r.id=a.receipt_id WHERE a.merchant_scope=$1 AND a.alias=$2",[merchantScope,alias],tx);
+      if(existing) {
+        if(existing.obligation_id!==owner.obligation_id || existing.data.grossSettledMinor!==resource.money.minor) throw new DomainError("PAYMENT_OWNER_CONFLICT","This economic payment already has a different owner or amount.");
+        continue;
+      }
       const prior=await query<{data:SettlementReceipt}>("SELECT data FROM fp_settlement_receipts WHERE obligation_id=$1",[owner.obligation_id],tx);
       const split=splitSettlement(resource.money.minor,Number(owner.amount_minor),prior.reduce((sum,r)=>sum+r.data.creditedMinor,0));
       const receipt:SettlementReceipt={id:randomUUID(),tenantId:command.scope.tenantId,projectId:command.scope.projectId,packageId:owner.package_id,donorObligationId:owner.obligation_id,sourceKind:"orders_capture",provenance:"live_sandbox",actualProviderPaymentRef:resource.id,economicAliases:[alias],sourceOrderId:command.action.kind==="capture_order"?command.action.orderId:resources.find(r=>r.kind==="order")?.id??resource.parentId,sourceInvoiceId:null,authoritativeObservedState:"COMPLETED",observedAt:resource.observedAt,currency:"USD",grossSettledMinor:resource.money.minor,...split,completedAttributedRefundMinor:0,pendingAttributedRefundReserveMinor:0,excludedMinor:0,provenRefundableRef:resource.id,refundAdapter:"capture_refund"};
+      if(compensate) receipt.excludedMinor=receipt.creditedMinor;
+      if(compensate && collection && round?.state==="cancelled") {
+        await tx.query("UPDATE fp_collection_rounds SET state='compensating' WHERE id=$1",[collection.round_id]);
+        await tx.query("UPDATE fp_packages SET data=jsonb_set(data,'{fundingState}','\"compensating\"'::jsonb) WHERE project_id=$1 AND id=$2",[command.scope.projectId,owner.package_id]);
+      }
       validateReceipt(receipt);
       const entries=[{account:"paypal_clearing",side:"debit" as const,amountMinor:receipt.grossSettledMinor},{account:"package_funds",side:"credit" as const,amountMinor:receipt.creditedMinor},{account:"excess_refund_liability",side:"credit" as const,amountMinor:receipt.excessLiabilityMinor}];
       assertBalanced(entries);
       await tx.query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,$5,$6,'live_sandbox',$7::jsonb)",[receipt.id,receipt.tenantId,receipt.projectId,receipt.donorObligationId,receipt.packageId,receipt.actualProviderPaymentRef,JSON.stringify(receipt)]);
       await tx.query("INSERT INTO fp_economic_aliases(merchant_scope,alias,receipt_id) VALUES($1,$2,$3)",[merchantScope,alias,receipt.id]);
       for(const entry of entries) if(entry.amountMinor) await tx.query("INSERT INTO fp_journal(id,tenant_id,project_id,receipt_id,account,side,amount_minor,currency) VALUES($1,$2,$3,$4,$5,$6,$7,'USD')",[randomUUID(),receipt.tenantId,receipt.projectId,receipt.id,entry.account,entry.side,entry.amountMinor]);
-      await tx.query("UPDATE fp_obligations SET channel=$1 WHERE id=$2",[receipt.excessLiabilityMinor?"excess_reconciliation":"collected",owner.obligation_id]);
-      await appendEvent(tx,{...command.scope,mode:"live_sandbox"},"payment.settled","PayPal confirmed your test payment","The actual captured amount is now linked to one canonical receipt. Physical evidence remains unreviewed.");
+      const creditedTotal=prior.reduce((sum,r)=>sum+r.data.creditedMinor-r.data.completedAttributedRefundMinor,0)+receipt.creditedMinor;
+      const nextChannel=compensate?"compensating":receipt.excessLiabilityMinor?"excess_reconciliation":creditedTotal>=Number(owner.amount_minor)?"collected":"unknown_reconciling";
+      await tx.query("UPDATE fp_obligations SET channel=$1 WHERE id=$2",[nextChannel,owner.obligation_id]);
+      const items=await query<{round_id:string;consent_id:string}>("UPDATE fp_collection_items SET state=$2 WHERE obligation_id=$1 RETURNING round_id,consent_id",[owner.obligation_id,nextChannel==="unknown_reconciling"?"unknown":nextChannel],tx);
+      for(const item of items){
+        if(nextChannel==="collected")await tx.query("UPDATE fp_conditional_consents SET status='collected' WHERE id=$1",[item.consent_id]);
+        if(compensate)await tx.query("UPDATE fp_conditional_consents SET status='refunding' WHERE id=$1",[item.consent_id]);
+        await refreshRoundFunding(tx,item.round_id);
+      }
+      if(collection && receipt.excessLiabilityMinor) await tx.query("INSERT INTO fp_outbox(id,tenant_id,project_id,kind,data) VALUES($1,$2,$3,'collection.excess',$4::jsonb) ON CONFLICT(id) DO NOTHING",[`excess:${owner.obligation_id}`,command.scope.tenantId,command.scope.projectId,JSON.stringify({roundId:collection.round_id,obligationId:owner.obligation_id})]);
+      if(collection && compensate) await tx.query("INSERT INTO fp_outbox(id,tenant_id,project_id,kind,data) VALUES($1,$2,$3,'collection.compensate',$4::jsonb) ON CONFLICT(id) DO UPDATE SET status='queued',available_at=now()",[`compensate:${collection.round_id}`,command.scope.tenantId,command.scope.projectId,JSON.stringify({roundId:collection.round_id})]);
+      await appendEvent(tx,{...command.scope,mode:"live_sandbox"},"payment.settled",command.businessKey.startsWith("conditional:")?"PayPal confirmed a conditional contribution":"PayPal confirmed your test payment","The actual captured amount is now linked to one canonical receipt. Physical evidence remains unreviewed.");
     }
     if(pending){
-      await tx.query("UPDATE fp_obligations SET channel='unknown_reconciling' WHERE id=$1 AND channel NOT IN ('collected','excess_reconciliation')",[owner.obligation_id]);
+      await tx.query("UPDATE fp_obligations SET channel='unknown_reconciling' WHERE id=$1 AND channel NOT IN ('collected','excess_reconciliation','compensating','refunded','cancelled')",[owner.obligation_id]);
       await tx.query("INSERT INTO fp_outbox(id,tenant_id,project_id,kind,data) VALUES($1,$2,$3,'payment.reconcile',$4::jsonb) ON CONFLICT(id) DO NOTHING",[`reconcile:${command.operationId}`,command.scope.tenantId,command.scope.projectId,JSON.stringify({operationId:command.operationId})]);
     }
   });
@@ -156,7 +190,7 @@ export async function captureCheckout(session:Session,intentId:string,orderId:st
 export async function ownedPayment(session:Session,operationId:string,reconcile=false){
   const [owner]=await query<{command:PaymentCommand}>("SELECT command FROM fp_payment_commands WHERE operation_id=$1 AND tenant_id=$2 AND session_id=$3",[operationId,session.tenantId,session.id]);
   if(!owner) throw new DomainError("PAYMENT_NOT_FOUND","That payment does not belong to this workspace.",404);
-  const operation=reconcile?await paymentCore().reconcile(owner.command.scope,operationId):await new SqlPaymentStore(database()).get(owner.command.scope,operationId);
+  const operation=reconcile?await paymentCore().reconcile(owner.command.scope,operationId):await paymentStore().get(owner.command.scope,operationId);
   if(!operation) throw new DomainError("PAYMENT_NOT_FOUND","The payment has not been dispatched.",404);
   if(reconcile) await ingestPaymentOperation(operation);
   return paymentView(operation);

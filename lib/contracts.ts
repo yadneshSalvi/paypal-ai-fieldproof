@@ -1,7 +1,7 @@
 export type Provenance = "sample" | "live_sandbox" | "replay" | "modelled";
 export type WorkspaceRole = "donor" | "volunteer" | "organizer" | "auditor";
 export type FundingState = "open" | "ready" | "collecting" | "recovering" | "funded" | "compensating" | "cancelled";
-export type CollectionChannel = "uncollected" | "original_in_flight" | "collected" | "definitively_declined" | "unknown_reconciling" | "recovery_invoice_open" | "excess_reconciliation";
+export type CollectionChannel = "uncollected" | "original_in_flight" | "collected" | "definitively_declined" | "unknown_reconciling" | "recovery_invoice_open" | "excess_reconciliation" | "compensating" | "refunding" | "refunded" | "cancelled";
 
 export interface Point { x: number; y: number }
 export interface BlueprintZone {

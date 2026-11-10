@@ -65,7 +65,7 @@ describe("leased webhook processing with fixture provider reads",()=>{
   const f=await fixture();await f.event();assert.equal((await processVerifiedWebhooks({provider:{read:async kind=>kind==="capture"?[f.capture]:[f.order,{...f.capture,id:providerId()}]}})).retry,1);assert.deepEqual(await totals(f.s.tenantId),[{count:"0",credited:"0"}]);
  });
  it("unsupported states need review and rejected signatures never become jobs",async()=>{
-  const f=await fixture();await f.event("PAYMENT.CAPTURE.REFUNDED");assert.equal((await processVerifiedWebhooks({provider:f.provider})).review,1);assert.equal(f.reads.length,0);
+  const f=await fixture();await f.event("PAYMENT.AUTHORIZATION.CREATED");assert.equal((await processVerifiedWebhooks({provider:f.provider})).review,1);assert.equal(f.reads.length,0);
   const id=`FIXTURE-${randomUUID()}`;await assert.rejects(()=>receivePayPalWebhook(JSON.stringify({id,event_type:"PAYMENT.CAPTURE.COMPLETED",resource:{id:f.captureId}}),new Headers(),{verify:async()=>({verified:false,transmissionId:"invalid"})}));
   await enqueueVerifiedWebhooks();assert.equal((await query("SELECT event_id FROM fp_webhook_jobs WHERE event_id=$1",[id])).length,0);
  });

@@ -4,6 +4,7 @@ import type { WorkspaceRole } from "../contracts";
 import { DomainError } from "../domain/money";
 import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
+import { requireMembership } from "./membership";
 
 const COOKIE = "fieldproof_session";
 export interface Session {
@@ -39,6 +40,7 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
   await database().transaction(async tx => {
     await createProject(tx,tenantId,projectId,`eastside-${id.slice(0,8)}`,mode);
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'donor',$6)", [id,tokenHash(token),tenantId,projectId,actorId,expiresAt]);
+    await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,$4::jsonb)", [tenantId,projectId,actorId,JSON.stringify(["donor","volunteer","organizer","auditor"])]);
   });
   (await cookies()).set(COOKIE,token,{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV === "production",path:"/",maxAge:12*60*60});
   return {id,tenantId,projectId,actorId,role:"donor",expiresAt,mode};
@@ -51,5 +53,6 @@ export function assertSameOrigin(request: Request): void {
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);
 }
 export async function setRole(session: Session, role: WorkspaceRole): Promise<void> {
+  await requireMembership(session.tenantId,session.projectId,session.actorId,role);
   await query("UPDATE fp_sessions SET role=$1 WHERE id=$2 AND revoked_at IS NULL AND expires_at>now()",[role,session.id]);
 }

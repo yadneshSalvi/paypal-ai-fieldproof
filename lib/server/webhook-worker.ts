@@ -4,9 +4,11 @@ import { DomainError } from "../domain/money";
 import { database, initializeDatabase, query } from "./db";
 import { ingestOwnedOrderRead, paypalProvider } from "./payments";
 import { webhookInboxScope } from "./webhooks";
+import { observeOwnedInvoice, type RecoveryDependencies } from "./recovery-invoices";
+import { observeOwnedRefund, type RefundDependencies } from "./refunds";
 
 type Job={inbox_id:string;event_id:string;event_type:string;resource_id:string;attempts:number;lease_id:string};
-const supported=new Set(["CHECKOUT.ORDER.APPROVED","CHECKOUT.ORDER.COMPLETED","PAYMENT.CAPTURE.COMPLETED","PAYMENT.CAPTURE.PENDING","PAYMENT.CAPTURE.DENIED"]);
+const supported=new Set(["CHECKOUT.ORDER.APPROVED","CHECKOUT.ORDER.COMPLETED","PAYMENT.CAPTURE.COMPLETED","PAYMENT.CAPTURE.PENDING","PAYMENT.CAPTURE.DENIED","PAYMENT.CAPTURE.DECLINED"]);
 const validId=(value:string)=>/^[A-Za-z0-9_.:-]{1,128}$/.test(value);
 
 /** A link yields a candidate ID only. We never fetch provider-supplied URLs. */
@@ -60,9 +62,19 @@ async function finishJob(job:Job,status:"processed"|"retry"|"review",code:string
   });
 }
 
-async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline:number) {
-  if(!supported.has(job.event_type)) {await finishJob(job,"review","DOMAIN_ADAPTER_REQUIRED");return "review" as const;}
+async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline:number,domain:{recovery?:RecoveryDependencies;refunds?:RefundDependencies}={}) {
   if(!validId(job.resource_id)) {await finishJob(job,"review","INVALID_RESOURCE_ID");return "review" as const;}
+  if(job.event_type.startsWith("INVOICING.INVOICE.")) {
+    const owner=await observeOwnedInvoice(job.resource_id,domain.recovery);
+    await finishJob(job,"processed","CURRENT_OWNED_INVOICE_APPLIED",{observedAt:new Date().toISOString(),invoiceIdHash:sha256(job.resource_id),financialWrites:0},owner);
+    return "processed" as const;
+  }
+  if(["PAYMENT.CAPTURE.REFUNDED","PAYMENT.REFUND.PENDING","PAYMENT.REFUND.FAILED"].includes(job.event_type)) {
+    const owner=await observeOwnedRefund(job.resource_id,domain.refunds);
+    await finishJob(job,"processed","CURRENT_OWNED_REFUND_APPLIED",{observedAt:new Date().toISOString(),refundIdHash:sha256(job.resource_id),financialWrites:0},owner);
+    return "processed" as const;
+  }
+  if(!supported.has(job.event_type)) {await finishJob(job,"review","DOMAIN_ADAPTER_REQUIRED");return "review" as const;}
   const signal=()=>AbortSignal.timeout(Math.max(1,Math.min(12000,deadline-Date.now())));
   let capture:ProviderResource|undefined;
   let orderId=job.resource_id;
@@ -95,13 +107,13 @@ async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline
 }
 
 /** Bounded scheduler batch; every provider call is a read. */
-export async function processVerifiedWebhooks(options:{limit?:number;provider?:Pick<ProviderAdapter,"read">;budgetMs?:number}={}) {
+export async function processVerifiedWebhooks(options:{limit?:number;provider?:Pick<ProviderAdapter,"read">;budgetMs?:number;recovery?:RecoveryDependencies;refunds?:RefundDependencies}={}) {
   const limit=Math.max(1,Math.min(options.limit??3,20)),budget=Math.max(1000,Math.min(options.budgetMs??40000,45000));
   await enqueueVerifiedWebhooks();const deadline=Date.now()+budget,provider=options.provider??paypalProvider();
   const summary={processed:0,retry:0,review:0};
   for(let i=0;i<limit&&Date.now()<deadline;i++){
     const job=await claimJob();if(!job)break;
-    try{summary[await processJob(job,provider,deadline)]++;}
+    try{summary[await processJob(job,provider,deadline,options)]++;}
     catch(error){
       const code=error instanceof DomainError?error.code:"PROVIDER_READ_UNAVAILABLE";
       const status=job.attempts>=8?"review":"retry";

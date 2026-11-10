@@ -1,4 +1,5 @@
 import { PostgresDatabase, SqlPaymentStore, type SqlConnection } from "@fracture/paypal-core";
+import { paymentOperationCodec } from "./private-values";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -18,7 +19,7 @@ export async function initializeDatabase(): Promise<void> {
       await tx.query("SELECT pg_advisory_xact_lock(410202611)");
       await tx.query(schema);
     });
-    await new SqlPaymentStore(database()).initialize();
+    await new SqlPaymentStore(database(),{operationDocumentCodec:paymentOperationCodec}).initialize();
   })().catch(error => { state.fieldproofReady = undefined; throw error; });
   return state.fieldproofReady;
 }
@@ -58,6 +59,16 @@ CREATE TABLE IF NOT EXISTS fp_obligations (
   data jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
   FOREIGN KEY(project_id,package_id) REFERENCES fp_packages(project_id,id)
 );
+CREATE TABLE IF NOT EXISTS fp_memberships (
+  tenant_id text NOT NULL REFERENCES fp_tenants(id) ON DELETE CASCADE, project_id text NOT NULL REFERENCES fp_projects(id) ON DELETE CASCADE,
+  actor_id text NOT NULL, roles jsonb NOT NULL, state text NOT NULL DEFAULT 'active' CHECK(state IN ('active','revoked')),
+  version integer NOT NULL DEFAULT 1, created_at timestamptz NOT NULL DEFAULT now(), revoked_at timestamptz,
+  PRIMARY KEY(project_id,actor_id)
+);
+INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles)
+  SELECT tenant_id,project_id,actor_id,'["donor","volunteer","organizer","auditor"]'::jsonb
+  FROM (SELECT DISTINCT ON(project_id) tenant_id,project_id,actor_id FROM fp_sessions ORDER BY project_id,created_at,id) founders
+  ON CONFLICT(project_id,actor_id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS fp_collection_rounds (
   id text PRIMARY KEY, tenant_id text NOT NULL, project_id text NOT NULL, package_id text NOT NULL,
   package_version integer NOT NULL, target_minor bigint NOT NULL,
@@ -67,6 +78,9 @@ CREATE TABLE IF NOT EXISTS fp_collection_rounds (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS fp_active_round ON fp_collection_rounds(project_id,package_id)
   WHERE state IN ('collecting','recovering');
+ALTER TABLE fp_collection_rounds ADD COLUMN IF NOT EXISTS cancellation_reason text;
+ALTER TABLE fp_collection_rounds ADD COLUMN IF NOT EXISTS cancelled_by text;
+ALTER TABLE fp_collection_rounds ADD COLUMN IF NOT EXISTS cancellation_requested_at timestamptz;
 CREATE TABLE IF NOT EXISTS fp_settlement_receipts (
   id text PRIMARY KEY, tenant_id text NOT NULL, project_id text NOT NULL REFERENCES fp_projects(id),
   obligation_id text NOT NULL REFERENCES fp_obligations(id), package_id text NOT NULL,
@@ -167,7 +181,52 @@ CREATE TABLE IF NOT EXISTS fp_collection_items (
   amount_minor bigint NOT NULL CHECK(amount_minor>0), state text NOT NULL DEFAULT 'waiting',
   operation_id text, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(round_id,consent_id)
 );
+ALTER TABLE fp_collection_items ADD COLUMN IF NOT EXISTS wallet_checked_at timestamptz;
+ALTER TABLE fp_collection_items ADD COLUMN IF NOT EXISTS wallet_identity_hash text;
+ALTER TABLE fp_collection_items ADD COLUMN IF NOT EXISTS last_code text;
+CREATE TABLE IF NOT EXISTS fp_recovery_invoices (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  round_id text NOT NULL REFERENCES fp_collection_rounds(id), consent_id text NOT NULL REFERENCES fp_conditional_consents(id),
+  obligation_id text NOT NULL UNIQUE REFERENCES fp_obligations(id), actor_id text NOT NULL, created_by text NOT NULL,
+  creator_membership_version integer NOT NULL, consent_version integer NOT NULL, consent_digest text NOT NULL,
+  package_version integer NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>0),
+  invoice_number text NOT NULL UNIQUE, reference text NOT NULL UNIQUE, provider_invoice_hash text UNIQUE,
+  state text NOT NULL DEFAULT 'draft_requested', version integer NOT NULL DEFAULT 1,
+  encrypted_data text NOT NULL, recipient_label text NOT NULL, last_code text,
+  observed_at timestamptz, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_invoice_payment_observations (
+  id text PRIMARY KEY, invoice_id text NOT NULL REFERENCES fp_recovery_invoices(id),
+  payment_identity_hash text NOT NULL, state text NOT NULL, body_hash text NOT NULL,
+  encrypted_data text NOT NULL, observed_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(invoice_id,payment_identity_hash,body_hash)
+);
+ALTER TABLE fp_settlement_receipts ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+ALTER TABLE fp_journal ADD COLUMN IF NOT EXISTS operation_id text;
+ALTER TABLE fp_journal ADD COLUMN IF NOT EXISTS entry_kind text NOT NULL DEFAULT 'settlement';
+CREATE TABLE IF NOT EXISTS fp_receipt_allocations (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  receipt_id text NOT NULL REFERENCES fp_settlement_receipts(id), claim_id text NOT NULL, claim_line_id text NOT NULL,
+  package_id text NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>0), state text NOT NULL DEFAULT 'reserved',
+  revision integer NOT NULL DEFAULT 1, created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(claim_id,claim_line_id,receipt_id,revision)
+);
+CREATE TABLE IF NOT EXISTS fp_refunds (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  receipt_id text NOT NULL REFERENCES fp_settlement_receipts(id), obligation_id text NOT NULL REFERENCES fp_obligations(id),
+  actor_id text NOT NULL, session_id text NOT NULL REFERENCES fp_sessions(id), approved_role text NOT NULL,
+  intent_id text NOT NULL, reason text NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>0),
+  attributed_minor bigint NOT NULL CHECK(attributed_minor>=0), excess_minor bigint NOT NULL CHECK(excess_minor>=0),
+  receipt_version integer NOT NULL, receipt_identity_digest text NOT NULL, approval_digest text NOT NULL,
+  state text NOT NULL DEFAULT 'reserved', operation_id text UNIQUE, provider_refund_hash text UNIQUE,
+  budget jsonb NOT NULL, observed_at timestamptz NOT NULL, last_code text, completed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(tenant_id,receipt_id,intent_id),
+  CHECK(amount_minor=attributed_minor+excess_minor)
+);
+ALTER TABLE fp_refunds ADD COLUMN IF NOT EXISTS checked_at timestamptz;
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(3) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(4) ON CONFLICT DO NOTHING;
 `;

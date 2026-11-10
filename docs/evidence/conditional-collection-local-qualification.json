@@ -1,0 +1,62 @@
+{
+  "project": "Fieldproof",
+  "observedAt": "2026-11-10T23:20:24.771196+00:00",
+  "provenance": "local_fixture",
+  "core": {
+    "version": "0.2.6",
+    "sha256": "099c2097279f90a706abdabb548e08874ef47d3abb4e91d52b3376df7f93cad9"
+  },
+  "validation": {
+    "testsPassed": 94,
+    "testsFailed": 0,
+    "suites": 12,
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "publicCollectionPageStatus": 200,
+    "unauthenticatedCollectionApiStatus": 401
+  },
+  "fixtureCoverage": [
+    "exact eight-amount frozen round and fixed 48-hour deadline",
+    "concurrent command and receipt idempotency",
+    "operation and wallet encryption",
+    "unknown original cannot create recovery invoice",
+    "seven 925USD receipts plus same-obligation 35USD invoice fixture",
+    "paid invoice labels and external payments cannot add credit",
+    "independent payment identity, amount and merchant checks",
+    "invoice cancellation races actual fixture payment",
+    "original-route refund reservation and balanced journal",
+    "pending and lost refund response never resent automatically",
+    "external refund budget and exact parent linkage",
+    "unspent cancellation and committed-use denial",
+    "reordered invoice/refund events use fresh owned reads"
+  ],
+  "separateActualDatabaseObservation": {
+    "walletReadySlots": 8,
+    "approvedAmountMinor": 96000,
+    "currency": "USD",
+    "participantAccounts": 1,
+    "independentlyRecruitedDonors": 0,
+    "conditionalRounds": 0,
+    "conditionalReceipts": 0,
+    "separateCheckoutReceipts": 1,
+    "separateCheckoutCreditedMinor": 100
+  },
+  "actualProviderEvidence": "paypal-vault-qualification.json",
+  "notClaimed": [
+    "actual conditional collection",
+    "native provider decline",
+    "Fieldproof invoice settlement or financial invoice refund",
+    "Fieldproof Payout success",
+    "physical project completion",
+    "human research findings"
+  ],
+  "remainingFullScope": [
+    "qualify actual collection/invoice/refund lifecycle",
+    "reviewed claims and verified-recipient balance-gated Payouts",
+    "real evidence uploads/OCR/duplicate review and blueprint extraction",
+    "native Studio six widgets, real Steward/Auditor tools and persisted history",
+    "reallocation, matching, restrictions, membership and portfolio workflows",
+    "redacted public proof, QR, templates and Spanish",
+    "evaluations, accessibility, responsive verification, rehearsals and release"
+  ]
+}

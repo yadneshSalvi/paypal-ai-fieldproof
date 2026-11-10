@@ -27,7 +27,8 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   const receipts = receiptRows.map(row => row.data);
   const obligations: DonorObligation[] = obligationRows.map(row=>({id:row.id,packageId:row.package_id,amountMinor:Number(row.amount_minor),channel:row.channel,consentVersion:row.consent_version,donorLabel:row.data.donorLabel,provenance:row.data.provenance,createdAt:row.created_at.toISOString(),purpose:row.purpose}));
   const packages: PackageView[] = packageRows.map(row=>{
-    const totals = fundingTotals(receipts.filter(r=>r.packageId===row.id),Number(row.budget_minor),project.mode);
+    const contributionIds = new Set(obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge").map(o=>o.id));
+    const totals = fundingTotals(receipts.filter(r=>r.packageId===row.id && contributionIds.has(r.donorObligationId)),Number(row.budget_minor),project.mode);
     const pledgedMinor = obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge" && (project.mode==="sample" || o.data.eligible===true)).reduce((sum,o)=>sum+Number(o.amount_minor),0);
     return {...row.data,...totals,id:row.id,budgetMinor:Number(row.budget_minor),version:row.version,pledgedMinor,fundingState:totals.fundingEligibleMinor>=Number(row.budget_minor)?"funded":row.data.fundingState};
   });
