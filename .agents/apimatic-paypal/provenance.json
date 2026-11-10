@@ -1,0 +1,204 @@
+{
+  "source_repository": "https://github.com/context-plugins/plugin-marketplace",
+  "commit": "7cbdf85dc95f09d9ede8c5d349506686684fa0d4",
+  "plugin": "paypal",
+  "plugin_version": "0.4.1",
+  "installed_on": "2026-11-10",
+  "installation_mode": "repository-scoped Codex skills; no user-wide plugin registration",
+  "skill_count": 29,
+  "verified_file_count": 32,
+  "files": [
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-authentication/SKILL.md",
+      "installed": ".agents/skills/dotnet-authentication/SKILL.md",
+      "git_blob_sha1": "802240bf1bd93fffa953c2fcbc0b259688eb8f38",
+      "sha256": "77e47b4b128303110c56712f836409a819157bac2750d46e1037a215b42475f4"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-calling-endpoints/SKILL.md",
+      "installed": ".agents/skills/dotnet-calling-endpoints/SKILL.md",
+      "git_blob_sha1": "fb0db7125a500b211a1503dd6dabbe401b6b2cd3",
+      "sha256": "24626e3fcc9b8b2142cc251f2e59d58a79b9fd0c3b5919f2e07a1099f5616a65"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-client-initialization/SKILL.md",
+      "installed": ".agents/skills/dotnet-client-initialization/SKILL.md",
+      "git_blob_sha1": "948c68ebf6fdfc2752f261dad3d22d7be624899a",
+      "sha256": "0438fb9ab45e77a2e997f257ccfdcbc6f7ab526b3e43c6afd411c532ef7f4946"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-configuration-resilience/SKILL.md",
+      "installed": ".agents/skills/dotnet-configuration-resilience/SKILL.md",
+      "git_blob_sha1": "8d1c807a027f380cd661938f4ef19a2cb94b1735",
+      "sha256": "930e0e98f6edd8af45459332978256e41f0a7e5327c3b9d3de8b93193bf9b11d"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-error-handling/SKILL.md",
+      "installed": ".agents/skills/dotnet-error-handling/SKILL.md",
+      "git_blob_sha1": "b4fd301b989e036b3546073216008e1c8cfee7c3",
+      "sha256": "ff63b73e8df58c5f97d33b0934293b5b951d4faf6bee6ab8f6fa182eb29b49ac"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-getting-started/SKILL.md",
+      "installed": ".agents/skills/dotnet-getting-started/SKILL.md",
+      "git_blob_sha1": "8124a9ce7d1b946278960a0430cbb2f351840b0d",
+      "sha256": "e5084e25eff0eae77478df2a4a8557ec634507198e8e99ce0c97de8c48faac04"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-integrate-paypal/SKILL.md",
+      "installed": ".agents/skills/dotnet-integrate-paypal/SKILL.md",
+      "git_blob_sha1": "dea6ad17324e5e056edcc82bd342470b1212ed34",
+      "sha256": "db53a2fbc592083a50f3de1a76b80b21cbddbd6c1d76875f0ca910906d208887"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-models/SKILL.md",
+      "installed": ".agents/skills/dotnet-models/SKILL.md",
+      "git_blob_sha1": "c426a34bda8337dd5763618a097439976f729abd",
+      "sha256": "b138c3af60ab3796afc3455fdc3fc41d4845a3b9564c44ae2078eaae48269f67"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-models/reference.md",
+      "installed": ".agents/skills/dotnet-models/reference.md",
+      "git_blob_sha1": "e780a4e685c9f8c6c8193c2c56bd04571afd19db",
+      "sha256": "6a40cdf90d8f927d0e15e67b0cfa1be0f4580862f71525542ee0a13b910f2f35"
+    },
+    {
+      "source": "plugins/paypal/skills/dotnet/dotnet-testing/SKILL.md",
+      "installed": ".agents/skills/dotnet-testing/SKILL.md",
+      "git_blob_sha1": "720a21ebc3edca1b4535e7ed515c1a4adbc9ce77",
+      "sha256": "82511280699f26c59222f965f29665797c099d99cd638d993e35fedd5a1b1a7b"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-authentication/SKILL.md",
+      "installed": ".agents/skills/python-authentication/SKILL.md",
+      "git_blob_sha1": "87665c3913197c04775f75dc930456ca0dc609a1",
+      "sha256": "8dded69966b0758fec809595403664361b28a0e6b7dadf2c5fc3f48bfe958b29"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-calling-endpoints/SKILL.md",
+      "installed": ".agents/skills/python-calling-endpoints/SKILL.md",
+      "git_blob_sha1": "a6e72427cb65793597b13f27ff7c151ed527af8b",
+      "sha256": "2dab405e3e398e350c030444970882a6391fc53f288dfdfc421646e116d083e3"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-client-initialization/SKILL.md",
+      "installed": ".agents/skills/python-client-initialization/SKILL.md",
+      "git_blob_sha1": "357e62847bd6a7ec422ab1ded2c6ec79d839b352",
+      "sha256": "b15b843c34ebd28cb8bff77573d7901e935f493c05731a82a7c389c182626612"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-configuration-resilience/SKILL.md",
+      "installed": ".agents/skills/python-configuration-resilience/SKILL.md",
+      "git_blob_sha1": "05c86314fb216b5d39ca25cb0b3e6f1f49ba3b81",
+      "sha256": "44a0c889e6b65562d29aa37a135b0173267193493526b535f47f0848668fc266"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-error-handling/SKILL.md",
+      "installed": ".agents/skills/python-error-handling/SKILL.md",
+      "git_blob_sha1": "02bf6bbead934b1b7c2be049cf78515b493e96c0",
+      "sha256": "14a6d85d08110b64a857cb6ab76ef3e4b38635331161e474b15abf7f802bcb89"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-event-streams/SKILL.md",
+      "installed": ".agents/skills/python-event-streams/SKILL.md",
+      "git_blob_sha1": "90ce063faa7885715aba8e656ce33a41524d2668",
+      "sha256": "2711c87e92b6011f61c940bab6daf19d92cd73e001c8dec1035cd542f9ea067f"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-file-handling/SKILL.md",
+      "installed": ".agents/skills/python-file-handling/SKILL.md",
+      "git_blob_sha1": "df25a80e3ebfcc320316e9827fcd7c6908a197a7",
+      "sha256": "cd311e2e94ed7ee08c07fcf58611df82440da2ca744897726ed1838ea72e1180"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-getting-started/SKILL.md",
+      "installed": ".agents/skills/python-getting-started/SKILL.md",
+      "git_blob_sha1": "abca9679faa2081b66fb8c06a1da46fbaa3b6849",
+      "sha256": "50a4b8904ee7d0264442ef333448edb49ac1b4858b3f2b5ba95e66de5b48c96d"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-integrate-paypal/SKILL.md",
+      "installed": ".agents/skills/python-integrate-paypal/SKILL.md",
+      "git_blob_sha1": "62a0ceeab048bfcb3a54fb010700464b726e3f33",
+      "sha256": "1b50273aebdb907bb96840fd4a36ac94b1c83f58f1b87c1d0251ed2b680f48ae"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-models/SKILL.md",
+      "installed": ".agents/skills/python-models/SKILL.md",
+      "git_blob_sha1": "cbf33c8f76c0310d073f73ff555fc5e10d9d6f1e",
+      "sha256": "a82898746e6e31c771594956f8f51206f74f0f97d968e6056da7ab4e39e30065"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-models/reference.md",
+      "installed": ".agents/skills/python-models/reference.md",
+      "git_blob_sha1": "8524cc0a9d0b3daf342d341ba13b2fb58202eb95",
+      "sha256": "9f69f8e0aa8c71c2626912b4ff1cb8c2a848bcb62602eca6f015e55b8caa4974"
+    },
+    {
+      "source": "plugins/paypal/skills/python/python-testing/SKILL.md",
+      "installed": ".agents/skills/python-testing/SKILL.md",
+      "git_blob_sha1": "883b947a154c435b2c528b54883388f052743669",
+      "sha256": "951e812bedd63ec037054268d06b6015df1e74211e319dc5f11727cda3b97278"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-authentication/SKILL.md",
+      "installed": ".agents/skills/typescript-authentication/SKILL.md",
+      "git_blob_sha1": "ae49a764b445321c7119fa98c4365c53573b99e1",
+      "sha256": "cc4653044e6c7e36cd293b14f91a18c8c167fe0fbff0ae6f23c72322fab5b05e"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-calling-endpoints/SKILL.md",
+      "installed": ".agents/skills/typescript-calling-endpoints/SKILL.md",
+      "git_blob_sha1": "74e5dd04ceea2c52f89a1585eef234cbe4dd6131",
+      "sha256": "2928c41f2c5b962af3c125c64a5dc6dc5ddacd9c3bc7e31a55d288fcf21f3282"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-client-initialization/SKILL.md",
+      "installed": ".agents/skills/typescript-client-initialization/SKILL.md",
+      "git_blob_sha1": "8f8dcacf066d4e79527e59ca6db0cfb195d27511",
+      "sha256": "70602ed10f61a49fe4c518db6ffe799c4d5b2722bed5668f2362116a3021c189"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-configuration-resilience/SKILL.md",
+      "installed": ".agents/skills/typescript-configuration-resilience/SKILL.md",
+      "git_blob_sha1": "480ee8e727b2a44439e4d33d7e98155f47747da3",
+      "sha256": "4141d1099198f4428e838a1e1a20cfdb347641e212c30873be8897f6537e37c0"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-error-handling/SKILL.md",
+      "installed": ".agents/skills/typescript-error-handling/SKILL.md",
+      "git_blob_sha1": "db15dba17e4e82076b41f7f98a06bc143c115e62",
+      "sha256": "3ea93f37a6c50a1f8d9f43e25d6ae584d09fdc60bc57056d25e309161637f4a4"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-getting-started/SKILL.md",
+      "installed": ".agents/skills/typescript-getting-started/SKILL.md",
+      "git_blob_sha1": "1f9e9c29b0ff416810ece19049cf7e2520bcdaf2",
+      "sha256": "45d9af1d1181f8af0ff4a0a1d7cb8cf80d30c5a9542796e142e9e60b5a778773"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-integrate-paypal/SKILL.md",
+      "installed": ".agents/skills/typescript-integrate-paypal/SKILL.md",
+      "git_blob_sha1": "69afcb42e5f988a752f458b0281626a3691739f9",
+      "sha256": "ea3d3a49a5e5250334aaa2316f7e11d8e508c2d66ad31c33477f53521eafc126"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-models/SKILL.md",
+      "installed": ".agents/skills/typescript-models/SKILL.md",
+      "git_blob_sha1": "ca6fed292860b946cae1334bdbfc1ec77e2dbfb6",
+      "sha256": "e2a647da586d7b444ea1b8e571bd6106f28b7e8db033dd2ccfe4a6b1102af9a7"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-models/reference.md",
+      "installed": ".agents/skills/typescript-models/reference.md",
+      "git_blob_sha1": "e6dc98c68da02493538ee1267b9a55ebba33ea97",
+      "sha256": "f98bdb5800a14a4c8feb5bff283ac1499e07c2aadaeae694fe64484982b7cf7f"
+    },
+    {
+      "source": "plugins/paypal/skills/typescript/typescript-testing/SKILL.md",
+      "installed": ".agents/skills/typescript-testing/SKILL.md",
+      "git_blob_sha1": "2475f409723f818030e7f5c1c4cbc6f5738238bb",
+      "sha256": "8c9e0eaf79cab03ee846694c344195d18a0fe213a2ceda8fa5cdebdc5ed1ef60"
+    }
+  ]
+}

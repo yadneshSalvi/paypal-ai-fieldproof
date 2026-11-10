@@ -1,0 +1,18 @@
+{
+  "name": "paypal",
+  "displayName": "Paypal",
+  "version": "0.4.1",
+  "description": "Integrate and consume the APIMatic-generated PayPal Server SDK SDK — bundled skills for C#/.NET, python, TypeScript.",
+  "author": {
+    "name": "APIMatic",
+    "email": "developer@apimatic.io"
+  },
+  "license": "MIT",
+  "homepage": "https://context.apimatic.io/",
+  "repository": "https://github.com/context-plugins/plugin-marketplace",
+  "skills": [
+    "./skills/dotnet",
+    "./skills/python",
+    "./skills/typescript"
+  ]
+}

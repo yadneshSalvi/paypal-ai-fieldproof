@@ -1,0 +1,31 @@
+# Local planning and credentials
+/plans/
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+.npmrc.local
+
+# Dependencies and generated artifacts
+node_modules/
+.next/
+.vercel/
+out/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+*.tsbuildinfo
+.DS_Store
+*.log
+
+# Local state, recordings, and private evidence
+.data/
+.local/
+.private/
+.setup-evidence/
+artifacts/private/
