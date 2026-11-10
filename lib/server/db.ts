@@ -125,6 +125,16 @@ CREATE TABLE IF NOT EXISTS fp_recipient_accounts (
   account_verified boolean NOT NULL, version integer NOT NULL DEFAULT 1,
   verified_at timestamptz NOT NULL, UNIQUE(tenant_id,actor_id)
 );
+CREATE TABLE IF NOT EXISTS fp_webhook_jobs (
+  inbox_id text NOT NULL, event_id text NOT NULL, event_type text NOT NULL, resource_id text NOT NULL,
+  status text NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','processing','retry','processed','review')),
+  attempts integer NOT NULL DEFAULT 0, available_at timestamptz NOT NULL DEFAULT now(),
+  lease_id text, lease_until timestamptz, last_code text,
+  owner_tenant_id text, owner_project_id text, observation jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(), completed_at timestamptz,
+  PRIMARY KEY(inbox_id,event_id)
+);
+CREATE INDEX IF NOT EXISTS fp_webhook_jobs_ready ON fp_webhook_jobs(inbox_id,status,available_at);
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 `;
