@@ -8,6 +8,7 @@ import { applicationOrigin, captureCheckout, checkCheckoutIntent, createCheckout
 import { completeIdentity, identityStart, recipientView } from "@/lib/server/identity";
 import { DomainError } from "@/lib/domain/money";
 import { database, initializeDatabase, query } from "@/lib/server/db";
+import { beginWalletApproval, commitmentOverview, commitmentView, completeWalletApproval, createCommitment, withdrawCommitment } from "@/lib/server/commitments";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -35,6 +36,8 @@ export async function GET(request:Request,context:Context){
     if(path==="health") {await initializeDatabase();await query("SELECT 1");return json({status:"ok",storage:"postgresql",project:"fieldproof",environment:"sandbox"});}
     if(path==="paypal/config") {await requireSession(["donor"]);return json({clientId:process.env.PAYPAL_CLIENT_ID??null,currency:"USD",environment:"sandbox"});}
     if(path==="recipient") return json({recipient:await recipientView(await requireSession())});
+    if(path==="commitments") return json(await commitmentOverview(await requireSession()));
+    if(path.startsWith("commitments/")) return json(await commitmentView(await requireSession(),z.uuid().parse(path.slice("commitments/".length))));
     if(path==="auth/paypal"){
       if(request.headers.get("sec-fetch-site")==="cross-site") throw new DomainError("ORIGIN_DENIED","Start account linking from Fieldproof.",403);
       return NextResponse.redirect(await identityStart(await requireSession(["donor","volunteer"])));
@@ -79,6 +82,14 @@ export async function POST(request:Request,context:Context){
     if(path==="pledges"){
       const data=z.object({amountMinor:z.number().int().min(100).max(100000),packageId:z.string().min(1).max(64),expectedVersion:z.number().int().positive(),intentId:z.uuid()}).strict().parse(body),session=await requireSession(["donor"]);
       await addSamplePledge(session,data);return json(await projectSnapshot(session),201);
+    }
+    if(path==="commitments"){
+      const data=z.object({slotIndex:z.number().int().min(0).max(7),expectedVersion:z.number().int().positive(),intentId:z.uuid(),accepted:z.literal(true),policyVersion:z.literal(1)}).strict().parse(body);
+      return json(await createCommitment(await requireSession(["donor"]),data),201);
+    }
+    if(["commitments/wallet","commitments/check","commitments/withdraw"].includes(path)){
+      const {consentId}=z.object({consentId:z.uuid()}).strict().parse(body),session=await requireSession(["donor"]);
+      return json(path==="commitments/wallet"?await beginWalletApproval(session,consentId):path==="commitments/check"?await completeWalletApproval(session,consentId):await withdrawCommitment(session,consentId));
     }
     if(path==="tour"){
       const {step}=z.object({step:z.number().int().min(1).max(3)}).strict().parse(body),session=await requireSession();

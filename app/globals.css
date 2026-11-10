@@ -7,6 +7,7 @@
 @import "@fontsource/ibm-plex-sans/600.css";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
+@import "./commitment.css";
 
 :root{--paper:#f4f1ea;--ink:#1e3a5f;--line:#4a6fa5;--marigold:#f2a93b;--leaf:#3e8e5e;--coral:#bd513e;--muted:#697582;--border:#d8d8cf;--white:#fffdf8;--sans:"IBM Plex Sans",sans-serif;--heading:"Space Grotesk",sans-serif;--mono:"IBM Plex Mono",monospace;--radius:7px;--shadow:0 14px 40px #20364a09}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:100px}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}body:has(dialog[open]){overflow:hidden}button,input,select,textarea{font:inherit}button,a,input,select,summary{-webkit-tap-highlight-color:transparent}button,a{touch-action:manipulation}button{cursor:pointer;color:inherit}button:disabled{cursor:wait;opacity:.6}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #946516;outline-offset:5px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--heading);font-weight:500;line-height:1.2;letter-spacing:-.035em}button{border:0;background:none}svg{flex-shrink:0}::selection{background:#f2a93b77}.mono{font-family:var(--mono)}.skip-link{position:fixed;top:-100px;left:20px;padding:12px 20px;background:var(--ink);color:white;z-index:1000}.skip-link:focus{top:10px}

@@ -5,7 +5,7 @@ import {getSession} from "@/lib/server/auth";
 import {projectSnapshot} from "@/lib/server/repository";
 
 export const dynamic="force-dynamic";
-const views=["project","packages","progress","proof","my-contribution","my-expenses","organizer","board-pack","sandbox"] as const;
+const views=["project","packages","progress","proof","my-contribution","my-expenses","organizer","board-pack","sandbox","commitment"] as const;
 export default async function Page({params}:{params:Promise<{path?:string[]}>}){
   const path=(await params).path?.join("/")??"project";
   if(path==="privacy"||path==="terms")return <LegalPage privacy={path==="privacy"}/>;

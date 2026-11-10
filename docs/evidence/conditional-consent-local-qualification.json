@@ -1,0 +1,37 @@
+{
+  "recordedAt": "2026-11-11",
+  "environment": "local",
+  "project": "fieldproof",
+  "provenance": "fixture",
+  "scope": "Durable exact conditional consent and APIMatic Vault adapter; no actual PayPal Vault operation claimed",
+  "applicationPath": "/commitment",
+  "coreVersion": "0.2.3",
+  "sdkVersion": "paypal 2.29.0, pinned repository revision",
+  "checks": {
+    "typescript": "passed",
+    "productionBuild": "passed",
+    "tests": { "passed": 56, "failed": 0, "suites": 8 },
+    "httpPage": 200,
+    "unauthenticatedWalletMutation": 401
+  },
+  "verifiedByFixtures": [
+    "Eight exact USD obligations total 96000 minor units",
+    "Concurrent consent requests produce one immutable consent and obligation",
+    "Concurrent setup requests dispatch once with a stable PayPal request identity",
+    "Current donor role, tenant ownership and package version are checked before dispatch",
+    "Only exact owned approved setup can be exchanged",
+    "Fresh token identity/customer/usage mismatch cannot make a wallet ready",
+    "Lost exchange response and malformed setup success are uncertain and never blindly repeated",
+    "Withdrawal remains revoked after a late setup response",
+    "Provider identifiers are encrypted at rest and absent from public consent projections",
+    "Actual generated SDK wire serializes the expected headers, defaults and body fields through fake fetch",
+    "Provider 500, transport failure and malformed success never trigger SDK mutation retries"
+  ],
+  "notYetQualified": [
+    "Actual Fieldproof buyer saved-wallet approval and token exchange",
+    "Actual Fieldproof merchant-initiated collection",
+    "Provider wallet revocation",
+    "Full frozen collection, recovery invoice and reimbursement lifecycle",
+    "Visual browser, keyboard and mobile inspection of the new page"
+  ]
+}

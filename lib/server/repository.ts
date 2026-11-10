@@ -19,7 +19,7 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   if (!project) throw new DomainError("PROJECT_NOT_FOUND","This project is no longer available.",404);
   const [packageRows,obligationRows,receiptRows,evidenceRows,eventRows] = await Promise.all([
     query<{id:string;version:number;budget_minor:string;data:PackageView}>("SELECT * FROM fp_packages WHERE project_id=$1 ORDER BY CASE id WHEN 'electronics' THEN 0 WHEN 'printing' THEN 1 WHEN 'woodworking' THEN 2 WHEN 'safety' THEN 3 WHEN 'laser' THEN 4 ELSE 5 END",[projectId]),
-    query<{id:string;package_id:string;amount_minor:string;channel:DonorObligation["channel"];consent_version:number;purpose:DonorObligation["purpose"];created_at:Date;data:{donorLabel:string;provenance:DonorObligation["provenance"]}}>("SELECT * FROM fp_obligations WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
+    query<{id:string;package_id:string;amount_minor:string;channel:DonorObligation["channel"];consent_version:number;purpose:DonorObligation["purpose"];created_at:Date;data:{donorLabel:string;provenance:DonorObligation["provenance"];eligible?:boolean}}>("SELECT * FROM fp_obligations WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
     query<{data:SettlementReceipt}>("SELECT data FROM fp_settlement_receipts WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
     query<{data:EvidenceItem}>("SELECT data FROM fp_evidence WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
     query<{id:string;sequence:string;type:string;occurred_at:Date;data:Omit<ProjectEvent,"id"|"sequence"|"type"|"occurredAt">}>("SELECT * FROM fp_events WHERE project_id=$1 ORDER BY sequence DESC LIMIT 30",[projectId]),
@@ -28,7 +28,7 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   const obligations: DonorObligation[] = obligationRows.map(row=>({id:row.id,packageId:row.package_id,amountMinor:Number(row.amount_minor),channel:row.channel,consentVersion:row.consent_version,donorLabel:row.data.donorLabel,provenance:row.data.provenance,createdAt:row.created_at.toISOString(),purpose:row.purpose}));
   const packages: PackageView[] = packageRows.map(row=>{
     const totals = fundingTotals(receipts.filter(r=>r.packageId===row.id),Number(row.budget_minor),project.mode);
-    const pledgedMinor = obligations.filter(o=>o.packageId===row.id && o.purpose==="conditional_pledge").reduce((sum,o)=>sum+o.amountMinor,0);
+    const pledgedMinor = obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge" && (project.mode==="sample" || o.data.eligible===true)).reduce((sum,o)=>sum+Number(o.amount_minor),0);
     return {...row.data,...totals,id:row.id,budgetMinor:Number(row.budget_minor),version:row.version,pledgedMinor,fundingState:totals.fundingEligibleMinor>=Number(row.budget_minor)?"funded":row.data.fundingState};
   });
   const metadata = project.metadata as unknown as Pick<ProjectSnapshot,"title"|"subtitle"|"organizer"|"location"|"currency"|"targetMinor"|"deadline">;

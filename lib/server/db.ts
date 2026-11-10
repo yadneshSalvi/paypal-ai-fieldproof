@@ -135,6 +135,39 @@ CREATE TABLE IF NOT EXISTS fp_webhook_jobs (
   PRIMARY KEY(inbox_id,event_id)
 );
 CREATE INDEX IF NOT EXISTS fp_webhook_jobs_ready ON fp_webhook_jobs(inbox_id,status,available_at);
+CREATE TABLE IF NOT EXISTS fp_conditional_consents (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id),
+  project_id text NOT NULL REFERENCES fp_projects(id), actor_id text NOT NULL,
+  session_id text NOT NULL REFERENCES fp_sessions(id), obligation_id text NOT NULL UNIQUE REFERENCES fp_obligations(id),
+  intent_id text NOT NULL, slot_index integer NOT NULL CHECK(slot_index BETWEEN 0 AND 7),
+  package_id text NOT NULL, package_version integer NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>0),
+  version integer NOT NULL DEFAULT 1, status text NOT NULL, policy_digest text NOT NULL,
+  policy jsonb NOT NULL, expires_at timestamptz NOT NULL, acknowledged_at timestamptz NOT NULL DEFAULT now(),
+  withdrawn_at timestamptz, round_id text REFERENCES fp_collection_rounds(id),
+  encrypted_wallet text, wallet_label text, wallet_observed_at timestamptz,
+  provider_status text, last_code text, created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(tenant_id,actor_id,intent_id), FOREIGN KEY(project_id,package_id) REFERENCES fp_packages(project_id,id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS fp_conditional_slot ON fp_conditional_consents(project_id,package_id,slot_index)
+  WHERE withdrawn_at IS NULL;
+CREATE TABLE IF NOT EXISTS fp_provider_operations (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  actor_id text NOT NULL, resource_id text NOT NULL, kind text NOT NULL, business_key text NOT NULL,
+  request_id text NOT NULL, payload_hash text NOT NULL, status text NOT NULL DEFAULT 'claimed',
+  diagnostic_code text, http_status integer, observation jsonb, dispatched_at timestamptz,
+  completed_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(tenant_id,business_key)
+);
+CREATE INDEX IF NOT EXISTS fp_provider_operations_pending ON fp_provider_operations(status,created_at);
+CREATE TABLE IF NOT EXISTS fp_collection_items (
+  round_id text NOT NULL REFERENCES fp_collection_rounds(id),
+  consent_id text NOT NULL UNIQUE REFERENCES fp_conditional_consents(id),
+  obligation_id text NOT NULL UNIQUE REFERENCES fp_obligations(id),
+  consent_version integer NOT NULL, consent_digest text NOT NULL,
+  amount_minor bigint NOT NULL CHECK(amount_minor>0), state text NOT NULL DEFAULT 'waiting',
+  operation_id text, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(round_id,consent_id)
+);
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
 `;
