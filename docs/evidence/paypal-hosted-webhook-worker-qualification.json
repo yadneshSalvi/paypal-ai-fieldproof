@@ -1,0 +1,113 @@
+{
+  "observedAt": "2026-11-10T21:30:19.475Z",
+  "verifiedDeliveries": [
+    {
+      "event_type": "CHECKOUT.ORDER.APPROVED",
+      "status": "processed",
+      "verified_deliveries": 1
+    },
+    {
+      "event_type": "PAYMENT.CAPTURE.COMPLETED",
+      "status": "processed",
+      "verified_deliveries": 3
+    }
+  ],
+  "postProcessingResendDeduplicated": true,
+  "source": "live_sandbox",
+  "hostedUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "deploymentId": "dpl_7AicoPCxmn9KCaE6EAxWLkZm1awT",
+  "unauthorizedStatus": 403,
+  "batch": {
+    "processed": 0,
+    "retry": 0,
+    "review": 0
+  },
+  "before": {
+    "receipts": {
+      "count": "1",
+      "credited_minor": "100"
+    },
+    "journal": {
+      "count": "2",
+      "balance": "0"
+    }
+  },
+  "after": {
+    "receipts": {
+      "count": "1",
+      "credited_minor": "100"
+    },
+    "journal": {
+      "count": "2",
+      "balance": "0"
+    }
+  },
+  "jobs": [
+    {
+      "event_type": "CHECKOUT.ORDER.APPROVED",
+      "status": "processed",
+      "attempts": 1,
+      "last_code": "CURRENT_OWNED_RESOURCES_APPLIED",
+      "observation": {
+        "resources": [
+          {
+            "kind": "order",
+            "money": null,
+            "idHash": "6ad09c91025bbbf1b09663109ea60622125acb9fa7702c5f4589582b0e7fd52d",
+            "status": "COMPLETED",
+            "observedAt": "2026-11-10T21:24:32.197Z"
+          },
+          {
+            "kind": "capture",
+            "money": {
+              "minor": 100,
+              "currency": "USD"
+            },
+            "idHash": "16c5324a53b03f7a014275ef42af99c88278dba4aacd18fffc6cd98e8060d5dd",
+            "status": "COMPLETED",
+            "observedAt": "2026-11-10T21:24:32.197Z"
+          }
+        ],
+        "observedAt": "2026-11-10T21:24:32.210Z",
+        "orderIdHash": "6ad09c91025bbbf1b09663109ea60622125acb9fa7702c5f4589582b0e7fd52d",
+        "financialWrites": 0
+      }
+    },
+    {
+      "event_type": "PAYMENT.CAPTURE.COMPLETED",
+      "status": "processed",
+      "attempts": 1,
+      "last_code": "CURRENT_OWNED_RESOURCES_APPLIED",
+      "observation": {
+        "resources": [
+          {
+            "kind": "order",
+            "money": null,
+            "idHash": "6ad09c91025bbbf1b09663109ea60622125acb9fa7702c5f4589582b0e7fd52d",
+            "status": "COMPLETED",
+            "observedAt": "2026-11-10T21:24:31.569Z"
+          },
+          {
+            "kind": "capture",
+            "money": {
+              "minor": 100,
+              "currency": "USD"
+            },
+            "idHash": "16c5324a53b03f7a014275ef42af99c88278dba4aacd18fffc6cd98e8060d5dd",
+            "status": "COMPLETED",
+            "observedAt": "2026-11-10T21:24:31.569Z"
+          }
+        ],
+        "observedAt": "2026-11-10T21:24:31.584Z",
+        "orderIdHash": "6ad09c91025bbbf1b09663109ea60622125acb9fa7702c5f4589582b0e7fd52d",
+        "financialWrites": 0
+      }
+    }
+  ],
+  "financialWrites": 0,
+  "limits": [
+    "Qualifies current owned Orders/Capture read processing only",
+    "Refund, reversal, invoice, Vault and Payout domain adapters still require their own implementation",
+    "Receipt already existed from buyer-approved checkout; this proves real event processing and deduplication, not an observed lost-checkout-response recovery"
+  ]
+}
