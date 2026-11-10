@@ -29,3 +29,7 @@ test-results/
 .private/
 .setup-evidence/
 artifacts/private/
+.vercel
+.env*
+!.env.example
+!.env.*.example

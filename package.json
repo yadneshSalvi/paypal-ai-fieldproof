@@ -1,0 +1,42 @@
+{
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
+    "@fracture/paypal-core": "file:vendor/fracture-paypal-core-0.2.1.tgz",
+    "ag-studio": "3.1.0",
+    "ag-studio-react": "3.1.0",
+    "lucide-react": "0.577.0",
+    "next": "16.4.6",
+    "openai": "7.55.0",
+    "paypal": "github:context-plugins/paypal-typescript-sdk#5d0df8a8817e5fdf2e2cd48e68f790ea4730aab2",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "name": "fieldproof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port 4102",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port 4102",
+    "typecheck": "tsc --noEmit",
+    "test": "node --env-file=.env --import tsx --test tests/*.test.ts",
+    "db:seed": "node --env-file=.env --import tsx scripts/seed.ts"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "package": "@fracture/paypal-core",
+  "version": "0.1.0",
+  "sha256": "239f1b398e5563b49cc478c9c6ed419c6fe8bc1917175998ffa2990f848ad62f",
+  "sha1": "7bc6e29c8330a2550251204755b534c36df7199b",
+  "origin": "../fracture-lab/packages/paypal-core",
+  "conformance": {
+    "passed": 34,
+    "failed": 0,
+    "adapters": [
+      "postgres",
+      "sqlite"
+    ],
+    "source": "sample",
+    "liveProviderQualification": false
+  },
+  "install": "npm install ./vendor/fracture-paypal-core-0.1.0.tgz",
+  "qualification": "Local fixture conformance only. Read package README for missing extensions and domain authority obligations."
+}

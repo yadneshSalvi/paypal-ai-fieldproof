@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-10T20:53:44.757467+00:00",
+  "environment": "PayPal sandbox",
+  "application": "https://paypal-ai-fieldproof.vercel.app",
+  "flow": "Actual hosted Login with PayPal authorization code exchange and userinfo",
+  "scopes": [
+    "openid",
+    "https://uri.paypal.com/services/paypalattributes"
+  ],
+  "observedProfileShape": {
+    "fields": [
+      "payer_id",
+      "sub",
+      "user_id",
+      "verified_account"
+    ],
+    "payerIdPresent": true,
+    "verifiedAccountType": "string",
+    "verifiedAccountExactTrue": true
+  },
+  "validation": "Explicit boolean true or exact string true plus actual payer_id. No truthiness or subject fallback.",
+  "result": "Verified recipient persisted encrypted; masked recipient shown in browser",
+  "tests": {
+    "passed": 31,
+    "identityContractTests": 3
+  },
+  "payoutPerformed": false,
+  "localCallback": "Provider configuration save returned HTTP 520; only hosted callback qualified"
+}

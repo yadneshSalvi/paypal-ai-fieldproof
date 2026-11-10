@@ -1,0 +1,38 @@
+{
+  "archive": "fracture-paypal-core-0.2.2.tgz",
+  "archiveSha256": "eb23321fafb98dbf85d3eafdddd249b4c8d50010c5c44f91dd80bc817392d660",
+  "schemaVersion": 1,
+  "name": "@fracture/paypal-core",
+  "version": "0.2.2",
+  "license": "MIT",
+  "origin": "Fracture Lab hardened-control implementation",
+  "sdk": {
+    "package": "paypal",
+    "version": "2.29.0",
+    "repository": "https://github.com/context-plugins/paypal-typescript-sdk",
+    "commit": "5d0df8a8817e5fdf2e2cd48e68f790ea4730aab2",
+    "vendored": false
+  },
+  "testedAt": "2026-11-10T20:21:14.774Z",
+  "conformance": {
+    "passed": 69,
+    "failed": 0,
+    "adapters": [
+      "postgres",
+      "sqlite"
+    ],
+    "source": "sample",
+    "liveProviderQualification": false
+  },
+  "sourceHashes": {
+    "src/canonical.ts": "6a5283850790cafd278103fa15cb2e463bdf20ddb57030d3e417decfa0a22363",
+    "src/checkout.ts": "f804797f506c909f05514eee18b5ffd11e7d9f361cc622a36db57b34818025ec",
+    "src/core.ts": "52e21d42185465e2cb9e0c7fb8b945eede7eeff60d3f52497c11ffc5585fa021",
+    "src/index.ts": "8527f4629db0bd7fb49b1f9f45e0b3878ae0177747ac88aa3c504e907e18ce4c",
+    "src/provider.ts": "e073ddd1ac9d105916b670bbc0111f16ad42bccc31912d13a7ed207cc0bd4acd",
+    "src/sql.ts": "b2e3cc42068c5059055f1f6f926e4d2473988fee034df0a5d727a4eaf7a1a02a",
+    "src/store.ts": "fd0832a2897866e84242e54828b1eb93342fb14f6be8ca52e0f63c8a0edbf25a",
+    "src/types.ts": "0e90c08df6592d720e1e15e63c04103ec194db03b9db39c83e65583ba4c0e8cd",
+    "src/webhook.ts": "146e61a475115f1a888336b2a11d02cf292b74fe09e2b78df3ff8aa9df867559"
+  }
+}

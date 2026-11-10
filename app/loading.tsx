@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="loading-page" aria-busy="true" aria-label="Loading project"><span className="wordmark">fieldproof<span className="brand-dot">.</span></span><div className="loading-skeleton"/><p className="fine-print">Opening the latest project record…</p></main>;}

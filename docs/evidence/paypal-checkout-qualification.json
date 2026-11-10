@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-11-10T20:35:32.871Z",
+  "scope": "Local Fieldproof sandbox, browser-approved one-dollar contribution",
+  "realProviderState": "COMPLETED",
+  "grossMinor": 100,
+  "currency": "USD",
+  "reconciliationAndReload": {
+    "canonicalReceipts": 1,
+    "journalRows": 2,
+    "journalBalance": 0,
+    "captureCommands": 1
+  },
+  "notes": [
+    "Official PayPal sandbox buyer approval through same-tab recovery link",
+    "Same original checkout intent and order reused after stopped development server",
+    "Two journal entries balance to zero; no duplicate canonical receipt after reconciliation and reload",
+    "No physical evidence completion or reimbursement claimed"
+  ]
+}

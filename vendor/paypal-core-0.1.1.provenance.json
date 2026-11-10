@@ -1,0 +1,17 @@
+{
+  "package": "@fracture/paypal-core",
+  "version": "0.1.1",
+  "sha256": "24c608968613b13ba4f88655b4f26b143f788ab03873c64cd0f063f30f7dd170",
+  "origin": "Fracture Lab shared core",
+  "conformance": {
+    "passed": 40,
+    "failed": 0,
+    "adapters": [
+      "postgres",
+      "sqlite"
+    ],
+    "source": "sample",
+    "liveProviderQualification": false
+  },
+  "qualification": "Fixture conformance; separate real Guild empty-account reporting read verified. No financial writes qualified."
+}

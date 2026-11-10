@@ -1,0 +1,170 @@
+# Fieldproof PayPal implementation contract
+
+Contract version 1 · 11 November 2026 · sandbox only.
+
+This document records the implementation boundary, not a claim that transactions occurred. The full product includes conditional commitments, payer-present collection, saved-wallet collection when qualified, recovery invoices, reviewed reimbursement, refunds, verified events and scoped reporting. The first executable slice is a payer-present Orders contribution with a durable all-rail receipt. Subsequent capabilities retain explicit proof gates below.
+
+## Repository, toolchain and authority
+
+- Greenfield baseline had no application, build or tests to run. Existing guidance: `AGENTS.md`; existing shared implementation exemplar: installed `@fracture/paypal-core` root API and its source. Fieldproof has no sibling runtime imports.
+- Node 22.22.3; npm 10.9.8; Next.js App Router and React; TypeScript strict ESM. Checks will be `npm run typecheck`, `npm test`, `npm run build`.
+- Installed `paypal` 2.29.0 from `context-plugins/paypal-typescript-sdk` commit `5d0df8a8817e5fdf2e2cd48e68f790ea4730aab2`; the package resolves locally and includes `sdk-map.md`, resource maps and source. Import only from `paypal`. Core 0.1.1 is the local versioned archive, independently buildable.
+- Every deployment, including Vercel production hosting, uses `https://api-m.sandbox.paypal.com` only. The SDK has one server and **no ServerEnvironment**. Explicit `serverOptions.baseUrl` is the host knob. `PAYPAL_ENVIRONMENT=sandbox` and `PAYPAL_PROJECT_ISOLATED=true` are checked independently. Missing credentials disable provider initialization with a named configuration error; no secret values are logged.
+- The already-authorized full build governs implementation. Capability failures select the documented supported path and remain visible; they do not require asking the user to approve the same build again.
+- Long-lived server client; `oauth2.clientId/clientSecret` from server environment, no per-request reconstruction. `retry.maxRetries=0` for mutation transport, 20-second per-attempt budget plus a bounded signal; no stacked automatic mutation retry. `logging.level=off`, no request body/header logging, no per-call logging override. `fetch` preserves the complete Request and signal.
+
+## Operations and exact generated surface
+
+All operations use `oauth2` and the default sandbox group. The installed map is the source of signatures and error arms. Every call takes one flat request object and optional `RequestOptions` with signal/retry/logging; it is not a header bag. Mutation calls use `.asApiResult()` before any promise chain. Optional absent fields are omitted. Malformed or incomplete success stays unknown, never domain absence.
+
+| Operation | Signature request → result | Wire | Required fields; optional fields used |
+| --- | --- | --- | --- |
+| create order | `Orders.CreateOrderRequest` → `Order` | POST `/v2/checkout/orders` | `body: OrderRequest`; `payPalRequestId` header; `prefer: return=representation` header |
+| capture order | `Orders.CaptureOrderRequest` → `Order` | POST `/v2/checkout/orders/{id}/capture` | path `id`; request-id; representation |
+| get order | `Orders.GetOrderRequest` → `Order` | GET `/v2/checkout/orders/{id}` | path `id` |
+| get capture | `Payments.GetCapturedPaymentRequest` → `CapturedPayment` | GET `/v2/payments/captures/{capture_id}` | path `captureId` |
+| refund capture | `Payments.RefundCapturedPaymentRequest` → `Refund` | POST `/v2/payments/captures/{capture_id}/refund` | path `captureId`; request-id; representation; `body.amount`, `body.customId` |
+| get refund | `Payments.GetRefundRequest` → `Refund` | GET `/v2/payments/refunds/{refund_id}` | path `refundId` |
+| create setup token | `Vault.CreateSetupTokenRequest` → `SetupTokenResponse` | POST `/v3/vault/setup-tokens` | `body: SetupTokenRequest`; request-id |
+| get setup token | `Vault.GetSetupTokenRequest` → `SetupTokenResponse` | GET `/v3/vault/setup-tokens/{id}` | path `id` |
+| create payment token | `Vault.CreatePaymentTokenRequest` → `PaymentTokenResponse` | POST `/v3/vault/payment-tokens` | `body: PaymentTokenRequest`; request-id |
+| get payment token | `Vault.GetPaymentTokenRequest` → `PaymentTokenResponse` | GET `/v3/vault/payment-tokens/{id}` | path `id` |
+| delete payment token | `Vault.DeletePaymentTokenRequest` → `undefined` | DELETE `/v3/vault/payment-tokens/{id}` | path `id`; observe HTTP status via `.asApiResult()`, then reread |
+| list payment tokens | `Vault.ListCustomerPaymentTokensRequest` → `CustomerVaultPaymentTokensResponse` | GET `/v3/vault/payment-tokens` | query `customerId` → `customer_id`; explicit bounded `page` and `pageSize`; defaults 1, 5, totalRequired=false |
+| balances | `TransactionSearch.SearchBalancesRequest` → `BalancesResponse` | GET `/v1/reporting/balances` | query `currencyCode` → `currency_code`; optional `asOfTime` omitted for latest |
+| transactions | `TransactionSearch.SearchTransactionsRequest` → `SearchResponse` | GET `/v1/reporting/transactions` | query `startDate/endDate` → `start_date/end_date`; bounded page/pageSize and owned resource scope |
+
+Every result above is wrapped in `ApiPromise<Result, Resource.OperationError>`. The SDK additionally generates `Idempotency-Key` per non-GET call; Fieldproof never substitutes that for its durable `PayPal-Request-Id`. `Prefer` defaults to `return=minimal` where exposed, so representation is expressly needed for resource reconciliation. Generated maps were read in full for Vault/Transaction Search and scoped to these Orders/Payments operations.
+
+### Request models actually set
+
+- `OrderRequest.intent` required `CheckoutPaymentIntent.Capture = CAPTURE`; `purchaseUnits` required array. One `PurchaseUnitRequest` with required `amount {currencyCode:string,value:string}` and optional `customId` required by lineage. USD is stored as safe integer cents and serialized exactly. No caller-supplied payee or card data.
+- Orders approval experience and saved-wallet source are added only through a new versioned shared-core action. Do not smuggle fields through the current `create_order` action.
+- `SetupTokenRequest.paymentSource` required, with `paypal` using `usageType: PayPalPaymentTokenUsageType.Merchant = MERCHANT`, `customerType: PayPalPaymentTokenCustomerType.Consumer = CONSUMER`, description tied to consent, and `experienceContext.returnUrl/cancelUrl` required for the wallet contingency. Merchant customer ID binds the session donor. Other optional wallet/body fields omitted. Schema default `permitMultiplePaymentTokens=false`; experience defaults GET_FROM_FILE/CONTINUE unless the contract explicitly requires an override.
+- `PaymentTokenRequest.paymentSource.token` has required `id` (our approved, owned setup token) and `type: VaultTokenRequestType.SetupToken = SETUP_TOKEN`.
+- Setup responses have optional `id/status/links/customer`; require ID, acceptable state and an allowlisted HTTPS PayPal approval URL before presenting approval. States are CREATED, PAYER_ACTION_REQUIRED, APPROVED, VAULTED, TOKENIZED. Token response ID is optional in schema but required by our adapter.
+- Refund body `amount` is optional to provider but required by our exact approved partial-refund operation; `customId` binds operation. `invoiceId`, `noteToPayer`, `paymentInstruction` omitted.
+- Balances response `balances/accountId/asOfTime/lastRefreshTime` are optional in generated model; check each required policy field. `BalanceInformation.currency` and `totalBalance` are required, `availableBalance` optional. No available balance or stale provider snapshot fails closed.
+- Generated enums are open; unknown observed states are not terminal success. SDK model `Error` is aliased `SdkError` if imported. Sensitive SDK models are mapped to our allowlisted DTOs, never JSON-serialized blindly.
+
+### Per-operation API error arms
+
+Names are schema-derived and meaningful only beside the operation, never a shared status switch.
+
+| Operation | Typed arms (all also include undeclared raw bytes) |
+| --- | --- |
+| createOrder | error 400; error2 401; error3 422; error4 default |
+| captureOrder | error 400; error2 401; error3 403; error4 404; error5 422; error6 500; error7 default |
+| getOrder | error 401; error2 404; error3 default |
+| getCapturedPayment / getRefund | error 401; error2 403; error3 404; error500 500 with no body; error4 default |
+| refundCapturedPayment | error 400; error2 401; error3 403; error4 404; error5 409; error6 422; error500 500 with no body; error7 default |
+| createSetupToken | error 400; error2 403; error3 422; error4 500 |
+| createPaymentToken | error 400; error2 403; error3 404; error4 422; error5 500 |
+| getSetupToken / getPaymentToken | error 403; error2 404; error3 422; error4 500 |
+| deletePaymentToken | error 400; error2 403; error3 500 |
+| listCustomerPaymentTokens | error 400; error2 403; error3 500 |
+| searchBalances | defaultError 400; defaultError2 403; defaultError3 500; defaultError4 default |
+| searchTransactions | searchError default |
+
+### OPTIONAL FIELDS
+
+| Field | What requires it | Set it? |
+| --- | --- | --- |
+| payPalRequestId | Durable operation identity below | Yes, stored once |
+| prefer | Complete resource proof and reconciliation | representation on supported operations |
+| customId / merchantCustomerId | Tenant-owned business lineage | Server-derived opaque reference |
+| returnUrl / cancelUrl | Genuine approval return and recovery | Fixed configured origin + bound state |
+| usageType / customerType | Direct merchant consumer pledge policy | MERCHANT / CONSUMER |
+| description on setup token | Payer-readable exact conditional consent | Approved policy wording only |
+| list page/pageSize and reporting dates | Bounded scope, complete result detection | Yes, owned scope and measured cutoff |
+| fields / balanceAffectingRecordsOnly | No change needed for first reporting read | Keep SDK defaults transaction_info / Y |
+| mock responses, partner attribution, metadata ID, auth assertion, payer overrides, shipping, line items, billing plan, locale override | Nothing in the current provider contract requires them | Omit |
+
+## DURABLE WRITES
+
+### DUPLICATE CLAIMS
+
+| Write | Where claim is stored | What rejects second call | Catch / implementation |
+| --- | --- | --- | --- |
+| Orders create/capture | Shared SqlPaymentStore before dispatch; domain command/obligation authority | scope + semantic businessKey unique, immutable payload and provider request IDs; current domain version | Core conflict returns canonical operation; Fieldproof `lib/server/payments.ts` planned integration |
+| capture refund | Shared SqlPaymentStore + current domain refund allowance | capture budget lock including uncertain/pending reservations; receipt refund bounds | Same core gate; Fieldproof cancellation choice service |
+| Vault setup/exchange/delete | Domain external_operations before SDK call | tenant + obligation + purpose unique, request hash immutable | Domain adapter catches PostgreSQL 23505 and reads winning operation; no new request ID |
+| invoice create/send/cancel | Domain external_operations and obligation row lock | Exactly one active original or recovery channel | Typed REST adapter, only after operation-specific contract proof |
+| payout | Domain external_operations, payable allowance and current approval | payable ID/version unique; stable sender_batch_id and sender_item_id | Typed REST adapter, exact approved recipient version |
+
+### UNKNOWN OUTCOMES
+
+| Write | Authoritative reread | Search reference | Required behavior / test |
+| --- | --- | --- | --- |
+| create order | getOrder only if order ID known | returned resource ID | No invented lookup by request ID; unknown stays unknown and worker owns reconciliation; lost-create test |
+| capture order | getOrder + getCapturedPayment | owned order/capture ID | One observed capture; response-loss test and no second mutation |
+| refund capture | getRefund, owning order refund correlation | refund ID or exact customId | Reserve persists until exact attributable refund; response-loss test |
+| setup token | getSetupToken if ID known | owned setup ID | Lost ID stays unknown; no blind second setup |
+| payment token | getPaymentToken, bounded owned-customer token listing | known token or proven setup/customer correlation | Uncorrelated token is excluded; unknown cannot authorize a charge |
+| delete token | getPaymentToken | same token | Verified absence revokes future use only; it never reverses collected receipts |
+| recovery invoice | get invoice, search owned external invoice reference | invoice ID + immutable external number | Paid label alone is not payment identity; unknown original blocks invoice |
+| payout | batch/item read; provider duplicate-batch link where available | same sender_batch_id, batch/item ID | Pending is not successful repayment; no fresh batch on retry |
+
+Auth/encode errors known before dispatch are not_sent and do not trigger a misleading status reread. Connection/timeout or unreadable success is unknown; reread immediately where possible and enqueue durable reconciliation. An abort after dispatch is also potentially unknown.
+
+## CROSS-OPERATION INVARIANTS
+
+| Invariant | Legal set | Enforcement / meaningful test |
+| --- | --- | --- |
+| resource, payer, recipient ownership | Server session tenant + stored obligation/approval/resource relations | Before claim and again before dispatch; cross-tenant forged ID calls no provider |
+| threshold and exact 48-hour authority | Published package version + valid consent snapshot | Lock round and obligations, persist freeze/recovery times before dispatch; withdrawal/freeze race |
+| exclusive recovery channel | Same donor obligation across Orders/invoice | Unknown original prohibits invoice; invoice settlement suppresses original retry |
+| unified credited receipts | Proven economic payment aliases per app/merchant | Seven capture receipts 92500 + invoice 3500 = 96000; duplicate aliases create no second credit |
+| excess settlement | Obligation maximum and already credited amount | Extra actual receipt enters suspense/refund liability, not package funding |
+| refunds | Credited receipt lineage + actual refundable resource | Reserve before dispatch; cumulative refund bound including pending; no invoice bookkeeping as money movement |
+| reimbursement | Reviewed claim/recipient/amount/currency/policy/version/expiry hash | Changed recipient, claim, membership or stale balance blocks dispatch; concurrent allowance test |
+| Auditor | Explicit read-only role | Forged direct financial command returns server denial |
+
+## WHEN THE API SAYS NO
+
+Applies to every in-scope operation using caller-owned data. Shared core supplies the normalized provider boundary; direct adapters must match it.
+
+| Provider outcome | HTTP/app outcome | User copy / test |
+| --- | --- | --- |
+| Caller 4xx except 401/403/429 | Same 4xx | Allowlisted issue and safe specific remedy; never raw payload or full SDK URL |
+| 401/403 or AuthError | 502 / not_sent for credential acquisition | Provider connection unavailable; no customer-auth blame |
+| 429 | 503 | Provider temporarily busy; retain operation |
+| 5xx / no response on read | 502 | Couldn't check PayPal; retry read |
+| no response or unreadable success on write | accepted pending reconciliation | Checking the original payment; no new mutation |
+| unknown non-SDK bug/ConfigurationError/direct SchemaError/caller abort | Rethrow to own typed boundary | Never swallowed as a provider refusal |
+
+## Capability experiments and explicit limits
+
+- 11 Nov read-only real SDK probe: balances 200, available balance exists, provider asOfTime/lastRefreshTime `2026-11-10T17:59:59Z`; this does **not** pass a 60-second provider-freshness policy. Reporting 200, totalItems 0, complete empty page. No money moved by these probes.
+- Real Orders approval/capture/refund, Vault consent/MIT, exact token event, Payout item/recipient proof, invoice payment/refund and webhook delivery remain runtime qualification gates. Reads of nonexistent resources cannot prove entitlement to those lifecycles.
+- US merchant/app isolation and credentials are provisioned by portfolio owner. Browser callbacks use port 4102 and the stable Fieldproof Vercel domain. No 3102 callback is used.
+- Registered recipient callback is `/api/auth/paypal/callback`. Authorization uses `openid email https://uri.paypal.com/services/paypalattributes`; state is unpredictable, single-use, session-bound, expiring. Store payer ID encrypted, show masked email and actual verification state, never infer account ownership from an app-only email check.
+- Invoicing/Payouts/Identity/webhook verification are absent from this generated SDK. They use separately tested typed REST adapters, with their exact source contract added before adapter enablement. No fabricated controller. Official Invoicing record-refund is bookkeeping and is never the financial refund route.
+- The current shared-core release cannot express Orders experience or saved-wallet source; portfolio owner supplies a versioned extension. Current buyer-present JS SDK create/capture works through its existing actions.
+- Sample tour uses synthetic documents and simulated outcomes with Sample badges. Replay is available only after real evidence exists. No invented physical completion or research result.
+
+## Sources
+
+Installed `node_modules/paypal/sdk-map.md`; `map/operations/orders.md`, `payments.md`, `vault.md`, `transaction-search.md`; corresponding type-source files; `api-reference.md`; versioned core README/provenance.
+
+[Save without purchase](https://developer.paypal.com/api/payment-tokens/save-without-purchase/paypal) · [Login scope attributes](https://developer.paypal.com/log-in/references) · [Login authorization button](https://developer.paypal.com/log-in/build-button/) · [Payout creation](https://developer.paypal.com/api/payments.payouts-batch/v1/payouts-post) · [Invoices](https://developer.paypal.com/api/invoicing/v2/) · [JS SDK](https://developer.paypal.com/sdk/js/reference/).
+
+## REQUIRED READING
+
+MUST load `typescript-integrate-paypal`, `typescript-getting-started`, `typescript-error-handling`, `typescript-client-initialization`, `typescript-authentication`, `typescript-calling-endpoints`, `typescript-models`, `typescript-configuration-resilience`, `typescript-testing`. These were read for this contract; generic environment examples are superseded by the installed single-server map. Exact signatures are never supplied from memory.
+
+## Implemented extension contract — 11 November
+
+Core 0.2.1 replaces 0.1.1. It adds the typed checkout experience and saved-wallet/current-consent grant and fixes the observed HTTP 415 by sending supported empty JSON bodies on Orders authorize/capture. Root verified 60 conformance cases and its own sandbox lifecycle; Fieldproof's own lifecycle is a separate qualification.
+
+Identity is absent from this SDK. The typed REST adapter follows [current Login integration](https://developer.paypal.com/log-in/build) and [profile endpoint](https://developer.paypal.com/api/identity/v1/userinfo-get): POST `/v1/oauth2/token`, Basic client credentials, URL-encoded `grant_type=authorization_code` and the received `code`; no alternate tokenservice endpoint. GET `/v1/identity/openidconnect/userinfo?schema=openid`, Bearer user access token. OAuth state is session-bound, random, stored as a hash, expires in ten minutes and is consumed transactionally before exchange. The token is kept only in this request, never returned or logged. No automatic token exchange retry.
+
+Recipient verification requires an actual nonempty payer ID and `verified_account === true`; an email or generic subject identifier is not sufficient. The attributes scope promises payer ID, but the generic userinfo schema omits it. Therefore a missing `payer_id` is an explicit qualification failure; do not infer it from `user_id` or invent a mapping. Store the actual destination with AES-256-GCM, fresh IV and tenant/actor authenticated context, derived from server `AUTH_SECRET`. Only masked label and verification state reach the UI. Replacing the destination increments its version and invalidates outstanding approvals. No Payout is enabled merely by linking identity.
+
+### Root identity scope correction — 11 November 2026
+
+The hosted authorization UI returned `invalid scope` when the application requested `email`, which is not enabled in its configured attributes and is not needed for repayment identity. Request only `openid https://uri.paypal.com/services/paypalattributes`, with `fullPage=true`. Official scope reference maps both account verification and payer ID to paypalattributes: https://developer.paypal.com/log-in/references ; same-tab parameter: https://developer.paypal.com/log-in/build-button/ . Existing profile validation still requires actual verified_account=true and actual payer_id; optional email is not authority. This is the uncovered Identity REST flow, not a generated SDK operation. No permission expansion is made.
+
+### Observed identity response — 11 November 2026
+
+Actual hosted authorization returned `payer_id`, `sub`, `user_id`, and `verified_account`. The verification field was the exact string `"true"`, while the official generic example uses boolean `true`. The strict domain parser accepts only those two explicit affirmative forms, requires the real payer ID, and rejects false, missing, numeric, padded, and differently cased values. Three contract tests cover these boundaries. The actual hosted flow then persisted the encrypted recipient and showed its masked label. No Payout occurred. See `docs/evidence/paypal-identity-qualification.json`.
