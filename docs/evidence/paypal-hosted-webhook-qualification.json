@@ -1,0 +1,41 @@
+{
+  "observedAt": "2026-11-10T21:05:30.527Z",
+  "environment": "PayPal sandbox",
+  "hostedUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "delivery": [
+    {
+      "verified": 1,
+      "type": "PAYMENT.CAPTURE.COMPLETED",
+      "status": "queued",
+      "count": "2"
+    },
+    {
+      "verified": 1,
+      "type": "CHECKOUT.ORDER.APPROVED",
+      "status": "queued",
+      "count": "1"
+    },
+    {
+      "verified": 0,
+      "type": "PAYMENT.CAPTURE.COMPLETED",
+      "status": "rejected",
+      "count": "1"
+    }
+  ],
+  "canonical": [
+    {
+      "type": "PAYMENT.CAPTURE.COMPLETED",
+      "count": "1"
+    },
+    {
+      "type": "CHECKOUT.ORDER.APPROVED",
+      "count": "1"
+    }
+  ],
+  "receipt": {
+    "count": "1",
+    "credited_minor": "100"
+  },
+  "scope": "Signature-verified durable intake only. Event-to-domain processing remains queued; the receipt is from the exact owned checkout capture path.",
+  "testMoneyOnly": true
+}
