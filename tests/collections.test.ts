@@ -18,6 +18,7 @@ import type { SettlementReceipt } from "../lib/contracts";
 import { refundParentMatches } from "../lib/domain/refunds";
 import { receivePayPalWebhook } from "../lib/server/webhooks";
 import { processVerifiedWebhooks } from "../lib/server/webhook-worker";
+import { readCancellationReview } from "../lib/server/cancellation-review";
 
 const schema = `fp_collection_test_${randomUUID().replaceAll("-", "")}`;
 const originalUrl = process.env.DATABASE_URL!;
@@ -98,6 +99,48 @@ function providerFixture(behavior: (command: PaymentCommand) => Behavior = () =>
   const core = new PaymentCore({ store: paymentStore(), provider, policy: { authorize: authorizePayment } });
   return { calls, provider, core, deps: { vault, provider, core } satisfies CollectionDependencies };
 }
+
+describe("read-only cancellation review", () => {
+  it("shows paid uses before cancellation and preserves the financial records", async () => {
+    const f = await refundFixture();
+    const first = await readCancellationReview(f.session, f.round.id);
+    assert.equal(first.canCancelUnspent, true); assert.equal(first.uncommittedMinor, 20000);
+    await query("INSERT INTO fp_receipt_allocations(id,tenant_id,project_id,receipt_id,claim_id,claim_line_id,package_id,amount_minor,state) VALUES($1,$2,$3,$4,$5,$6,'electronics',6625,'paid')", [randomUUID(),f.session.tenantId,f.session.projectId,f.receipt.id,randomUUID(),randomUUID()]);
+    const before = await query("SELECT data,version FROM fp_settlement_receipts ORDER BY id");
+    const result = await readCancellationReview(f.session,f.round.id);
+    assert.equal(result.canCancelUnspent,false); assert.equal(result.limitation,"committed_uses");
+    assert.equal(result.paidMinor,6625); assert.equal(result.uncommittedMinor,13375); assert.notEqual(result.digest,first.digest);
+    assert.deepEqual(await query("SELECT data,version FROM fp_settlement_receipts ORDER BY id"),before);
+    assert.equal(f.calls.length,0); assert.equal((await query("SELECT id FROM fp_refunds")).length,0);
+  });
+  it("allows the current Auditor to inspect the same exact records and denies donor or foreign-round access",async()=>{
+    const f=await refundFixture();
+    await query("UPDATE fp_sessions SET role='auditor' WHERE id=$1",[f.session.id]);
+    const auditor={...f.session,role:'auditor' as const};
+    assert.equal((await readCancellationReview(auditor,f.round.id)).creditedMinor,20000);
+    await assert.rejects(()=>readCancellationReview({...auditor,role:'donor'},f.round.id),{code:'ROLE_DENIED'});
+    await assert.rejects(()=>readCancellationReview(auditor,randomUUID()),{code:'ROUND_NOT_FOUND'});
+    await query("UPDATE fp_memberships SET state='revoked' WHERE actor_id=$1",[f.session.actorId]);
+    await assert.rejects(()=>readCancellationReview(auditor,f.round.id),{code:'MEMBERSHIP_DENIED'});
+  });
+  it("changes the saved review when a pending refund, package or session changes",async()=>{
+    const f=await refundFixture('pending');
+    await cancelUnspentCollection(f.session,{roundId:f.round.id,expectedVersion:1,acknowledged:true});
+    await compensateReceipt(f.session,f.receipt.id,'package_cancelled',f.deps);
+    const result=await readCancellationReview(f.session,f.round.id);
+    assert.equal(result.pendingRefundMinor,20000); assert.equal(result.uncommittedMinor,0); assert.equal(result.limitation,'already_compensating');
+    await query("UPDATE fp_sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[f.session.id]);
+    await assert.rejects(()=>readCancellationReview(f.session,f.round.id),{code:'ROLE_DENIED'});
+  });
+  it("reads canonical invoice settlement alongside Orders receipts without manufacturing a second credit",async()=>{
+    const f=await recoveryFixture(),invoice=await f.create();
+    await shareRecoveryInvoice(f.session,invoice.id,f.deps); f.pay(); await checkRecoveryInvoice(f.session,invoice.id,f.deps);
+    const result=await readCancellationReview(f.session,f.round.id);
+    assert.equal(result.creditedMinor,96000); assert.equal(result.sources.length,8);
+    assert.equal(result.sources.filter(row=>row.sourceKind==='invoice_payment').length,1);
+    assert.equal(result.canCancelUnspent,true); assert.equal(result.unqualifiedRouteCount,0);
+  });
+});
 
 const commerceResult = <T>(value: T): CommerceRestResult<T> => ({ outcome: "succeeded", value, source: "live_sandbox", observedAt: new Date().toISOString(), httpStatus: 200, debugId: null, recovered: false });
 async function recoveryFixture(mode: Behavior = "decline") {

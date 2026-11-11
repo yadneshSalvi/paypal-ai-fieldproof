@@ -25,6 +25,8 @@ import type { CollectionReview } from "@/lib/server/collections";
 import type { RecoveryInvoiceView } from "@/lib/server/recovery-invoices";
 import type { RefundView } from "@/lib/domain/refunds";
 import { formatMoney } from "@/lib/domain/money";
+import { CancellationPosition } from "./cancellation-position";
+import type { CancellationReview } from "@/lib/server/cancellation-review";
 
 interface Overview extends CollectionReview {
   invoices: RecoveryInvoiceView[];
@@ -131,6 +133,11 @@ export function ConditionalCollection({
   const [cancelReview, setCancelReview] = useState(false),
     [cancelAccepted, setCancelAccepted] = useState(false),
     [recoveryReview, setRecoveryReview] = useState<string | null>(null);
+  const [cancellationPosition, setCancellationPosition] = useState<CancellationReview | null>(null);
+  const handleCancellationReview = useCallback((value: CancellationReview | null) => {
+    setCancellationPosition(value);
+    setCancelAccepted(false);
+  }, []);
   const live = snapshot.mode === "live_sandbox" && !!snapshot.session,
     role = snapshot.session?.role,
     organizer = role === "organizer";
@@ -839,6 +846,8 @@ export function ConditionalCollection({
                 )}
                 {cancelReview && round.state !== "compensating" && (
                   <div className="round-inline-review">
+                    <CancellationPosition roundId={round.id} projectId={snapshot.id} onReviewed={handleCancellationReview}/>
+                    {cancellationPosition?.canCancelUnspent && <>
                     <h3>Return this round's unspent contributions.</h3>
                     <p>
                       All {formatMoney(round.collectedMinor)} of confirmed
@@ -880,6 +889,7 @@ export function ConditionalCollection({
                       Cancel collection and begin returns
                       <RotateCcw size={16} />
                     </button>
+                    </>}
                   </div>
                 )}
               </section>

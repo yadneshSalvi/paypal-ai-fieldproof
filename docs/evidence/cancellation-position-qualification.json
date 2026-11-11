@@ -1,0 +1,101 @@
+{
+  "version": "cancellation-position-qualification.v1",
+  "observedAt": "2026-11-11T13:12:52.540Z",
+  "passed": true,
+  "scope": "Two synthetic local ledger fixtures; no original workspace or provider access",
+  "checks": [
+    {
+      "path": "/api/cancellations/review?roundId=:paid-round",
+      "status": 401
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:paid-round",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:unspent-round",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:unspent-round",
+      "status": 404
+    },
+    {
+      "path": "/api/cancellations/review?roundId=invalid",
+      "status": 400
+    }
+  ],
+  "fixtures": {
+    "paid": {
+      "creditedMinor": 96000,
+      "paidMinor": 6625,
+      "reservedMinor": 1975,
+      "uncommittedMinor": 87400,
+      "cancellationActionHidden": true
+    },
+    "unspent": {
+      "creditedMinor": 96000,
+      "uncommittedMinor": 96000,
+      "acknowledgmentRequired": true,
+      "refreshClearsAcknowledgment": true
+    }
+  },
+  "native": {
+    "widths": [
+      1280,
+      390,
+      360
+    ],
+    "documentOverflow": false,
+    "keyboardTable": true,
+    "reloadRestores": true
+  },
+  "financialRows": {
+    "fp_provider_operations": 0,
+    "fp_payment_commands": 0,
+    "fp_refunds": 0,
+    "fp_approval_records": 0
+  },
+  "journalRows": 32,
+  "journalBalanced": true,
+  "savedPositionsUnchanged": true,
+  "actualProviderCalls": 0,
+  "tests": {
+    "focusedAndCollection": 43,
+    "typecheck": true,
+    "qaProductionBuild": true,
+    "fullRegression": 344
+  },
+  "remaining": "Donor-choice cases, pro-rata decisions, reallocation and rollover remain separate full-plan work; this release fixes unspent-cancellation review.",
+  "originalSavedLedger": {
+    "version": "cancellation-original-read.v1",
+    "observedAt": "2026-11-11T13:15:05.819Z",
+    "source": "Actual pre-existing original sandbox project, read-only; no new provider observation",
+    "passed": true,
+    "creditedMinor": 96000,
+    "paidMinor": 6625,
+    "reservedMinor": 0,
+    "uncommittedMinor": 89375,
+    "sourceCount": 8,
+    "sourceKind": "orders_capture",
+    "fullReturnBlocked": true,
+    "positionDigest": "6d77cb1edb4be64478616cae0b27325b14bb16b0b264040be4cdac7fa8351d03",
+    "databaseWrites": 0,
+    "providerCalls": 0
+  },
+  "sourceHashes": {
+    "lib/domain/cancellation-position.ts": "b96c28775ec999efe083f915861ea6cad95e56babc6ef22e07f2395f31b107bd",
+    "lib/server/cancellation-review.ts": "bcaaba302cfb6684d3b0dfa537eda541db210255b01d9dc4b0f20edc0c08205c",
+    "app/api/cancellations/review/route.ts": "23098a2c284ce1de5cd6ee60073c8ca91eef6e80e6676592957f610651a1a4ff",
+    "components/cancellation-position.tsx": "bfa1546b0938642b652f73e31c03e9a0ccd367c6289111bb6b869ec0ca954558",
+    "components/collection.tsx": "88fc0d11c3f870c09c5ee7603f04ad18988b9f7fcc1bc4e899df8866f80038d6",
+    "app/collection.css": "585c9320fcc98b575fc94ed4fbd749375cddafa4d7a88e998bc058a4b02dfd46"
+  },
+  "initialFailuresRetained": [
+    "TypeScript inferred the limitation as string; annotated the closed union and passed the final type check."
+  ],
+  "screenshots": {
+    "fieldproof-cancellation-position-mobile.jpg": "dd9bde1f3d976e2506d4e7d22657f34d3934a9b367239c76e1bb7d515eef1c14",
+    "fieldproof-cancellation-position-desktop.jpg": "3a824d684b61870ad259c72e17708f09cb2c98a1f753c16cfa19e4a2b53d0b82"
+  }
+}
