@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-11T21:52:21.214105+00:00",
+  "scope": "Funding evidence dialog focus and completed outside-return copy",
+  "environment": "Local production build; explicit fictional retained workspace; read-only database; providers disabled",
+  "candidateBuildId": "3888wLoycRc3oBfgetf4b",
+  "sourcePatchSha256": "3696b7a301cb870b470834318ba8ce7b1c986b3a2f743059e7a39974ed1b98b9",
+  "checks": {
+    "domCasesPassed": 24,
+    "originCookieIsolationPassed": 3,
+    "readOnlyVerificationPassed": 13,
+    "readOnlyHttpRequests": 10,
+    "strictTypeScript": true,
+    "independentProductionBuild": true,
+    "nativeBrowser": {
+      "escapeReturnsToExactPageOpener": true,
+      "closeReturnsToExactPageOpener": true,
+      "nestedEvidenceReturnsToExactPageOpener": true,
+      "completedAttributionCopyCorrect": true,
+      "historyRetained": true,
+      "keyboardFocusContained": true,
+      "mobileWidths": [
+        390,
+        360
+      ],
+      "lateCompletedReadAfterViewSwitchIgnored": true
+    }
+  },
+  "unchangedRetainedScopeSha256": "99e043b726d31a7234bc0b47ede78e5d7ea2392e629ab837e7f918e7cfea8541",
+  "fictionalAmountsMinor": {
+    "gross": 59000,
+    "returned": 24000,
+    "paid": 2000,
+    "available": 33000,
+    "pending": 0,
+    "excluded": 0
+  },
+  "financialOrModelDispatches": 0,
+  "limitations": [
+    "This qualifies the two interface corrections, not the complete funding product.",
+    "Actual provider and hosted qualification of the full funding lifecycle remain separate.",
+    "A historical cancellation review can still show residual-review prerequisites after zero remaining balance; retained as a separate UX follow-up."
+  ]
+}
