@@ -6,6 +6,7 @@ import { STUDIO_SCHEMA } from "./studio-schema";
 import { PLANNING_SCHEMA } from "./planning-schema";
 import { PROOF_SCHEMA } from "./proof-schema";
 import { COMMUNITY_SCHEMA } from "./community-schema";
+import { FUNDING_SCHEMA } from "./funding-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -48,7 +49,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 13;
+const CURRENT_SCHEMA_VERSION = 14;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -67,6 +68,16 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
     "fp_community_update_previews", "fp_community_due_runs", "fp_community_model_observations",
   ]]);
   if (!community.rows[0]?.ready) return false;
+  const funding = await tx.query<{ ready: boolean }>("SELECT bool_and(to_regclass(name) IS NOT NULL) AS ready FROM unnest($1::text[]) AS name", [[
+    "fp_funding_assignments", "fp_funding_assignment_scope", "fp_funding_deductions", "fp_funding_deduction_scope",
+  ]]);
+  if (!funding.rows[0]?.ready) return false;
+  const fundingTriggers = await tx.query<{ ready: boolean }>(`SELECT count(*)=5 AS ready FROM pg_trigger
+    WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid=ANY(ARRAY[
+      to_regclass('fp_funding_assignments'),to_regclass('fp_funding_deductions'),to_regclass('fp_settlement_receipts')])
+    AND tgname IN ('fp_funding_assignment_immutable','fp_funding_deduction_immutable','fp_receipt_version_on_change',
+      'fp_funding_assignment_source_scope','fp_funding_deduction_source_scope')`);
+  if (!fundingTriggers.rows[0]?.ready) return false;
   const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
@@ -432,6 +443,7 @@ ${STUDIO_SCHEMA}
 ${PLANNING_SCHEMA}
 ${PROOF_SCHEMA}
 ${COMMUNITY_SCHEMA}
+${FUNDING_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -446,4 +458,5 @@ INSERT INTO fp_schema_versions(version) VALUES(10) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(11) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(12) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(13) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(14) ON CONFLICT DO NOTHING;
 `;

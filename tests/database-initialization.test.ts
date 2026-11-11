@@ -34,7 +34,7 @@ describe("bounded cold database initialization", () => {
       assert.equal((await target.query("SELECT to_regclass('fp_schema_versions')::text AS present")).rows[0].present, null);
     } finally { release(); await holder; }
     await initializeDatabaseAt(target);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 13);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 14);
     for (const table of ["fp_proof_heads", "fp_proof_derivatives", "fp_proof_snapshots"]) assert.ok((await target.query("SELECT to_regclass($1)::text AS present", [table])).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('paycore_provider_identity')::text AS present")).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('fp_plan_provider_observations')::text AS present")).rows[0].present);
@@ -70,6 +70,14 @@ describe("bounded cold database initialization", () => {
     await target.query("DROP INDEX fp_community_due_runs");
     await initializeDatabaseAt(target);
     assert.ok((await target.query("SELECT to_regclass('fp_community_due_runs')::text AS present")).rows[0].present);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 13);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 14);
+  });
+
+  it("repairs disabled funding-history and receipt-version guards", async () => {
+    await target.query("ALTER TABLE fp_settlement_receipts DISABLE TRIGGER fp_receipt_version_on_change");
+    await target.query("DROP TRIGGER fp_funding_assignment_immutable ON fp_funding_assignments");
+    await initializeDatabaseAt(target);
+    const result=await target.query("SELECT count(*)::int AS count FROM pg_trigger WHERE tgrelid=ANY(ARRAY[to_regclass('fp_settlement_receipts'),to_regclass('fp_funding_assignments')]) AND tgname IN ('fp_receipt_version_on_change','fp_funding_assignment_immutable') AND tgenabled='O'");
+    assert.equal(result.rows[0].count,2);
   });
 });
