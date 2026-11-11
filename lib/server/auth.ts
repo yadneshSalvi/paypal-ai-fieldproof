@@ -59,6 +59,11 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   const allowed=["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  // Vercel supplies the exact immutable deployment hostname. This permits
+  // pre-promotion qualification without trusting sibling or caller-supplied hosts.
+  const deploymentHost = process.env.VERCEL_URL;
+  if (process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
+    allowed.push(`https://${deploymentHost}`);
   // The isolated Studio review process never runs on the retired source writer's port.
   if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
   const host=request.headers.get("host");
