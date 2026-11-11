@@ -1,0 +1,228 @@
+{
+  "observedAt": "2026-11-11T07:51:32.673741+00:00",
+  "sourceCommit": "104ddc426c3e9c00b90c8e123b198409edd16cda",
+  "sourceTree": "b9758b76b243a0017057dea00f7e5c6dd9433ee2",
+  "sourceFingerprint": "45035efd3602fde44ef37179ccff473e1effbb91871136985de05bf117b12a14",
+  "environment": {
+    "origin": "http://localhost:4502",
+    "database": "dedicated local Planning QA database",
+    "financialProviderConfiguration": "disabled",
+    "storage": "private isolated local adapter",
+    "originalDatabaseWrites": 0,
+    "deploymentPerformed": false
+  },
+  "provenance": "Actual native browser interaction and one actual model request over explicitly fictional Sample sources, with read-only database corroboration. Reviews were automated workflow exercises; no named independent human or physical inspection is claimed.",
+  "sourceVerification": {
+    "regressionTests": 267,
+    "regressionSuites": 40,
+    "failures": 0,
+    "skipped": 0,
+    "productionBuild": "passed",
+    "typescript": "passed",
+    "record": "planning-source-qualification.json"
+  },
+  "actualExtraction": {
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "executionRevision": "durable-plan-v2",
+    "background": true,
+    "longTermStore": false,
+    "explicitTemporaryRetentionConsent": true,
+    "freshAuthorizedRequests": 1,
+    "attempt": 1,
+    "inputHash": "9e1ec03cb5e28348c20182d6d4f1f4bebae106a1e071c1c82cc7f92c58986804",
+    "outputHash": "8d046f3cc37d7d649b3b9eec58df6b2f32c19ab560a90bbded11a244e9f5e6a7",
+    "rawOutputHash": "8d046f3cc37d7d649b3b9eec58df6b2f32c19ab560a90bbded11a244e9f5e6a7",
+    "responseIdentityHash": "600c6ba824312a8e4484c2e80e810a5636b4784a3a4bc16a998da084c309d873",
+    "submissionCount": 1,
+    "pollCount": 16,
+    "uniqueObservedResponseIdentityCount": 1,
+    "createdAt": "2026-11-11T07:33:08.585Z",
+    "completedAt": "2026-11-11T07:37:31.841Z",
+    "stats": {
+      "durationMs": 263226,
+      "inputTokens": 8383,
+      "outputTokens": 17995
+    },
+    "status": "succeeded",
+    "zones": 6,
+    "packages": 6,
+    "citations": 19,
+    "geometryValid": true,
+    "scaleState": "unknown",
+    "initialZoneAndPackageReviewsRequired": 12,
+    "initialPublishable": false,
+    "allFictionalQuoteAmountsMatch": true,
+    "survivedSourcesNavigationAndReload": true,
+    "providerResponseIdPublished": false
+  },
+  "preservedOriginalAttempt": {
+    "inputHash": "32e52f607b800ef37e8369c7b6e864a6a6db18fec9d65a3b2b287fb03e760ca1",
+    "status": "failed_no_usable_response",
+    "durationMs": 240021,
+    "code": "OPENAI_HTTP_UNKNOWN",
+    "providerProcessingOutcome": "indeterminate",
+    "responseIdentityReceived": false,
+    "tokenCountsReceived": false,
+    "overwritten": false
+  },
+  "nativeChecks": {
+    "sourceReview": {
+      "fictionalSourcesImported": 4,
+      "originalSketchPreview": "passed",
+      "originalQuotePreview": "passed",
+      "sourceHashAndPermissionLabels": "passed",
+      "allSixQuotedAmountsVisuallyCompared": true,
+      "quotedTotalMinor": 841000,
+      "geometryOverlayAndLabelsCompared": true
+    },
+    "geometryAndVersions": {
+      "keyboardCornerX": [
+        0.07,
+        0.072,
+        0.07,
+        0.072,
+        0.07
+      ],
+      "actions": [
+        "original",
+        "ArrowRight",
+        "Undo",
+        "Redo",
+        "Undo"
+      ],
+      "explicitZoneAndPackageAcknowledgements": 12,
+      "savedReviewedAndSharedRevision": 1,
+      "sharedContentHash": "6e93e931e24a52571ad47c540d92b5034d510f30a707e6f6ba435f742a2e0fe5",
+      "geometryHash": "855a12834b33e2383466fc7d06dbab8b73ba1d76383f77380603861f049790d1",
+      "restoredNewDraftRevision": 2,
+      "restoreContentHashUnchanged": true,
+      "restoredDraftHasNoInheritedApproval": true,
+      "restoredDraftOrigin": "manual",
+      "originalReviewedRevisionKeepsActualModelLineage": true,
+      "sharedRevisionRemained": 1
+    },
+    "scenario": {
+      "basis": "prospective",
+      "budgetMinor": 600000,
+      "optionTotalsMinor": [
+        566000,
+        446000,
+        516000
+      ],
+      "fullPlanCostMinor": 841000,
+      "fullPlanFits": false,
+      "laserSafetyPrerequisiteRetained": true,
+      "financialWrite": false
+    },
+    "imageAssociation": {
+      "sourceClass": "sample_illustration",
+      "anchorCount": 3,
+      "sampleLandmarksExplicit": true,
+      "maskCoveringAnchorRejected": true,
+      "rejectionCode": "ANCHOR_REDACTED",
+      "visibleWarningObserved": true,
+      "savedMasks": [
+        {
+          "x": 0.7,
+          "y": 0.7,
+          "width": 0.15,
+          "height": 0.1
+        }
+      ],
+      "displayCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "contentHash": "4ab70681e65d9439a36050d8e9ec8f808f2bc43ef7f08807d1c317c2bfc5eb63",
+      "reviewedPngHash": "7c9891ecac917f8fb687a4b52e77893816325ea3719693ac8d726c2d4519c2d3",
+      "dimensions": {
+        "width": 1600,
+        "height": 1200
+      },
+      "opaqueMaskVisuallyInspected": true,
+      "sampleWatermarkVisible": true,
+      "review": "illustrative association only",
+      "sharing": "project_members",
+      "comparisonKeyboardHomePercent": 0
+    },
+    "reviewerScope": {
+      "sourceLabel": "NOT A CREDENTIAL",
+      "exercise": "Controlled Sample equipment reviewer",
+      "scope": "equipment_setup",
+      "state": "verified",
+      "version": 2,
+      "provenance": "sample",
+      "bothAcknowledgementsExplicit": true,
+      "notesDiscloseAutomatedFictionalExercise": true,
+      "actualIndependentReviewerQualified": false,
+      "invitationsCreated": 0,
+      "physicalSignoffs": 0
+    },
+    "donorPrivacy": {
+      "roleChangeClearedPrivateDraftAndSelection": true,
+      "privateSourcesTabAbsent": true,
+      "privateImageComposerAbsent": true,
+      "privateReviewNoteAbsent": true,
+      "sanitizedReviewedRenditionVisible": true
+    },
+    "studio": {
+      "currentSharedRevision": 1,
+      "sharedContentHash": "6e93e931e24a52571ad47c540d92b5034d510f30a707e6f6ba435f742a2e0fe5",
+      "zones": 6,
+      "sampleCollectedMinor": 212500,
+      "sampleBudgetMinor": 841000,
+      "sampleCommittedMinor": 491500,
+      "reviewedImageRequirements": 1,
+      "totalRequirements": 14,
+      "electronicsCheckedRequirements": 1,
+      "electronicsTotalRequirements": 2,
+      "laserPrerequisitesStillNeeded": true,
+      "drillThroughDisclosesIllustrativeNonfinancialSample": true,
+      "physicalCertificationClaimed": false
+    },
+    "mobileAndKeyboard": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "dialogWidth": 368,
+      "dialogScrollWidth": 366,
+      "dialogHeight": 630.5,
+      "keyboardEnterOpensBoundaryDialog": true,
+      "escapeClosesDialog": true,
+      "temporaryViewportCleared": true,
+      "asynchronousNavigationEventuallyReachedPlanning": true,
+      "navigationDefectClaimed": false
+    }
+  },
+  "readOnlyCorroboration": {
+    "cutoff": "2026-11-11T07:49:08.817Z",
+    "savedAndReviewedAndPublishedHashMatch": true,
+    "reviewedImageHashMatches": true,
+    "immutableRevisionCount": 2,
+    "restoredDraftApproved": false,
+    "sampleScopeVerified": true,
+    "workSignoffs": 0,
+    "payables": 0,
+    "paymentCommands": 0,
+    "providerOperations": 0,
+    "providerRequestsBySourceLead": 0
+  },
+  "privateScreenshots": [
+    "fieldproof-planning-mobile-boundaries.png",
+    "fieldproof-planning-member-image.png"
+  ],
+  "limitations": [
+    "One successful extraction of two fictional pages is not a held-out accuracy benchmark.",
+    "A reviewed image requirement is not accepted physical work, location proof or safety certification.",
+    "No actual independent credentials, physical inspection, purchase, repayment or financial operation occurred.",
+    "Reviewer invitation redemption/revocation and adversarial role/source cases are tested fixtures; no real external reviewer was recruited.",
+    "Native qualification used isolated local storage; hosted Blob, schema 11 and cron behavior still require root-controlled deployment qualification.",
+    "A full accessibility, screen-reader, zoom and performance audit remains outstanding.",
+    "Public Proof Pages, QR/revocation and finished A4/Letter Board Packs remain unimplemented."
+  ]
+}
