@@ -1,0 +1,60 @@
+{
+  "checkedAt": "2026-11-11T08:46:21.248Z",
+  "deploymentId": "dpl_BzUfBD1pQZHUzFdSyLvgEXThLMHk",
+  "url": "https://paypal-ai-fieldproof-k64po9uv9-yadneshsalvis-projects.vercel.app",
+  "sourceCommit": "3e5f260",
+  "passed": true,
+  "checks": [
+    {
+      "name": "Healthy runtime; private publication authority and same-origin protection are enforced",
+      "passed": true
+    },
+    {
+      "name": "Separate Sample tenant uses private Blob sources and explicitly fictional reviewed geometry",
+      "passed": true
+    },
+    {
+      "name": "Raster public copy is private until separately reviewed; duplicate intent creates one copy",
+      "passed": true
+    },
+    {
+      "name": "Exact page review and separate publication produce a sanitized anonymous record, image and stable QR",
+      "passed": true
+    },
+    {
+      "name": "Donor and foreign tenant cannot access the private image or change publication",
+      "passed": true
+    },
+    {
+      "name": "A new immutable edition keeps the stable slug and the exact previous published edition",
+      "passed": true
+    },
+    {
+      "name": "Explicit withdrawal closes current, historical, image and QR reads while retaining private history",
+      "passed": true
+    },
+    {
+      "name": "Source withdrawal immediately closes public copies; reinstatement does not revive old reviews",
+      "passed": true
+    }
+  ],
+  "publishedEditions": 3,
+  "currentPublicState": "withdrawn",
+  "actualModelSubmissions": 0,
+  "actualFinancialProviderWrites": 0,
+  "actualPhysicalSignoffs": 0,
+  "originalProjectUntouched": true,
+  "limits": [
+    "Automated fictional hosted qualification only; no original sources or donor records were published.",
+    "Native responsive and print qualification recorded separately."
+  ],
+  "stableUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "migration": {
+    "schema": 12,
+    "newTables": 3,
+    "originalTables": 75,
+    "originalRows": 1612,
+    "originalDataHashesUnchanged": true
+  },
+  "nativeFinding": "Public content was correctly withdrawn, while the private organizer label still read Published. The following code correction and its hosted retest are recorded separately."
+}

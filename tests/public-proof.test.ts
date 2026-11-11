@@ -90,12 +90,15 @@ describe("public proof authority and immutable reviewed projections", () => {
   });
   it("invalidates dependent public pages and all image URLs immediately after source withdrawal", async () => {
     const f = await planningFixture(), image = await reviewedImage(f), published = await publish(f, [image.id]);
+    assert.equal((await readProofDesk(f.session)).packages.find(p => p.id === "electronics")?.publicationState, "published");
     await setPlanningSourcePermission(f.session, f.photo.id, { intentId: randomUUID(), expectedVersion: 1, permission: "withdrawn", reason: "Controlled public-source withdrawal test" });
     const start = performance.now(); assert.equal((await readPublicProof(published.slug)).state, "withdrawn");
     await assert.rejects(publicProofImage(published.slug, image.id, 1, f.storage), errorCode("PUBLIC_PROOF_WITHDRAWN"));
     assert.ok(performance.now() - start < 3000);
+    assert.equal((await readProofDesk(f.session)).packages.find(p => p.id === "electronics")?.publicationState, "withdrawn");
     await setPlanningSourcePermission(f.session, f.photo.id, { intentId: randomUUID(), expectedVersion: 2, permission: "allowed", reason: "Controlled reinstatement must not restore an old public review" });
     assert.equal((await readPublicProof(published.slug)).state, "withdrawn");
+    assert.equal((await readProofDesk(f.session)).packages.find(p => p.id === "electronics")?.publicationState, "withdrawn");
     assert.equal((await query<{ count: string }>("SELECT count(*) FROM fp_documents WHERE id=$1", [f.photo.id]))[0].count, "1");
   });
   it("revokes a derivative without deleting its private source or reviving previous publication", async () => {

@@ -64,6 +64,9 @@ if (args.includes("--build")) {
   // These values exist only in the disposable test child, never the QA server.
   const fixtureEnvironment: NodeJS.ProcessEnv = {
     ...environment, FIELDPROOF_PLANNING_QA: "false",
+    // Stubbed payment suites retain the registered callback contract. This
+    // does not start or contact the retired application on that address.
+    APP_URL: "http://localhost:4102",
     PAYPAL_ENVIRONMENT: "sandbox", PAYPAL_PROJECT_ISOLATED: "true",
     PAYPAL_CLIENT_ID: "controlled-planning-test-client", PAYPAL_CLIENT_SECRET: "controlled-planning-test-secret",
     PAYPAL_API_BASE_URL: "https://api-m.sandbox.paypal.com", PAYPAL_MERCHANT_ID: "CONTROLLED-PLANNING-MERCHANT",

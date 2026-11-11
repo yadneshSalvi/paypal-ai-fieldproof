@@ -67,5 +67,25 @@
   "corrections": [
     "QA APP_URL originally inherited port4102; launcher now explicitly binds port4502 and native QR/printed destination was rechecked.",
     "A separate one-page hallway poster was added alongside the two-page full record."
-  ]
+  ],
+  "subsequentStatusCorrection": {
+    "observedAt": "2026-11-11T08:54:58.749882+00:00",
+    "finding": "Public source withdrawal returned HTTP 410 correctly, but the private desk labeled the stored publication head Published.",
+    "change": "Derive the desk publication status from the same current permission and source checks as anonymous reads.",
+    "fullRegression": {
+      "passed": 282,
+      "failed": 0,
+      "skipped": 0,
+      "suites": 42,
+      "durationMs": 92641.705667
+    },
+    "productionBuild": "passed",
+    "typecheck": "passed",
+    "qualificationCorrection": "The first broad rerun inherited the planning preview URL in stubbed payment tests. The launcher now retains the registered callback URL only in its provider-stub test child; the preview remains on its separate port. Payment-origin rules were unchanged.",
+    "sourceSha256": {
+      "lib/server/proof.ts": "516c340f129e08b1f4e97dae6147e18f4a134adcb4d293bb976d9820a7cf3ec9",
+      "tests/public-proof.test.ts": "ff9c8094ee0c2e4054d7c0c79401c5759e53f176395f2bfb8492dbb9440ef790",
+      "scripts/planning-qa.ts": "aded7a7e4f8bfbb0d7811f272dcf9ed4da82bed8598a903c11337ef517d0d7e2"
+    }
+  }
 }

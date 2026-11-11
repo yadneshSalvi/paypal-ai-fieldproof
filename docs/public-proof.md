@@ -28,3 +28,5 @@ npm run planning:qa -- --resume
 The QA launcher uses a separate local database, cookie and document directory, disables financial providers, and binds poster URLs to port 4502. See `docs/planning-review.md` for creating that environment. Public publication tests use fictional Sample content only. They do not establish an independent human privacy review, real purchase, installation or professional inspection.
 
 Qualification records distinguish local, native-browser and hosted results. Complete organization Board Packs, reviewed translations, broader funding/organization flows and remaining evaluation/research work remain separate requirements.
+
+The organizer desk reports the effective public state, including withdrawal caused by source or review authority changes. Its retained publication history is not presented as currently available content.

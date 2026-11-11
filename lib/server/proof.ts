@@ -211,7 +211,13 @@ export async function readProofDesk(session: Session): Promise<ProofDesk> {
       if ((await sourceControl(doc, tx)).permission !== "allowed") continue;
       sources.push({ id: doc.id, purpose: doc.purpose as "receipt" | "photo", sample: doc.provenance === "sample_document", pages: documentPrivate(doc).pages.map(p => ({ number: p.number, width: p.width, height: p.height, previewUrl: `/api/proof/sources/${doc.id}?page=${p.number}` })) });
     }
-    return { mode: session.mode, packages: packages.map(p => ({ id: p.id, title: p.data.title, budgetMinor: Number(p.budget_minor), version: p.version, headVersion: p.head_version ?? 0, slug: p.slug, publicationState: p.publication_state ?? "private" })), derivatives, sources,
+    const packageViews: ProofDesk["packages"] = [];
+    for (const p of packages) {
+      let publicationState = p.publication_state ?? "private";
+      if (publicationState === "published" && p.slug && (await publicRecord(p.slug, undefined, tx)).record.state !== "published") publicationState = "withdrawn";
+      packageViews.push({ id: p.id, title: p.data.title, budgetMinor: Number(p.budget_minor), version: p.version, headVersion: p.head_version ?? 0, slug: p.slug, publicationState });
+    }
+    return { mode: session.mode, packages: packageViews, derivatives, sources,
       snapshots: (await query<Snapshot>("SELECT * FROM fp_proof_snapshots WHERE tenant_id=$1 AND project_id=$2 ORDER BY created_at DESC LIMIT 150", scope(session), tx)).map(view) };
   });
 }
