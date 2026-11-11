@@ -15,6 +15,7 @@ import { executionQuiescence } from "../lib/server/runtime-control";
 import { guardedApi, guardedProviderTransport } from "../lib/server/maintenance";
 import { runReceiptExtraction, startReceiptExtraction } from "../lib/server/receipt-extraction";
 import { commandFor, ownedPayment, paymentStore } from "../lib/server/payments";
+import { originalWorkspaceCookie, prepareWorkspaceRecovery, reissueImportedWorkspaceHandoff, validateRecoveryRequest } from "../lib/server/workspace-recovery";
 
 const originalUrl = process.env.DATABASE_URL!, sourceSchema = `fp_transfer_source_${randomUUID().replaceAll("-", "")}`, targetSchema = `fp_transfer_target_${randomUUID().replaceAll("-", "")}`;
 const admin = new PostgresDatabase(originalUrl);
@@ -75,6 +76,81 @@ async function existingHostedProject() {
   return { tenant, project };
 }
 const count = async (connection: PostgresDatabase, table: string) => Number((await query<{ count: string }>(`SELECT count(*) AS count FROM ${table}`, [], connection))[0].count);
+describe("original-browser continuation recovery", () => {
+  async function recoveryFixture() {
+    const f = await fixture();
+    await importWorkspace(target, f.bundle, transferConfiguration(), false);
+    return { ...f, recovery: await prepareWorkspaceRecovery(database(), target, f.bundle) };
+  }
+  it("requires one original private cookie, exact origin/host, a fresh nonce and explicit form navigation", async () => {
+    const token = randomBytes(32).toString("base64url"), nonce = randomBytes(32).toString("base64url");
+    const headers = { host: "localhost:4102", origin: LOCAL_ORIGIN, cookie: `fieldproof_session=${token}`, "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "same-origin", "sec-fetch-mode": "navigate", "sec-fetch-dest": "document", "sec-fetch-user": "?1" };
+    const request = (changes: Record<string, string> = {}, body = `nonce=${nonce}`) => new Request(`${LOCAL_ORIGIN}/continue/recover`, { method: "POST", headers: { ...headers, ...changes }, body });
+    assert.equal(await validateRecoveryRequest(request(), nonce), token);
+    for (const changes of [{ origin: "https://foreign.invalid" }, { host: "foreign.invalid" }, { "sec-fetch-site": "cross-site" }, { "sec-fetch-mode": "cors" }, { "sec-fetch-user": "" }] as Record<string, string>[])
+      await assert.rejects(validateRecoveryRequest(request(changes), nonce), { code: "HANDOFF_RECOVERY_ORIGIN_DENIED" });
+    await assert.rejects(validateRecoveryRequest(request({ cookie: "" }), nonce), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+    await assert.rejects(validateRecoveryRequest(request({}, `nonce=${nonce}&actorId=override`), nonce), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+    await assert.rejects(validateRecoveryRequest(request({}, `nonce=${randomBytes(32).toString("base64url")}`), nonce), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+    assert.throws(() => originalWorkspaceCookie(`fieldproof_session=${token}; fieldproof_session=${token}`));
+  });
+  it("reissues the same imported grant, preserves every bound and leaves all source rows unchanged", async () => {
+    const f = await recoveryFixture();
+    const before = (await target.query("SELECT * FROM fp_workspace_handoffs WHERE id=$1", [f.recovery.bindings[0].grantId])).rows[0];
+    const result = await reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken);
+    const after = (await target.query("SELECT * FROM fp_workspace_handoffs WHERE id=$1", [result.grantId])).rows[0];
+    const { token_hash: oldHash, ...oldBound } = before, { token_hash: newHash, ...newBound } = after;
+    assert.deepEqual(newBound, oldBound); assert.notEqual(newHash, oldHash);
+    assert.equal(result.expiresAt, (before.expires_at as Date).toISOString());
+    assert.deepEqual((await exportWorkspace(database(), f.scope)).tables, f.bundle.tables);
+    assert.equal((await target.query("SELECT count(*)::int AS count FROM fp_events WHERE type='workspace.handoff_link_reissued'")).rows[0].count, 1);
+    assert.equal((await target.query("SELECT token_hash FROM fp_sessions WHERE id=$1", [f.session.id])).rows[0].token_hash, tokenHash(f.oldToken));
+    await assert.rejects(redeemWorkspaceHandoff(f.token, HOSTED_ORIGIN, target), { code: "HANDOFF_UNAVAILABLE" });
+    const restored = await redeemWorkspaceHandoff(new URLSearchParams(new URL(result.url).hash.slice(1)).get("handoff")!, HOSTED_ORIGIN, target);
+    assert.equal(restored.session.id, f.session.id); assert.equal(restored.session.actorId, f.session.actorId); assert.equal(restored.session.expiresAt, f.session.expiresAt);
+  });
+  it("refuses a different valid actor cookie without changing any grant", async () => {
+    const f = await recoveryFixture(), other = randomBytes(32).toString("base64url");
+    await target.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'organizer',$6)", [randomUUID(), tokenHash(other), f.session.tenantId, f.session.projectId, randomUUID(), f.session.expiresAt]);
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, other), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+    assert.equal((await target.query("SELECT count(*)::int AS count FROM fp_events WHERE type='workspace.handoff_link_reissued'")).rows[0].count, 0);
+  });
+  it("refuses an expired original grant without extending it", async () => {
+    const f = await recoveryFixture(), originalNow = Date.now;
+    const original = (await target.query("SELECT expires_at FROM fp_workspace_handoffs WHERE id=$1", [f.recovery.bindings[0].grantId])).rows[0].expires_at as Date;
+    Date.now = () => original.getTime() + 1;
+    try { await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_RECOVERY_UNAVAILABLE" }); }
+    finally { Date.now = originalNow; }
+    assert.deepEqual((await target.query("SELECT expires_at FROM fp_workspace_handoffs WHERE id=$1", [f.recovery.bindings[0].grantId])).rows[0].expires_at, original);
+  });
+  it("refuses an already consumed grant and the rotated old browser cookie", async () => {
+    const f = await recoveryFixture();
+    await redeemWorkspaceHandoff(f.token, HOSTED_ORIGIN, target);
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+  });
+  it("rechecks the original membership version and current session role", async () => {
+    const f = await recoveryFixture();
+    await target.query("UPDATE fp_memberships SET version=version+1 WHERE project_id=$1 AND actor_id=$2", [f.session.projectId, f.session.actorId]);
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_MEMBERSHIP_CHANGED" });
+    await target.query("UPDATE fp_sessions SET role='auditor' WHERE id=$1", [f.session.id]);
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
+  });
+  it("requires a current destination hold and the unchanged source hold version", async () => {
+    const f = await recoveryFixture();
+    await setRuntimeHold(target, false, "Fixture destination resumed");
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_TARGET_NOT_HELD" });
+    await setRuntimeHold(target, true, "Fixture destination held again");
+    await setRuntimeHold(database(), true, "Fixture source hold version changed");
+    await assert.rejects(reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), { code: "HANDOFF_SOURCE_HOLD_CHANGED" });
+  });
+  it("allows only one reissue against the same bootstrapped grant hash", async () => {
+    const f = await recoveryFixture();
+    const results = await Promise.allSettled([reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken), reissueImportedWorkspaceHandoff(database(), target, f.recovery, f.oldToken)]);
+    assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+    assert.equal((await target.query("SELECT count(*)::int AS count FROM fp_events WHERE type='workspace.handoff_link_reissued'")).rows[0].count, 1);
+    assert.deepEqual((await exportWorkspace(database(), f.scope)).tables, f.bundle.tables);
+  });
+});
 describe("private scoped workspace transfer", () => {
   it("retains encrypted claims, immutable IDs and hosted records; dry-run rolls back including cursor allocation", async () => {
     const f = await fixture(), hosted = await existingHostedProject();

@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS fp_request_leases (
 CREATE INDEX IF NOT EXISTS fp_request_leases_active ON fp_request_leases(expires_at) WHERE completed_at IS NULL;
 `;
 export interface RuntimeControl { held: boolean; version: number; activeRequests: number; }
+/** Coordinates operator hold changes with a read-only source check during handoff recovery. */
+export async function lockRuntimeControl(tx: SqlConnection): Promise<void> {
+  await tx.query("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':fieldproof-execution-control',4102))");
+}
 export async function runtimeControl(tx: SqlConnection): Promise<RuntimeControl> {
   const result = await tx.query<{ held: boolean; version: number; active_requests: string }>("SELECT COALESCE((SELECT held FROM fp_runtime_control WHERE key='execution'),false) AS held,COALESCE((SELECT version FROM fp_runtime_control WHERE key='execution'),0) AS version,(SELECT count(*) FROM fp_request_leases WHERE completed_at IS NULL AND expires_at>now()) AS active_requests");
   const row = result.rows[0];
@@ -26,6 +30,7 @@ export async function runtimeControl(tx: SqlConnection): Promise<RuntimeControl>
 export async function setRuntimeHold(db: SqlDatabase, held: boolean, reason: string): Promise<RuntimeControl> {
   if (reason.trim().length < 8 || reason.length > 200) throw new DomainError("MAINTENANCE_REASON_REQUIRED", "Record a concise operator reason for this execution change.", 400);
   await db.transaction(async tx => {
+    await lockRuntimeControl(tx);
     const result = await tx.query<{ version: number }>("INSERT INTO fp_runtime_control(key,held,reason) VALUES('execution',$1,$2) ON CONFLICT(key) DO UPDATE SET held=$1,reason=$2,version=fp_runtime_control.version+1,updated_at=now() RETURNING version", [held, reason.trim()]);
     await tx.query("INSERT INTO fp_runtime_control_events(id,held,version,reason) VALUES($1,$2,$3,$4)", [randomUUID(), held, result.rows[0].version, reason.trim()]);
   });

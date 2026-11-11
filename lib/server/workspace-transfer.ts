@@ -45,6 +45,10 @@ function configProof(config: TransferConfiguration) {
 }
 export function transferConfiguration(): TransferConfiguration { return { authSecret: process.env.AUTH_SECRET ?? "", clientId: process.env.PAYPAL_CLIENT_ID ?? "", blobToken: process.env.BLOB_READ_WRITE_TOKEN ?? "" }; }
 function sameProof(left: string, right: string): boolean { return left.length === right.length && timingSafeEqual(Buffer.from(left), Buffer.from(right)); }
+export function assertTransferConfiguration(bundle: WorkspaceTransfer, configuration: TransferConfiguration): void {
+  const proof = configProof(configuration);
+  if (!Object.entries(proof).every(([key, value]) => sameProof(value, bundle.configuration[key as keyof typeof proof]))) throw new DomainError("TRANSFER_CONFIGURATION_MISMATCH", "The destination encryption secret, isolated merchant or private Blob configuration differs. No project records were imported.", 409);
+}
 export interface WorkspaceTransfer {
   version: 1; id: string; scope: Scope; cutoff: string; sourceOrigin: typeof LOCAL_ORIGIN; targetOrigin: typeof HOSTED_ORIGIN;
   configuration: ReturnType<typeof configProof>; schemaVersions: number[];
@@ -118,8 +122,7 @@ async function rowAt(tx: SqlConnection, table: TableSpec, row: Row) {
   return existing ? normalize(table.name, existing.data) : null;
 }
 export async function importWorkspace(target: PostgresDatabase, bundle: WorkspaceTransfer, configuration: TransferConfiguration, dryRun = true): Promise<TransferManifest> {
-  const proof = configProof(configuration);
-  if (!Object.entries(proof).every(([key, value]) => sameProof(value, bundle.configuration[key as keyof typeof proof]))) throw new DomainError("TRANSFER_CONFIGURATION_MISMATCH", "The destination encryption secret, isolated merchant or private Blob configuration differs. No project records were imported.", 409);
+  assertTransferConfiguration(bundle, configuration);
   const manifest = transferManifest(bundle);
   if (!bundle.sourceExecution?.quiescent) throw new DomainError("TRANSFER_SOURCE_NOT_QUIESCENT", "The source snapshot was not taken under a drained execution hold. Hold the original writer, wait for work to finish and export again.", 409);
   try {
