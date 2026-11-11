@@ -7,7 +7,14 @@ import { createProject } from "./seed";
 import { requireMembership } from "./membership";
 
 export function sessionCookieName(): string {
-  if (process.env.NODE_ENV === "production" || process.env.FIELDPROOF_STUDIO_QA !== "true") return "fieldproof_session";
+  if (process.env.NODE_ENV === "production") return "fieldproof_session";
+  if (process.env.FIELDPROOF_PLANNING_QA === "true") {
+    const url = new URL(process.env.DATABASE_URL ?? "postgresql://invalid/invalid");
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !/^\/fp_planning_qa_[a-z0-9_]+$/.test(url.pathname))
+      throw new DomainError("QA_STORAGE_ISOLATION", "The isolated planning review requires its own local database.", 503);
+    return "fieldproof_planning_qa_session";
+  }
+  if (process.env.FIELDPROOF_STUDIO_QA !== "true") return "fieldproof_session";
   const url = new URL(process.env.DATABASE_URL ?? "postgresql://invalid/invalid");
   if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !/^\/fp_studio_qa_[a-z0-9_]+$/.test(url.pathname))
     throw new DomainError("QA_STORAGE_ISOLATION", "The isolated Studio review requires its own local database.", 503);
@@ -66,6 +73,7 @@ export function assertSameOrigin(request: Request): void {
     allowed.push(`https://${deploymentHost}`);
   // The isolated Studio review process never runs on the retired source writer's port.
   if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
+  if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
   const host=request.headers.get("host");
   if (!origin || !allowed.includes(origin) || new URL(origin).host !== host) throw new DomainError("ORIGIN_DENIED", "Refresh this page before trying again.", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);

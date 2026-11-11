@@ -56,6 +56,10 @@ export interface StudioSnapshot {
   contentHash?: string;
   data: StudioData;
   geometry: Record<string, BlueprintZone>;
+  geometrySource?: {
+    revision: number; planHash: string; geometryHash: string; state: "current" | "stale" | "revoked";
+    provenance: "sample" | "reviewed_plan"; pageAspectRatio: number; outline: { x: number; y: number }[]; scaleLabel: string;
+  };
   notices: string[];
 }
 

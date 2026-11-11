@@ -79,6 +79,10 @@ function BlueprintWidget(props: WidgetProps) {
   const result = useStudioRows<PackageRow>(props), gridId = useId().replaceAll(":", "");
   if (!result.valid || result.error || result.loading) return <QueryStatus result={result}/>;
   const zones = result.rows.map(row => ({ row, zone: props.context.snapshot.geometry[text(row.geometryRef)] ?? props.context.snapshot.geometry[row.packageId] })).filter(item => item.zone);
+  const source = props.context.snapshot.geometrySource;
+  const planWidth = source ? Math.min(860, 370 * source.pageAspectRatio) : 860;
+  const planHeight = source ? planWidth / source.pageAspectRatio : 360;
+  const left = (1000 - planWidth) / 2, top = 100 + (370 - planHeight) / 2;
   return <div className="studio-blueprint-widget">
     <PackageFilter result={result} count={result.rows.length}/>
     {zones.length ? <div className="studio-plan-paper"><svg viewBox="0 0 1000 580" className="studio-plan-svg" role="group" aria-label="Illustrative room plan. Each package can be selected to filter the report.">
@@ -86,21 +90,25 @@ function BlueprintWidget(props: WidgetProps) {
       <rect width="1000" height="580" rx="14" fill="#EEF2F2"/><rect x="20" y="20" width="960" height="540" fill={`url(#${gridId})`}/>
       <path d="M40 86V40H182 M818 40H960V86 M960 494V540H818 M182 540H40V494" fill="none" stroke="#4A6FA5" strokeWidth="1.3"/>
       <text x="52" y="65" className="studio-plan-label">FIELD NOTES / ROOM PLAN</text>
-      {zones.map(({ row, zone }) => {
-        const active = result.selected.has(row.packageId), points = zone.points.map(point => `${70 + point.x * 860},${105 + point.y * 360}`).join(" ");
-        const x = 70 + zone.label.x * 860, y = 105 + zone.label.y * 360;
+      {source?.state === "current" && <polygon points={source.outline.map(point => `${left + point.x * planWidth},${top + point.y * planHeight}`).join(" ")} fill="none" stroke="#1E3A5F" strokeWidth="2"/>}
+      {zones.map(({ row, zone }, index) => {
+        const active = result.selected.has(row.packageId), points = zone.points.map(point => `${left + point.x * planWidth},${top + point.y * planHeight}`).join(" ");
+        const x = left + zone.label.x * planWidth, y = top + zone.label.y * planHeight;
+        const width = (Math.max(...zone.points.map(p => p.x)) - Math.min(...zone.points.map(p => p.x))) * planWidth;
+        const height = (Math.max(...zone.points.map(p => p.y)) - Math.min(...zone.points.map(p => p.y))) * planHeight;
+        const compact = width < 160 || height < 66;
         return <g key={row.id} role="button" tabIndex={0} aria-label={`${row.title}. ${studioMoney(row.collectedMinor)} collected of ${studioMoney(row.budgetMinor)}. Filter by this package.`} aria-pressed={active}
           className={`studio-plan-zone${active ? " is-selected" : ""}`} onClick={() => result.select(row.packageId)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); result.select(row.packageId); } }}>
+          <title>{row.title} · {studioMoney(row.collectedMinor)} collected of {studioMoney(row.budgetMinor)}</title>
           <polygon points={points} fill={active ? "#F2A93B" : "#FFFEFA"} fillOpacity={active ? ".38" : ".85"} stroke={active ? "#1E3A5F" : "#4A6FA5"} strokeWidth={active ? 3 : 1.7}/>
-          <text x={x} y={y - 4} textAnchor="middle" className="studio-zone-title">{row.shortTitle || row.title}</text>
-          <text x={x} y={y + 18} textAnchor="middle" className="studio-zone-amount">{studioMoney(row.collectedMinor)} / {studioMoney(row.budgetMinor)}</text>
-          <circle cx={x} cy={y + 38} r="3" fill={row.workState === "accepted" ? "#3E8E5E" : "#F2A93B"}/>
+          <text x={x} y={compact ? y + 4 : y - 4} textAnchor="middle" className="studio-zone-title">{compact ? String(index + 1).padStart(2, "0") : row.shortTitle || row.title}</text>
+          {!compact && <><text x={x} y={y + 18} textAnchor="middle" className="studio-zone-amount">{studioMoney(row.collectedMinor)} / {studioMoney(row.budgetMinor)}</text><circle cx={x} cy={y + 38} r="3" fill={["accepted", "accepted_within_scope", "sample_review_complete"].includes(row.workState) ? "#3E8E5E" : "#F2A93B"}/></>}
         </g>;
       })}
       <text x="54" y="521" className="studio-plan-label">ILLUSTRATIVE GEOMETRY · NOT A SURVEY</text><path d="M792 517h145m-145-5v10m145-10v10" stroke="#4A6FA5"/><text x="831" y="505" className="studio-plan-label">NOT TO SCALE</text>
     </svg></div> : <WidgetEmpty title="A plan is still taking shape">Reviewed room geometry will appear here. The package records below already carry the current funding facts.</WidgetEmpty>}
     <div className="studio-plan-key">{result.rows.map((row, index) => <button key={row.id} aria-pressed={result.selected.has(row.packageId)} onClick={() => result.select(row.packageId)}><span>{String(index + 1).padStart(2, "0")}</span>{row.shortTitle || row.title}<ArrowDownRight size={13}/></button>)}</div>
-    <WidgetNote>Room selection filters the native report. Receipt review does not certify the room or its safety.</WidgetNote>
+    <WidgetNote>{source ? `Plan r${source.revision} · ${source.provenance === "sample" ? "sample" : "reviewed source"} · ${source.state}. ${source.scaleLabel}. ` : "Illustrative sample geometry. "}Room selection filters the native report. Receipt review does not certify the room or its safety.</WidgetNote>
   </div>;
 }
 

@@ -8,6 +8,9 @@ import { claimPrivate, type ClaimRow } from "./claims";
 import { database, query } from "./db";
 import { requireCurrentRole } from "./membership";
 import { openPrivate, sealPrivate } from "./private-values";
+import { publishedPlan } from "./planning-store";
+import { alignmentViews, packageReadiness, signoffViews } from "./planning-evidence";
+import { polygonLabel } from "../planning/geometry";
 
 const SOURCE_NOTICE = "The plan is an illustrative sample. Expense review does not certify installed work or safety.";
 const FUNDING_NOTICE = "Collection includes conditional Orders and invoice receipts. Separate checkout tests and duplicate excess cannot fund a package.";
@@ -15,6 +18,10 @@ const ROLES: WorkspaceRole[] = ["donor", "volunteer", "organizer", "auditor"];
 const snapshotContext = (scope: string, id: string) => `studio-snapshot:${scope}:${id}`;
 const iso = (value: Date | string | null) => value === null ? null : new Date(value).toISOString();
 const amount = (value: number | string) => { const result = Number(value); assertMinor(result); return result; };
+const studioContentHash = (snapshot: Pick<StudioSnapshot, "scope" | "asOf" | "data" | "geometry" | "geometrySource">) => sha256(canonicalJson({
+  scope: snapshot.scope, asOf: snapshot.asOf, data: snapshot.data, geometry: snapshot.geometry,
+  ...(snapshot.geometrySource ? { geometrySource: snapshot.geometrySource } : {}),
+}));
 export const studioScope = (session: Session, membershipVersion: number) => sha256(canonicalJson({ tenant: session.tenantId, project: session.projectId, actor: session.actorId, role: session.role, membershipVersion, semanticVersion: STUDIO_SEMANTIC_VERSION }));
 
 interface PackageSource { id: string; version: number; budget_minor: string; data: PackageView; }
@@ -109,6 +116,10 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       WHERE p.tenant_id=$1 AND p.project_id=$2 AND p.principal_paid_at IS NOT NULL AND p.principal_returned_at IS NULL GROUP BY l.package_id`, params, tx);
     const rounds = await query<{ id: string; package_id: string; package_version: number; state: string; recovery_ends_at: Date }>(
       "SELECT id,package_id,package_version,state,recovery_ends_at FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 ORDER BY collection_started_at DESC", params, tx);
+    const plan = await publishedPlan(session, tx);
+    const photoReviews = plan ? await alignmentViews(session, tx, true) : [];
+    const workReviews = plan ? await signoffViews(session, tx, true) : [];
+    const readiness = plan ? packageReadiness(plan.payload, plan.view.state === "current", photoReviews, workReviews, []) : [];
     const packageRows: PackageRow[] = packages.map(pkg => {
       const conditional = receipts.filter(row => row.purpose === "conditional_pledge" && row.data.packageId === pkg.id).map(row => row.data);
       const total = fundingTotals(conditional, amount(pkg.budget_minor), project.mode);
@@ -116,6 +127,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       const round = rounds.find(row => row.package_id === pkg.id && row.package_version === pkg.version);
       const currentReviews = reviews.filter(row => row.package_id === pkg.id && row.decision === "approved");
       const physicallyAccepted = work.filter(row => row.data.state === "accepted" && row.data.packageIds.includes(pkg.id) && ["photo", "signoff"].includes(row.data.kind)).length;
+      const reviewedWork = readiness.find(item => item.packageId === pkg.id);
       // A complete collection does not imply a funded round or permission to spend.
       const allocatable = total.shortfallMinor === 0 && (project.mode === "sample" || round?.state === "funded");
       return { id: pkg.id, packageId: pkg.id, title: pkg.data.title, shortTitle: pkg.data.shortTitle,
@@ -124,9 +136,10 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
         allocationReservedMinor: allocated, availableAllocationMinor: allocatable ? Math.max(0, total.fundingEligibleMinor - allocated) : 0,
         approvedExpenseMinor: currentReviews.reduce((sum, row) => sum + amount(row.approved_minor), 0),
         paidExpenseMinor: amount(delivered.find(row => row.package_id === pkg.id)?.paid ?? 0),
-        reviewedItemCount: physicallyAccepted, requiredItemCount: pkg.data.evidenceRequired, reviewedExpenseLineCount: currentReviews.length,
-        fundingState: round?.state ?? (total.shortfallMinor === 0 ? "collected" : pkg.data.fundingState), workState: pkg.data.workState,
-        geometryRef: pkg.id, provenance: project.mode };
+        reviewedItemCount: reviewedWork?.acceptedCount ?? physicallyAccepted, requiredItemCount: reviewedWork?.requiredCount ?? pkg.data.evidenceRequired, reviewedExpenseLineCount: currentReviews.length,
+        fundingState: round?.state ?? (total.shortfallMinor === 0 ? "collected" : pkg.data.fundingState),
+        workState: reviewedWork ? plan?.view.state !== "current" ? "plan_review_required" : !reviewedWork.prerequisitesMet ? "prerequisites_needed" : reviewedWork.accepted ? reviewedWork.provenance === "sample" ? "sample_review_complete" : "accepted_within_scope" : "evidence_needed" : pkg.data.workState,
+        geometryRef: plan ? `${pkg.id}:${plan.view.contentHash}:${plan.view.state}` : pkg.id, provenance: project.mode };
     });
     const visibleReceipts = receipts.filter(row => broad || (session.role === "donor" && row.actor_id === session.actorId));
     const settlementRows: SettlementRow[] = visibleReceipts.map(({ data: r, purpose }) => ({
@@ -157,10 +170,26 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
         if (!packages.some(pkg => pkg.id === packageId)) continue;
         evidenceRows.push({ id: `work:${item.id}:${packageId}`, packageId, evidenceId: item.id,
           title: item.provenance === "sample" || session.role === "organizer" ? item.title : `${item.kind === "photo" ? "Project photograph" : item.kind === "signoff" ? "Qualified signoff" : "Project evidence"} · ${item.state.replaceAll("_", " ")}`,
-          sourceClass: item.kind, reviewState: item.state, itemCount: 1, reviewedAt: item.reviewedAt,
+          sourceClass: item.kind, reviewState: plan ? "earlier_reference" : item.state, itemCount: 1, reviewedAt: item.reviewedAt,
           sourceAvailable: false, documentId: null, claimId: null, provenance: item.provenance,
-          reviewScope: item.kind === "signoff" ? "Only the recorded signoff scope, if accepted." : item.kind === "quote" ? "Proposed cost; no purchase is established." : "Only the recorded evidence decision; no automatic safety or completion claim.", amountMinor: null });
+          reviewScope: plan ? "Earlier project reference. It does not satisfy the reviewed plan's current physical-evidence requirements." : item.kind === "signoff" ? "Only the recorded signoff scope, if accepted." : item.kind === "quote" ? "Proposed cost; no purchase is established." : "Only the recorded evidence decision; no automatic safety or completion claim.", amountMinor: null });
       }
+    }
+    for (const image of photoReviews) {
+      if (!broad && image.state !== "reviewed") continue;
+      evidenceRows.push({ id: `planning-photo:${image.id}`, packageId: image.packageId, evidenceId: image.id,
+        title: image.sourceClass === "sample_illustration" ? "Sample image association" : "Three-landmark image association",
+        sourceClass: "photo_association", reviewState: image.state, itemCount: 1, reviewedAt: image.reviewedAt,
+        sourceAvailable: false, documentId: null, claimId: null, provenance: image.sourceClass === "sample_illustration" ? "sample" : "reviewer_attested",
+        reviewScope: "A reviewed illustration of the relationship between an image and a plan. It does not certify location, installation, completion or safety. Shared renditions are permission-checked in the planning desk.", amountMinor: null });
+    }
+    for (const decision of workReviews) {
+      if (!broad && !decision.current) continue;
+      evidenceRows.push({ id: `planning-signoff:${decision.id}`, packageId: decision.packageId, evidenceId: decision.id,
+        title: `${decision.provenance === "sample" ? "Sample review" : "Scoped review"} · ${decision.scope.replaceAll("_", " ")}`,
+        sourceClass: "qualified_signoff", reviewState: decision.current ? decision.decision : "no_longer_current", itemCount: 1,
+        reviewedAt: decision.recordedAt, sourceAvailable: false, documentId: null, claimId: null, provenance: decision.provenance,
+        reviewScope: `Only the recorded ${decision.scope.replaceAll("_", " ")} scope and exact plan version. Credentials, source permission and later decisions are checked at this cutoff. ${decision.provenance === "sample" ? "This fictional exercise establishes no physical outcome." : "Other work requirements, funding and spending approval remain separate."}`, amountMinor: null });
     }
     const claimGroups = new Map<string, ReviewSource[]>();
     for (const row of reviews) {
@@ -178,6 +207,12 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
         amountMinor: lines.reduce((sum, line) => sum + amount(line.approved_minor), 0) });
     }
     const exceptionRows: ExceptionRow[] = [];
+    if (plan && plan.view.state !== "current") for (const pkg of packages) exceptionRows.push({ id: `planning-source:${pkg.id}`, exceptionId: `planning-source:${pkg.id}`, packageId: pkg.id,
+      operationId: null, category: "plan_review", severity: "blocked", status: plan.view.state, title: "The plan needs a current review",
+      detail: "A plan withdrawal or changed source prevents its geometry and physical reviews from counting as current. Recheck the plan in the planning desk.", affectedMinor: 0, observedAt: null, ageMinutes: null, provenance: plan.view.provenance });
+    for (const pkg of readiness.filter(item => !item.prerequisitesMet)) exceptionRows.push({ id: `planning-prerequisite:${pkg.packageId}`, exceptionId: `planning-prerequisite:${pkg.packageId}`, packageId: pkg.packageId,
+      operationId: null, category: "work_prerequisite", severity: "blocked", status: "prerequisites_needed", title: "A work prerequisite is unresolved",
+      detail: "The reviewed plan requires accepted predecessor work or qualified safety reviews. A purchase, collection or photograph cannot satisfy that review.", affectedMinor: 0, observedAt: null, ageMinutes: null, provenance: pkg.provenance });
     for (const pkg of packageRows) {
       if (pkg.collectedMinor > 0 && pkg.shortfallMinor > 0) exceptionRows.push({ id: `shortfall:${pkg.id}`, exceptionId: `shortfall:${pkg.id}`, packageId: pkg.id,
         operationId: null, category: "collection_shortfall", severity: "blocked", status: pkg.fundingState,
@@ -210,12 +245,14 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
     }
     const data: StudioData = { packages: packageRows, settlements: settlementRows, allocations: allocationRows, evidence: evidenceRows, exceptions: exceptionRows };
     assertStudioProjection(data);
-    const geometry = Object.fromEntries(packages.map(pkg => [pkg.id, safeZone(pkg)]));
+    const geometry = plan ? plan.view.state === "current" ? Object.fromEntries(plan.view.zones.map(zone => [`${zone.packageId}:${plan.view.contentHash}:${plan.view.state}`, { packageId: zone.packageId, points: zone.polygon, label: polygonLabel(zone.polygon) }])) : {} : Object.fromEntries(packages.map(pkg => [pkg.id, safeZone(pkg)]));
+    const geometrySource: StudioSnapshot["geometrySource"] = plan ? { revision: plan.view.revision, planHash: plan.view.contentHash, geometryHash: plan.view.geometryHash,
+      state: plan.view.state, provenance: plan.view.provenance, pageAspectRatio: plan.view.pageAspectRatio, outline: plan.view.state === "current" ? plan.view.outline : [], scaleLabel: plan.view.scaleLabel } : undefined;
     const asOf = project.as_of.toISOString();
-    const contentHash = sha256(canonicalJson({ scope, asOf, data, geometry }));
+    const contentHash = studioContentHash({ scope, asOf, data, geometry, geometrySource });
     return { semanticVersion: STUDIO_SEMANTIC_VERSION, scope, datasetHandle: "", role: session.role, mode: project.mode, projectTitle: project.title,
-      projectionVersion: project.projection_version, eventCursor: Number(project.cursor), asOf, contentHash, data, geometry,
-      notices: [SOURCE_NOTICE, FUNDING_NOTICE, session.role === "donor" ? "Payment and allocation details include only your contributions." : session.role === "volunteer" ? "Original expense sources include only your claims." : session.role === "auditor" ? "The Auditor receives redacted financial facts. Private originals and payment destinations are excluded." : "Private source links recheck your current role when opened."] };
+      projectionVersion: project.projection_version, eventCursor: Number(project.cursor), asOf, contentHash, data, geometry, ...(geometrySource ? { geometrySource } : {}),
+      notices: [plan ? `Plan revision ${plan.view.revision} · ${plan.view.state} · ${plan.view.provenance === "sample" ? "fictional sample" : "reviewed source geometry"}. Physical acceptance counts only current required reviews; provider availability and expense approval remain separate.` : SOURCE_NOTICE, FUNDING_NOTICE, session.role === "donor" ? "Payment and allocation details include only your contributions." : session.role === "volunteer" ? "Original expense sources include only your claims." : session.role === "auditor" ? "The Auditor receives redacted financial facts. Private originals and payment destinations are excluded." : "Private source links recheck your current role when opened."] };
   });
 }
 
@@ -244,7 +281,7 @@ export async function requireStudioDataset(session: Session, id: string, tx: Sql
   const snapshot = openPrivate<StudioSnapshot>(row.encrypted_data, snapshotContext(scope, id));
   assertStudioProjection(snapshot.data);
   if (snapshot.scope !== scope || snapshot.role !== session.role || snapshot.datasetHandle !== id || snapshot.contentHash !== row.content_hash
-    || sha256(canonicalJson({ scope, asOf: snapshot.asOf, data: snapshot.data, geometry: snapshot.geometry })) !== row.content_hash)
+    || studioContentHash(snapshot) !== row.content_hash)
     throw new DomainError("STUDIO_DATASET_CHANGED", "The stored report could not be verified.", 409);
   return snapshot;
 }

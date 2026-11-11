@@ -46,6 +46,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --env-file=.env --import tsx scripts/test-isolated.ts",
     "studio:qa": "node --env-file=.env --import tsx scripts/studio-qa.ts",
+    "planning:qa": "node --import tsx scripts/planning-qa.ts",
     "db:seed": "node --env-file=.env --import tsx scripts/seed.ts"
   }
 }

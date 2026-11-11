@@ -1,0 +1,83 @@
+{
+  "observedAt": "2026-11-11T07:31:49.581037+00:00",
+  "sourceBaseCommit": "de93e3272617ce2083322fd2d3ce3e9ccf0a9248",
+  "sourceFingerprint": "45035efd3602fde44ef37179ccff473e1effbb91871136985de05bf117b12a14",
+  "fingerprintMethod": "SHA-256 of sorted JSON path/sha256 pairs for application, component, library, public, script, test, vendor and explicit config files; generated next-env.d.ts and tsconfig.json use their unchanged HEAD contents.",
+  "databaseSchema": 11,
+  "scope": "Source qualification in an isolated local Planning QA database; no original project writes or financial provider calls.",
+  "regression": {
+    "tests": 267,
+    "suites": 40,
+    "passed": 267,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 70668.384708,
+    "logSha256": "d39a52e96a904d4622879b1a5b140a2063fd2da8e15f04438c7ea8ddf71d8317"
+  },
+  "build": {
+    "result": "passed",
+    "framework": "Next.js 16.4.6",
+    "typescript": "passed",
+    "outputDirectory": ".next-planning-build",
+    "logSha256": "ff8788009c5f06df7d1a704d7b82e9ed6cd3ba3cc94450bec80684129109201f"
+  },
+  "initialRegression": {
+    "result": "failed",
+    "cause": "The isolated QA launcher intentionally disabled financial configuration needed by controlled fixtures, and the schema expectation was still 10. The test child now supplies synthetic credentials and expects schema 11. No real financial credentials were restored.",
+    "retainedLogSha256": "7cbb8cf4e2e7bc5c9c779226fb1906f7c3fab4374520dcd037cbf37382561dea"
+  },
+  "actualModelQualification": {
+    "state": "pending_new_durable_attempt",
+    "originalAttempt": {
+      "state": "failed_no_usable_response",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "durationMs": 240021,
+      "inputHash": "32e52f607b800ef37e8369c7b6e864a6a6db18fec9d65a3b2b287fb03e760ca1",
+      "code": "OPENAI_HTTP_UNKNOWN",
+      "safeDiagnostic": "Request timed out.",
+      "httpStatus": null,
+      "responseIdentityReceived": false,
+      "tokenCountsReceived": false,
+      "providerProcessingOutcome": "indeterminate",
+      "preserved": true
+    },
+    "newExecutionRevision": "durable-plan-v2",
+    "background": true,
+    "longTermStore": false,
+    "transportTimeoutMs": 45000,
+    "automaticSubmissionRetries": 0,
+    "applicationRecoveryWindowMs": 1200000,
+    "freshNativeAttemptsAfterChange": 0
+  },
+  "observedNativeChecks": [
+    "Fresh Sample organizer workspace created",
+    "Four labelled fictional sources imported",
+    "Original sketch preview opened",
+    "Source hashes and permission labels visible",
+    "Updated temporary-retention consent visible",
+    "Original timeout shown as no result returned with indeterminate wording"
+  ],
+  "pendingNativeChecks": [
+    "One explicitly consented durable extraction",
+    "Geometry editing, Undo/Redo, immutable save/review/share",
+    "Prerequisite closure and restricted-funding scenario",
+    "Cropped/masked three-anchor alignment and sharing",
+    "Reviewer scope, role and revocation restrictions",
+    "Studio geometry/evidence integration",
+    "Responsive keyboard/mobile interaction",
+    "Hosted schema and scheduler qualification"
+  ],
+  "physicalQualification": {
+    "actualIndependentCredentialsVerified": false,
+    "actualPhysicalInspectionPerformed": false,
+    "actualWorkAccepted": false
+  },
+  "limitations": [
+    "Fixture transports do not establish actual provider outcomes.",
+    "Hand-authored sample assets describe no actual supplier, room, credential or installation.",
+    "Three-anchor interpolation is illustrative and not physical accuracy or certification.",
+    "Private project-member plan sharing is not a public Proof Page.",
+    "No original financial lifecycle, repayment, public publication or deployment occurred in this unit."
+  ]
+}

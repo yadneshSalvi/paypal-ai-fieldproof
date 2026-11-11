@@ -34,6 +34,11 @@ export function documentContext(row: Pick<DocumentRow, "tenant_id" | "project_id
   return `document:${row.tenant_id}:${row.project_id}:${row.id}`;
 }
 export function documentPrivate(row: DocumentRow): DocumentPrivateData { return openPrivate(row.encrypted_data, documentContext(row)); }
+async function assertSourcePermission(row: DocumentRow): Promise<void> {
+  if (row.purpose === "receipt") return;
+  const [control] = await query<{ permission: string }>("SELECT permission FROM fp_plan_source_controls WHERE document_id=$1 AND tenant_id=$2 AND project_id=$3", [row.id, row.tenant_id, row.project_id]);
+  if (control?.permission === "withdrawn") throw new DomainError("SOURCE_PERMISSION_WITHDRAWN", "Permission to use this planning source has been withdrawn.", 404);
+}
 export async function requireDocument(session: Session, id: string, tx: SqlConnection = database()): Promise<DocumentRow> {
   await requireCurrentRole(session, session.role, tx);
   const [row] = await query<DocumentRow>("SELECT * FROM fp_documents WHERE id=$1 AND tenant_id=$2 AND project_id=$3", [id, session.tenantId, session.projectId], tx);
@@ -88,6 +93,7 @@ export async function createUploadDocument(session: Session, input: z.infer<type
 
 export async function documentUploadGrant(session: Session, id: string, pathname: string) {
   const row = await requireDocument(session, id);
+  await assertSourcePermission(row);
   await assertUploader(session, row.purpose);
   if (row.actor_id !== session.actorId || row.provenance !== "user_upload" || row.pathname !== pathname || row.state !== "awaiting_upload")
     throw new DomainError("UPLOAD_SCOPE", "This upload token does not match your original draft.", 403);
@@ -145,17 +151,21 @@ export async function validateStoredDocument(...args: Parameters<typeof performD
 }
 export async function documentPreview(session: Session, id: string, pageNumber: number, storage: DocumentStorage = privateDocumentStorage): Promise<Buffer> {
   const row = await requireDocument(session, id);
+  await assertSourcePermission(row);
   const page = documentPrivate(row).pages.find(page => page.number === pageNumber);
   if (row.state !== "ready" || !page) throw new DomainError("PREVIEW_NOT_READY", "The private preview is not ready yet.", 404);
   const result = await storage.read(page.pathname, 20 * 1024 * 1024);
   if (result.contentType !== "image/png" || createHash("sha256").update(result.bytes).digest("hex") !== page.sha256) throw new DomainError("PREVIEW_INVALID", "This preview could not be verified.", 409);
+  await assertSourcePermission(await requireDocument(session, id));
   return result.bytes;
 }
 export async function documentOriginal(session: Session, id: string, storage: DocumentStorage = privateDocumentStorage) {
   const row = await requireDocument(session, id);
+  await assertSourcePermission(row);
   if (row.state !== "ready" || !row.sha256) throw new DomainError("DOCUMENT_NOT_READY", "Only a validated original can be downloaded.", 409);
   const original = await storage.read(row.pathname);
   if (original.contentType !== row.content_type || createHash("sha256").update(original.bytes).digest("hex") !== row.sha256) throw new DomainError("SOURCE_CHANGED", "This original no longer matches its validated version.", 409);
+  await assertSourcePermission(await requireDocument(session, id));
   return { bytes: original.bytes, filename: documentPrivate(row).filename, contentType: row.content_type };
 }
 export async function importSampleReceipt(session: Session, intentId: string, variant: "original" | "rotated" | "cropped" = "original", storage: DocumentStorage = privateDocumentStorage): Promise<DocumentView> {

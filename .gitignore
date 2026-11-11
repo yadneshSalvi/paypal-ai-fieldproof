@@ -11,6 +11,8 @@
 # Dependencies and generated artifacts
 node_modules/
 .next/
+.next-planning-qa/
+.next-planning-build/
 .vercel/
 out/
 dist/

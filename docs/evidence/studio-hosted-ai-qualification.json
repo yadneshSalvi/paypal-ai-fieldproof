@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-11-11T05:30:05.538Z",
+  "sourceCommit": "de93e32",
+  "deploymentId": "dpl_EBqvyKJbQ2PK3XHBFVHFe8RPjxix",
+  "role": "donor",
+  "state": "succeeded",
+  "model": "gpt-6.1-sol",
+  "stats": {
+    "modelTurns": 4,
+    "clientTools": 1,
+    "inputTokens": 197733,
+    "serverTools": 2,
+    "outputTokens": 1037
+  },
+  "result": "passed",
+  "limitations": [
+    "Sample records only. No payment or physical completion is established by this read-only explanation."
+  ],
+  "providerResponseCount": 4,
+  "providerResponseHashes": [
+    "b00b83db5c3728c43e4b0229a5c20aa1593bf4f1f93a27bec47b2035ae41c53e",
+    "16df052076dbf2bee0d296a0c280503b18ecbfa6fabcc59a62fe8312bb852c35",
+    "4ff07c465c0789f7bb1f909f7ee1ea49141210505b2848dbe2b9da4b03bddfc2",
+    "20423c9303410b451a4ce0de460bb0fa44075e7409acd9408ccf0b78191b4ad8"
+  ],
+  "serverTools": [
+    {
+      "tool": "fieldproof_snapshot",
+      "status": "succeeded",
+      "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "outputHash": "68027aa886823b33051b8defb0d542deed6621c2c5de09910ce6d92fe6be8759"
+    },
+    {
+      "tool": "fieldproof_evidence",
+      "status": "succeeded",
+      "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "outputHash": "dd47fe7642cb84246ca3e9c2a16ecf02453fbb0e83429ab6d4d387ad8925038f"
+    }
+  ],
+  "reportEdits": 0,
+  "nativeObservedAnswer": {
+    "collectedMinor": 212500,
+    "remainingMinor": 628500,
+    "committedMinor": 491500,
+    "budgetMinor": 841000,
+    "acceptedWorkRequirements": 0,
+    "totalWorkRequirements": 18,
+    "sampleDisclosure": true,
+    "physicalCompletionSeparate": true
+  }
+}
