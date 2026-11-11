@@ -1,0 +1,11 @@
+# Expired demonstration workspace access
+
+Demo sessions last twelve hours. Expiry does not delete the project or renew any funding, spending, recipient, collection or payout authority. A new browser session opens a separate sample project; it cannot take over the old participant merely by supplying an ID or expired cookie.
+
+The local `scripts/recover-expired-session.ts` command is an administrative recovery tool for the repository/database owner. It requires privileged access to the hosted database, `APP_URL=https://paypal-ai-fieldproof.vercel.app`, and the explicit operator environment flag `FIELDPROOF_OPERATOR_RECOVERY=true`. There is no public recovery endpoint. Verify a readable database backup and the intended original participant before running it.
+
+Pass the original expired session ID, a new intent filename inside an ignored private directory with mode0700, and a concrete audit reason. The command saves a mode0600 intent before committing; rerunning with that same file reuses the same session and secret after response loss. Credentials never appear in standard output. Install the retained credential only in the authorized operator's browser on the stable Fieldproof origin, keeping the normal HttpOnly, Secure and SameSite=Lax protections.
+
+The tool creates a separate twelve-hour session for exactly the original tenant, project, participant and role. Current active membership and its reviewed version must still grant that role. It refuses revoked access, an active original session, changed scope, an old preparation, a different replay or a duplicate active participant session. The old session and expiry remain unchanged. An audit event records the source and recovered session identities and the operator's reason; project projection advances once.
+
+The six isolated PostgreSQL tests cover retained original records and expired approval, exact concurrent replay, changed credentials, revoked source/membership, actor/project/role substitution, membership changes, duplicate active sessions, revoked recovered access and the fixed lifetime. This command is not a general public sign-in system or a way to extend payment approvals. Recovered sessions still need the application's normal current-role, fresh-review, balance, recipient and financial-authority checks for each subsequent action.
