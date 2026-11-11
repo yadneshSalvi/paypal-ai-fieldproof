@@ -15,6 +15,8 @@ interface Grant {
 }
 export interface RecoveryBinding { grantId: string; expectedTokenHash: string; originalSessionTokenHash: string; }
 export interface WorkspaceRecoveryContext { bundle: WorkspaceTransfer; bindings: RecoveryBinding[]; }
+// Preserve the local form's Origin in WebKit, while omitting Referer on the hosted redirect.
+export const RECOVERY_REFERRER_POLICY = "same-origin";
 const unavailable = () => new DomainError("HANDOFF_RECOVERY_UNAVAILABLE", "This browser cannot recover the original continuation. The existing workspace and its expiry have not changed.", 409);
 const sourceRows = (bundle: WorkspaceTransfer, table: string) => bundle.tables.find(value => value.name === table)?.rows ?? [];
 
@@ -96,6 +98,16 @@ export function originalWorkspaceCookie(header: string | null): string {
   const token = values[0].slice("fieldproof_session=".length);
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw unavailable();
   return token;
+}
+/** A fixed, bounded metadata allowlist. Never include cookies, body, query or a capability. */
+export function recoveryRequestDiagnostics(request: Request) {
+  const url = new URL(request.url);
+  const names = ["host", "origin", "content-type", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest"] as const;
+  return {
+    method: ["GET", "POST"].includes(request.method) ? request.method : "other",
+    path: url.pathname === "/continue/recover" ? "/continue/recover" : "other",
+    headers: Object.fromEntries(names.map(name => [name, request.headers.get(name)?.replace(/[\u0000-\u001f\u007f]/g, "?").slice(0, 160) ?? null])),
+  };
 }
 export async function validateRecoveryRequest(request: Request, nonce: string): Promise<string> {
   const url = new URL(request.url);

@@ -8,14 +8,14 @@ import { DomainError } from "../lib/domain/money";
 import { tokenHash } from "../lib/server/auth";
 import { LOCAL_ORIGIN } from "../lib/server/workspace-handoff";
 import { assertTransferConfiguration, openTransfer, type TransferEnvelope } from "../lib/server/workspace-transfer";
-import { originalWorkspaceCookie, prepareWorkspaceRecovery, reissueImportedWorkspaceHandoff, validateRecoveryRequest } from "../lib/server/workspace-recovery";
+import { originalWorkspaceCookie, prepareWorkspaceRecovery, recoveryRequestDiagnostics, RECOVERY_REFERRER_POLICY, reissueImportedWorkspaceHandoff, validateRecoveryRequest } from "../lib/server/workspace-recovery";
 
 const args = process.argv.slice(2);
 const option = (name: string) => { const index = args.indexOf(name); return index < 0 ? undefined : args[index + 1]; };
 let source: PostgresDatabase | undefined, target: PostgresDatabase | undefined;
 const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 const headers = {
-  "Cache-Control": "private, no-store, max-age=0", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff",
+  "Cache-Control": "private, no-store, max-age=0", "Referrer-Policy": RECOVERY_REFERRER_POLICY, "X-Content-Type-Options": "nosniff",
   "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https://paypal-ai-fieldproof.vercel.app; base-uri 'none'; frame-ancestors 'none'",
 };
 const page = (content: string) => `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Continue your original workspace · Fieldproof</title><style>body{margin:0;background:#f4f1ea;color:#1e3a5f;font:17px/1.6 system-ui,sans-serif}main{max-width:620px;margin:10vh auto;padding:32px}small{letter-spacing:.12em;text-transform:uppercase;font-size:12px}h1{font-size:40px;line-height:1.15}button,a{display:inline-block;border:0;background:#1e3a5f;color:white;padding:16px 24px;border-radius:8px;font:inherit;cursor:pointer;text-decoration:none}button:focus-visible,a:focus-visible{outline:3px solid #b76700;outline-offset:4px}.note{border-top:1px solid #c7c6be;padding-top:20px;font-size:14px}</style><main><small>Fieldproof / private workspace continuation</small>${content}</main></html>`;
@@ -40,6 +40,7 @@ try {
   const nonces = new Map<string, { cookieHash: string; expiresAt: number }>();
   let running = false, finished = false;
   const server = createServer({ maxHeaderSize: 8192, requestTimeout: 30_000 }, async (req, res) => {
+    let requestMetadata: ReturnType<typeof recoveryRequestDiagnostics> | undefined;
     const reply = (status: number, content: string) => { res.writeHead(status, { ...headers, "Content-Type": "text/html; charset=utf-8", ...(status === 503 ? { "Retry-After": "30" } : {}) }); res.end(page(content)); };
     try {
       if (!["127.0.0.1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "") || req.headers.host !== "localhost:4102" || req.headers.forwarded || req.headers["x-forwarded-host"] || req.headers["x-forwarded-proto"]) throw new DomainError("RECOVERY_LOOPBACK_REQUIRED", "Open this page at http://localhost:4102/continue in the original browser.", 403);
@@ -60,7 +61,9 @@ try {
       if (!challenge || challenge.expiresAt <= Date.now()) throw new DomainError("RECOVERY_CHALLENGE_EXPIRED", "Refresh this local page, then use its Continue button.", 409);
       const requestHeaders = new Headers();
       for (const [name, value] of Object.entries(req.headers)) if (value) requestHeaders.set(name, Array.isArray(value) ? value.join(",") : value);
-      const cookie = await validateRecoveryRequest(new Request(`${LOCAL_ORIGIN}/continue/recover`, { method: "POST", headers: requestHeaders, body }), nonce);
+      const request = new Request(`${LOCAL_ORIGIN}/continue/recover`, { method: "POST", headers: requestHeaders, body });
+      requestMetadata = recoveryRequestDiagnostics(request);
+      const cookie = await validateRecoveryRequest(request, nonce);
       if (tokenHash(cookie) !== challenge.cookieHash) throw new DomainError("HANDOFF_RECOVERY_UNAVAILABLE", "The original browser session changed. Recovery is paused.", 403);
       if (running) return reply(409, "<h1>Your continuation is opening.</h1><p>Allow the original request to finish.</p>");
       running = true;
@@ -74,7 +77,7 @@ try {
     } catch (error) {
       const problem = error instanceof DomainError ? error : new DomainError("RECOVERY_UNAVAILABLE", "The continuation could not be recovered. The original data and expiry remain unchanged; ask the operator to check the held destination.", 503);
       reply(problem.status, `<h1>Your records are still safe.</h1><p>${escape(problem.message)}</p><p><a href="/continue">Check this original session</a></p><small>${escape(problem.code)}</small>`);
-      console.error(JSON.stringify({ bridge: "request_refused", code: problem.code, providerCalls: 0 }));
+      console.error(JSON.stringify({ bridge: "request_refused", code: problem.code, providerCalls: 0, ...(problem.code === "HANDOFF_RECOVERY_ORIGIN_DENIED" ? { requestMetadata } : {}) }));
     }
   });
   await new Promise<void>((resolveListen, reject) => { server.once("error", reject); server.listen(4102, "127.0.0.1", () => { server.off("error", reject); resolveListen(); }); });

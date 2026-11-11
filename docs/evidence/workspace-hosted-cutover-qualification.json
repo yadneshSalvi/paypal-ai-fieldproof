@@ -1,0 +1,395 @@
+{
+  "observedAt": "2026-11-11T01:52:33.793Z",
+  "method": "Read-only repeatable-read exports from the frozen local source and held hosted destination; no schema initialization or provider requests.",
+  "provenance": "live_sandbox",
+  "importBundleHash": "45e125ddda5fa3f1bd045f9979ff6ca96ce75903336b1e5846dbbf0ca8bbcd69",
+  "importedAt": "2026-11-11T01:28:46.708Z",
+  "insertedRows": 276,
+  "configurationMatches": true,
+  "sourceUnchanged": true,
+  "originalRowsPreserved": [
+    {
+      "table": "fp_tenants",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_projects",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_packages",
+      "originalRows": 6,
+      "hostedRows": 6,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_sessions",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_memberships",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_collection_rounds",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_obligations",
+      "originalRows": 9,
+      "hostedRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_conditional_consents",
+      "originalRows": 8,
+      "hostedRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_collection_items",
+      "originalRows": 8,
+      "hostedRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_approval_records",
+      "originalRows": 9,
+      "hostedRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payment_commands",
+      "originalRows": 9,
+      "hostedRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_provider_orders",
+      "originalRows": 8,
+      "hostedRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "paycore_operations",
+      "originalRows": 9,
+      "hostedRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "paycore_resource_locks",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "paycore_attempts",
+      "originalRows": 9,
+      "hostedRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_settlement_receipts",
+      "originalRows": 8,
+      "hostedRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_economic_aliases",
+      "originalRows": 8,
+      "hostedRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_journal",
+      "originalRows": 16,
+      "hostedRows": 16,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_evidence",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_events",
+      "originalRows": 53,
+      "hostedRows": 55,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_outbox",
+      "originalRows": 61,
+      "hostedRows": 63,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_identity_states",
+      "originalRows": 2,
+      "hostedRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_recipient_accounts",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_provider_operations",
+      "originalRows": 17,
+      "hostedRows": 17,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_recovery_invoices",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_invoice_payment_observations",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_refunds",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_documents",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_ai_runs",
+      "originalRows": 4,
+      "hostedRows": 4,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_ai_attempts",
+      "originalRows": 5,
+      "hostedRows": 5,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_receipt_groups",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_receipt_group_documents",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_receipt_group_lines",
+      "originalRows": 7,
+      "hostedRows": 7,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_claims",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_claim_revisions",
+      "originalRows": 3,
+      "hostedRows": 3,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_claim_line_reviews",
+      "originalRows": 7,
+      "hostedRows": 7,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_receipt_comparison_decisions",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payable_reviews",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_balance_observations",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payables",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payable_lines",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payable_approval_intents",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_receipt_allocations",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_merchant_journal",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_payout_observations",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_allocation_revisions",
+      "originalRows": 0,
+      "hostedRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "fp_workspace_handoffs",
+      "originalRows": 1,
+      "hostedRows": 1,
+      "originalRowsPreserved": true
+    }
+  ],
+  "sourceExecution": {
+    "held": true,
+    "version": 2,
+    "activeRequests": 0,
+    "activeWorkerLeases": {},
+    "quiescent": true
+  },
+  "hostedExecution": {
+    "held": true,
+    "version": 2,
+    "activeRequests": 0,
+    "activeWorkerLeases": {},
+    "quiescent": true
+  },
+  "handoff": {
+    "originalGrantIdHash": "3f6d6e178ba3e7c35fea89fb4de2eecbd9f9ec19b82144a94d7b3b79595a41b6",
+    "sameGrant": true,
+    "reissues": 1,
+    "completions": 1,
+    "consumed": true,
+    "revoked": false,
+    "originalSessionRetained": true,
+    "originalCookieRotatedAtHostedRedemption": true,
+    "grantExpiry": "2026-11-11T02:24:02.563Z",
+    "sessionExpiry": "2026-11-11T08:26:17.602Z",
+    "expiriesUnchanged": true
+  },
+  "collection": {
+    "approvedSlots": 8,
+    "approvedAmountsMinor": [
+      20000,
+      20000,
+      17500,
+      15000,
+      10000,
+      5000,
+      5000,
+      3500
+    ],
+    "approvedTotalMinor": 96000,
+    "controlledActors": 1,
+    "independentlyRecruitedDonors": 0,
+    "conditionalReceipts": 7,
+    "conditionalCreditedMinor": 92500,
+    "separateTestCreditedMinor": 100,
+    "finalSlotMinor": 3500,
+    "finalSlotHasOperation": false,
+    "originalWalletCiphertextsPreserved": true,
+    "originalProviderIdentitiesPreserved": true,
+    "startedAt": "2026-11-10T23:21:52.633Z",
+    "recoveryEndsAt": "2026-11-12T23:21:52.633Z",
+    "exact48HourWindow": true,
+    "payables": 0,
+    "receiptAllocations": 0,
+    "journalRows": 16,
+    "paymentCommands": 9,
+    "paymentOperations": 9
+  },
+  "sourceReview": {
+    "version": 3,
+    "approvedMinor": 7800,
+    "heldMinor": 840,
+    "lineCount": 7,
+    "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d",
+    "privateCiphertextAuthenticated": true,
+    "reviewQualification": "Automated controlled sample; no physical purchase or independent human review."
+  },
+  "browserObservation": {
+    "source": "Root operator's actual IAB observation",
+    "sameOriginalHostedWorkspaceOpened": true,
+    "reviewedClaimVersion3Displayed": true,
+    "originalCookieProofRequired": true,
+    "firstNavigationOriginNullRejected": true,
+    "recoveryPageReferrerPolicy": "same-origin",
+    "exactOriginValidationRetained": true,
+    "privateSourcePreviewVerification": "Passed in the deployed application by the root operator using the original hosted session.",
+    "privateSourcePreviewDimensions": {
+      "width": 1385,
+      "height": 1800
+    },
+    "walletsDecryptedByHostedRuntime": 8,
+    "walletAmountsMinorByHostedRuntime": 96000,
+    "collectionShownMinor": 92500,
+    "remainingShownMinor": 3500,
+    "controlledParticipantDisclosureVisible": true,
+    "separateTestExcludedFromCollection": true,
+    "reviewedSourceMinor": 8640,
+    "reviewedClaimMinor": 7800,
+    "heldClaimMinor": 840,
+    "confirmedRepaymentMinor": 0,
+    "sameDeadlineVisible": true,
+    "sourceAndWalletReadsUsePreservedHostedAuthAndBlobConfiguration": true
+  },
+  "sourceWrites": 0,
+  "hostedWritesByThisCheck": 0,
+  "providerCalls": 0,
+  "limitations": [
+    "Existing provider observations were compared; this check does not claim a fresh PayPal balance or capture read.",
+    "Only the original controlled workspace is compared here; existing hosted history has separate backup and import-conflict evidence.",
+    "Both execution holds were still active at this cutoff; sole hosted-writer resumption is a later operator step."
+  ]
+}

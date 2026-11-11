@@ -15,7 +15,7 @@ import { executionQuiescence } from "../lib/server/runtime-control";
 import { guardedApi, guardedProviderTransport } from "../lib/server/maintenance";
 import { runReceiptExtraction, startReceiptExtraction } from "../lib/server/receipt-extraction";
 import { commandFor, ownedPayment, paymentStore } from "../lib/server/payments";
-import { originalWorkspaceCookie, prepareWorkspaceRecovery, reissueImportedWorkspaceHandoff, validateRecoveryRequest } from "../lib/server/workspace-recovery";
+import { originalWorkspaceCookie, prepareWorkspaceRecovery, recoveryRequestDiagnostics, RECOVERY_REFERRER_POLICY, reissueImportedWorkspaceHandoff, validateRecoveryRequest } from "../lib/server/workspace-recovery";
 
 const originalUrl = process.env.DATABASE_URL!, sourceSchema = `fp_transfer_source_${randomUUID().replaceAll("-", "")}`, targetSchema = `fp_transfer_target_${randomUUID().replaceAll("-", "")}`;
 const admin = new PostgresDatabase(originalUrl);
@@ -77,6 +77,16 @@ async function existingHostedProject() {
 }
 const count = async (connection: PostgresDatabase, table: string) => Number((await query<{ count: string }>(`SELECT count(*) AS count FROM ${table}`, [], connection))[0].count);
 describe("original-browser continuation recovery", () => {
+  it("limits refusal diagnostics to bounded navigation metadata without private request material", () => {
+    const privateValue = randomBytes(32).toString("base64url");
+    const request = new Request(`${LOCAL_ORIGIN}/continue/recover?handoff=${privateValue}`, { method: "POST", headers: { host: "localhost:4102", origin: LOCAL_ORIGIN, cookie: `fieldproof_session=${privateValue}`, authorization: `Bearer ${privateValue}`, "content-type": "x".repeat(500), "x-private": privateValue }, body: `nonce=${privateValue}` });
+    const diagnostic = recoveryRequestDiagnostics(request);
+    assert.deepEqual(Object.keys(diagnostic.headers), ["host", "origin", "content-type", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest"]);
+    assert.equal(diagnostic.path, "/continue/recover");
+    assert.equal(diagnostic.headers["content-type"]?.length, 160);
+    assert.equal(diagnostic.headers["sec-fetch-user"], null);
+    assert.ok(!JSON.stringify(diagnostic).includes(privateValue));
+  });
   async function recoveryFixture() {
     const f = await fixture();
     await importWorkspace(target, f.bundle, transferConfiguration(), false);
@@ -86,8 +96,9 @@ describe("original-browser continuation recovery", () => {
     const token = randomBytes(32).toString("base64url"), nonce = randomBytes(32).toString("base64url");
     const headers = { host: "localhost:4102", origin: LOCAL_ORIGIN, cookie: `fieldproof_session=${token}`, "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "same-origin", "sec-fetch-mode": "navigate", "sec-fetch-dest": "document", "sec-fetch-user": "?1" };
     const request = (changes: Record<string, string> = {}, body = `nonce=${nonce}`) => new Request(`${LOCAL_ORIGIN}/continue/recover`, { method: "POST", headers: { ...headers, ...changes }, body });
+    assert.equal(RECOVERY_REFERRER_POLICY, "same-origin", "retain local navigation origin; omit cross-origin redirect referrer");
     assert.equal(await validateRecoveryRequest(request(), nonce), token);
-    for (const changes of [{ origin: "https://foreign.invalid" }, { host: "foreign.invalid" }, { "sec-fetch-site": "cross-site" }, { "sec-fetch-mode": "cors" }, { "sec-fetch-user": "" }] as Record<string, string>[])
+    for (const changes of [{ origin: "null" }, { origin: "" }, { origin: "https://foreign.invalid" }, { host: "foreign.invalid" }, { "sec-fetch-site": "cross-site" }, { "sec-fetch-mode": "cors" }, { "sec-fetch-user": "" }] as Record<string, string>[])
       await assert.rejects(validateRecoveryRequest(request(changes), nonce), { code: "HANDOFF_RECOVERY_ORIGIN_DENIED" });
     await assert.rejects(validateRecoveryRequest(request({ cookie: "" }), nonce), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
     await assert.rejects(validateRecoveryRequest(request({}, `nonce=${nonce}&actorId=override`), nonce), { code: "HANDOFF_RECOVERY_UNAVAILABLE" });
