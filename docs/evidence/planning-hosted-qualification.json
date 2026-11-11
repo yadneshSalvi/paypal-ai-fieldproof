@@ -1,0 +1,84 @@
+{
+  "checkedAt": "2026-11-11T07:58:35.678Z",
+  "deploymentId": "dpl_AqTnU9d1JRowxWp5PZvhYwXJh5c3",
+  "sourceCommit": "104ddc426c3e9c00b90c8e123b198409edd16cda",
+  "passed": true,
+  "checks": [
+    {
+      "name": "Healthy hosted runtime; planning and scheduler require authority",
+      "passed": true
+    },
+    {
+      "name": "New isolated Sample organizer uses production private storage",
+      "passed": true
+    },
+    {
+      "name": "Four fictional private sources imported once; exact replay is idempotent",
+      "passed": true
+    },
+    {
+      "name": "Private source preview works; local-only upload adapter is unavailable",
+      "passed": true
+    },
+    {
+      "name": "Unreviewed draft cannot be approved; a stale editor cannot overwrite it",
+      "passed": true
+    },
+    {
+      "name": "Separate exact Sample review and member publication preserve immutable history",
+      "passed": true
+    },
+    {
+      "name": "Covered landmark rejected; donor cannot see unreviewed rendition or originals",
+      "passed": true
+    },
+    {
+      "name": "Reviewed flattened rendition is shared with sanitized source and note fields",
+      "passed": true
+    },
+    {
+      "name": "Another tenant cannot access the saved plan or image",
+      "passed": true
+    },
+    {
+      "name": "Source withdrawal invalidates current geometry and image authority without erasing history",
+      "passed": true
+    },
+    {
+      "name": "Authenticated hosted planning cron is idle; page is served",
+      "passed": true
+    }
+  ],
+  "actualModelSubmissions": 0,
+  "actualFinancialProviderWrites": 0,
+  "actualPhysicalSignoffs": 0,
+  "publicPublication": false,
+  "originalProjectUntouched": true,
+  "limits": [
+    "Automated hosted Sample fixtures; actual local extraction and native source/image review are recorded separately.",
+    "No independent human or physical qualification is asserted."
+  ],
+  "stableUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "migration": {
+    "oldTables": 62,
+    "oldRows": 1256,
+    "newTables": 13,
+    "originalHashesUnchanged": true,
+    "providerCalls": 0
+  },
+  "nativeHostedEntry": {
+    "originalSessionRetained": true,
+    "projectMode": "live_sandbox",
+    "planningSources": 0,
+    "planningRevisions": 0,
+    "modelRequestMade": false,
+    "financialActionMade": false,
+    "page": "/planning",
+    "screenshot": "fieldproof-planning-hosted-entry.png"
+  },
+  "harnessCorrections": [
+    "Source provenance expectation corrected from sample to the implemented sample_document value.",
+    "Hidden rendition correctly returned 404; initial harness expected 403. Both failures are retained privately, and remaining checks resumed the same Sample project."
+  ],
+  "relatedActualModelEvidence": "planning-native-qualification.json"
+}
