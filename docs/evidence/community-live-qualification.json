@@ -1,0 +1,108 @@
+{
+  "sourceCommit": "44174edf357d2682832f358fccba9b5cca3b2e42",
+  "protocolHash": "21d55f32c7d2365c82602449587a9e45c4c0308a340f97aef11fb59ac84d995d",
+  "startedAt": "2026-11-11T12:11:41.042Z",
+  "model": "gpt-6.1-sol",
+  "reasoning": "max",
+  "scope": "New local Sample community project only; no PayPal credentials or physical/human review claims",
+  "runs": [
+    {
+      "id": "0a229515-7aa4-47ea-852d-26f6e5b1756e",
+      "task": "brief",
+      "model": "gpt-6.1-sol",
+      "state": "succeeded",
+      "dispatch_count": 1,
+      "poll_count": 2,
+      "input_hash": "9b54039c1b4a4226880989000ea0f0b9d5381f0b39325a21ec53149422bc6f47",
+      "response_identity_hash": "24811fbca6771a3ef5c056a1cae37a7340f82232697ca4af25001d342d2d140b",
+      "output_hash": "bbe488598db26d290f00d9455637f331fbdaff111cb40c736a06e45d89b246e7",
+      "result_id": "b02abbf7-e19d-4827-a17b-77236f7cff4f",
+      "code": null,
+      "duration_ms": 32581,
+      "input_tokens": 1502,
+      "output_tokens": 1149,
+      "created_at": "2026-11-11T12:11:41.054Z",
+      "completed_at": "2026-11-11T12:12:13.646Z"
+    },
+    {
+      "id": "f1952032-d29b-4992-9d0c-542826bc40a3",
+      "task": "translate",
+      "model": "gpt-6.1-sol",
+      "state": "succeeded",
+      "dispatch_count": 1,
+      "poll_count": 6,
+      "input_hash": "7857a35a326f5bd583bd9a6b4760add3d30d3b803d33e13161227cb27aae76a0",
+      "response_identity_hash": "cd8f872e97b9ccb3fd24b41756f3f607bff794c8e7162c95dbbd77bf7c2619bf",
+      "output_hash": "b0f771d1dfb0105a8c7993f9444f55b4723ff47cf288466394bca2d0d8a38eb4",
+      "result_id": "37994d92-0639-4b30-9d73-a6f8d6048514",
+      "code": null,
+      "duration_ms": 94688,
+      "input_tokens": 813,
+      "output_tokens": 5369,
+      "created_at": "2026-11-11T12:12:13.721Z",
+      "completed_at": "2026-11-11T12:13:48.428Z"
+    },
+    {
+      "id": "8abb739e-3118-400b-8073-7d139e1f8bb3",
+      "task": "backtranslate",
+      "model": "gpt-6.1-sol",
+      "state": "succeeded",
+      "dispatch_count": 1,
+      "poll_count": 3,
+      "input_hash": "141308fdcfe09a667ab548db7395dde8ad260fa2a83613cbec566bf369679d77",
+      "response_identity_hash": "44b60ed4684cf46db47bc0ab072243cae80713cd881862db78d6086fdca4f9a4",
+      "output_hash": "260a9277b1947070052a269c087c0bd3a8cdf193e7d5484c81f21731d37d01a9",
+      "result_id": "896f3a8f-c171-4207-9557-47956ecb91aa",
+      "code": null,
+      "duration_ms": 47892,
+      "input_tokens": 917,
+      "output_tokens": 2214,
+      "created_at": "2026-11-11T12:13:48.503Z",
+      "completed_at": "2026-11-11T12:14:36.426Z"
+    }
+  ],
+  "passed": true,
+  "result": {
+    "drafts": 1,
+    "translations": [
+      {
+        "revision": 2,
+        "origin": "model",
+        "status": "review_pending",
+        "hasBackTranslation": true,
+        "review": null
+      },
+      {
+        "revision": 1,
+        "origin": "authored_starter",
+        "status": "stale",
+        "hasBackTranslation": false,
+        "review": null
+      }
+    ],
+    "draftContentHashes": [
+      "c8ad88c19d95637c7c61e4be6a3ce6e1781abbccfc4b62d493749c261252fc61"
+    ]
+  },
+  "zeroSideEffects": {
+    "fp_provider_orders": 0,
+    "fp_provider_operations": 0,
+    "fp_payables": 0,
+    "fp_obligations": 0,
+    "fp_work_signoffs": 0,
+    "fp_community_translation_reviews": 0,
+    "fp_community_update_previews": 0
+  },
+  "finishedAt": "2026-11-11T12:14:36.502Z",
+  "sourceLineageChecks": {
+    "sentences": 14,
+    "exactParagraphCoverage": true,
+    "exactProtectedPlaceholders": true,
+    "allSentencesCited": true,
+    "automatedComparisonOnly": true,
+    "fluentHumanReview": false,
+    "previewPublished": false
+  },
+  "reportSha256": "97de4899be7f0f7e0cd592eb7f89d305de4c6c62fb6c468a0a001918f2d40593",
+  "qualification": "Three actual model tasks on a separate disclosed local Sample workspace; this is not a multilingual benchmark, human review, physical work, payment test or hosted qualification."
+}
