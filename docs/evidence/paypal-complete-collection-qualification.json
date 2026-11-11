@@ -1,0 +1,156 @@
+{
+  "startedAt": "2026-11-11T08:10:47.893Z",
+  "completedAt": "2026-11-11T08:11:03.137Z",
+  "passed": true,
+  "runtimeCommit": "104ddc426c3e9c00b90c8e123b198409edd16cda",
+  "origin": "https://paypal-ai-fieldproof.vercel.app",
+  "participantAccounts": 1,
+  "originalRound": {
+    "idHash": "69a42901bc320bd938a91caa3e28f19f25b8b8b65e18f0c0b4a6064142a7879e",
+    "startedAt": "2026-11-10T23:21:52.633Z",
+    "recoveryEndsAt": "2026-11-12T23:21:52.633Z",
+    "state": "funded"
+  },
+  "totals": {
+    "currency": "USD",
+    "originalContributions": 8,
+    "ordersCapturedMinor": 96000,
+    "invoicePaidMinor": 0,
+    "canonicalCreditedMinor": 96000,
+    "shortfallMinor": 0,
+    "excessLiabilityMinor": 0,
+    "separateCheckoutExcludedMinor": 100
+  },
+  "observed": [
+    {
+      "slot": 1,
+      "amountMinor": 20000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "842ace370d0eb262f193c208b524b6d747e138b03c40ac48cfda81e75913316a",
+      "captureIdHash": "0b6959f4df147bfdd2a283a9d39243d2923b1bd84faa655166ec9dd24cb6e8ed",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "b9f43646ec607a0ec7df125d64e551a6aa6ff32fe97f8f7f79668e4719274bff",
+      "receiptHash": "14bcdfce7ac4012e655b02a626bfa914d06c5e73068bf3062424a655d8d16ddc",
+      "operationHash": "84491141e6d09d57b71a4d499635933a55a0bda5c5119256be32ffc30670e9f3",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 2,
+      "amountMinor": 20000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "c57bac691c8a44a23d1cecf6639b645db66b3b8ef51f447381db0f56202dcf1b",
+      "captureIdHash": "46a8df470d6fe84c880fe58cf24381a8ccd7da4fb15d076975b506d1ab963951",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "64daf71a292d0c73d55b443262f444258ef0044ec4a983f0c07bde154c010a58",
+      "receiptHash": "6257192a59b56800b3e18d72389edf73fd067dcc3dd87fef832fe30d54d4632e",
+      "operationHash": "12f1106376935edf997a37df6145e1352c08f18303614589729c41aa85ee858f",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 3,
+      "amountMinor": 17500,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "22651ba511c9a087ff0115d7fec9fe71b54d1fc5c30a259c3ac5bdbb7f0359ee",
+      "captureIdHash": "989d955e2135e9e6902780c960b47c452887b8576c35dd61b53762ff09eb5449",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "000e30de29d3bea06926b94f1a6087bd09c3de544e58ce749b8786ae638e0dbd",
+      "receiptHash": "99d6d0f286139a874ae1fd4a8dec1d0fb37a58d8de16e0abac345405f26f9638",
+      "operationHash": "7e8b2628cacb9fd6457b726bf2fe07206fc69bf083b5539800103da1cfb7f296",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 4,
+      "amountMinor": 15000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "525fb184f03ddcb94c153d9a11f27f439d5252caf434470f1d784d51ee733844",
+      "captureIdHash": "427b72ad7e4e16ddef058f18d0c996586af0915cf3073ca2558897a827c10a7b",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "f05c170a4ba36f870009ccfa8808e2b2a7c97b62ee7e587ecd6150aafa861140",
+      "receiptHash": "8eeb053ce1433dd5efc70fabd2693f154a48e1bcecd0d512d346542b6d4f8257",
+      "operationHash": "bcfed3bc6eaada8ec3223782ba225d1b1e810e16973c70545e10435cff99caaf",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 5,
+      "amountMinor": 10000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "05a075555cd940e100d7467773eb085016718d2ae4c77e8e7679387702445b38",
+      "captureIdHash": "822483111ab2e54700100ebe4c8568c73ec6f901b893a61e432522571c5fb96c",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "d31727d4666e2ef2a70cf05c77b7464c10e28705b827a8d57130d236b6c56477",
+      "receiptHash": "a9c8eea333d1fffa26afd86511838217265d45d43ab905b8c6854b1c5a83822f",
+      "operationHash": "561aaf6b18d68c52a72d8c036d4d12839f77f90f7cca2931171549587b1c0e6e",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 6,
+      "amountMinor": 5000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "2cc0beb7c0f0e6deb638cbab7fd3a9d2f28aa31939af5b32d36e9c73f89eed43",
+      "captureIdHash": "7bb8e73ef211e74981c9ce6694a20e2596c8f2be626b29d20373cf4db5606fab",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "ee5a7236d49150645fb8d741da2133383a2d84cca3642b4876eea71123099abc",
+      "receiptHash": "bbfd0733ed054ebb85bbfe8a6339ece6d5775caf192676935b4043520cff1983",
+      "operationHash": "f2497aeccc0224cdc9a5395040c7f84ae50b648b34ec65681297ce3a0564aff5",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 7,
+      "amountMinor": 5000,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "7cffc844c49ee49bbca1f6321743748c2ad73802af4260f7691d48228577c5c9",
+      "captureIdHash": "b595aa253330f2d254069589be1e64718ae6536c34a7e263378118a244224c77",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "6e5952c730893820f050eb460710405de75036f3f2b0365fc0bfb26ece8edeff",
+      "receiptHash": "ac182afbdaf036d51823598fb9caa8e5d8aea679283b2cc0750bf866b185d45a",
+      "operationHash": "62f128de4c4f1cc1efae8dbfafbd1737bcbaf490b6a2bf561b92e0b00f7a8405",
+      "writeAttempts": 1
+    },
+    {
+      "slot": 8,
+      "amountMinor": 3500,
+      "source": "live_sandbox",
+      "transport": "apimatic_sdk",
+      "orderIdHash": "d457395fe08d2ab5206d0a32f9b2a2c2e7aa60629b697898c52b197ed0db7315",
+      "captureIdHash": "b83ded4d2dd68e4971378bd029ba200aacc1a37f761776cb6679b1b79c1410eb",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "originalConsentHash": "425de9e9f17c9dc61d5aeb83efc36d5c0c8de9c1864751ae6883d685440e8475",
+      "receiptHash": "43112c14c2b2b26c82cf2b3022a4c93c3c81cfe5f17d7c1f5f8feb7f72cf0592",
+      "operationHash": "9312c8b48367dd8a0296c651c884e36de9f52e0ff9c1b19132aea08b8dc2c9bc",
+      "writeAttempts": 1
+    }
+  ],
+  "finalOriginalSlot": {
+    "index": 8,
+    "amountMinor": 3500,
+    "result": "successful_original_collection",
+    "nativeDeclineObserved": false,
+    "recoveryInvoiceCreated": false
+  },
+  "audit": {
+    "sqlReadOnly": true,
+    "providerResourceReads": 16,
+    "financialWrites": 0,
+    "applicationInitializersCalled": 0
+  },
+  "limitations": [
+    "One controlled participant with eight separately approved slots, not eight recruited donors.",
+    "The original $35 collection succeeded. A native decline and invoice-payment recovery remain separate unqualified gates.",
+    "Sandbox collection proves no physical purchase, work, independent human review or repayment."
+  ]
+}
