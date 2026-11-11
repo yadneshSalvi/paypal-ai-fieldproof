@@ -1,0 +1,124 @@
+{
+  "version": "cancellation-hosted.v1",
+  "observedAt": "2026-11-11T13:22:11.594Z",
+  "passed": true,
+  "sourceCommit": "e9ceeb27a9c93eafb6344af2c0a9e8b451462983",
+  "deploymentId": "dpl_ADnDS2Mb4c4WGo4VVCGeCowqDsgE",
+  "url": "https://paypal-ai-fieldproof-jvybicp07-yadneshsalvis-projects.vercel.app",
+  "checks": [
+    {
+      "path": "/collection",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:test-case",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "path": "/api/collection",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:original-round",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:original-round",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:test-case",
+      "method": "GET",
+      "status": 404
+    },
+    {
+      "path": "/api/cancellations/review?roundId=invalid",
+      "method": "GET",
+      "status": 400
+    },
+    {
+      "path": "/api/cancellations/review",
+      "method": "GET",
+      "status": 400
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:original-round",
+      "method": "GET",
+      "status": 409
+    },
+    {
+      "path": "/api/cancellations/review?roundId=:original-round",
+      "method": "POST",
+      "status": 405
+    },
+    {
+      "path": "/api/collection",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/collection",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "source": "Pre-existing original sandbox saved ledger; read-only requests only",
+  "position": {
+    "creditedMinor": 96000,
+    "paidMinor": 6625,
+    "reservedMinor": 0,
+    "uncommittedMinor": 89375,
+    "canonicalReceiptCount": 8,
+    "fullReturnBlocked": true,
+    "digest": "6d77cb1edb4be64478616cae0b27325b14bb16b0b264040be4cdac7fa8351d03"
+  },
+  "collectionViewUnchanged": true,
+  "providerCalls": 0,
+  "financialDispatches": 0,
+  "stableUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "promoted": true,
+  "native": {
+    "width": 390,
+    "horizontalOverflow": false,
+    "eightSourcesVisible": true,
+    "fullReturnActionHidden": true,
+    "temporaryQualificationSessionRemoved": true,
+    "screenshotSha256": "4f929ff677322147babf2562e82fe2d9cf3549846ab9abda6cc0adc84790e480"
+  },
+  "continuity": {
+    "exactUnchangedTables": 27,
+    "exactUnchangedRows": 277,
+    "existingCommandsComparedWithTwoBackups": 10,
+    "immutableCommandContentsUnchanged": true,
+    "changedFields": [
+      "reconciled_at",
+      "reconciliation_code"
+    ],
+    "providerCalls": 0,
+    "databaseWrites": 0
+  },
+  "backup": {
+    "bytes": 841847,
+    "tocEntries": 486,
+    "sha256": "857824e7d00a5855af82ddfbd4aa05457528cfc15f5e070aab663cc836786b9d",
+    "archiveReadable": true
+  },
+  "uploadScan": {
+    "files": 313,
+    "privateValuesChecked": 58,
+    "findings": 0
+  },
+  "limitations": [
+    "Saved original sandbox ledger only; no new provider refresh or refund.",
+    "Donor choices, pro-rata entitlement, reallocation and rollover remain active work."
+  ],
+  "retainedFailures": [
+    "Initial post-read audit received 42P01; fresh diagnosis found expected schema. No data repair performed.",
+    "Raw command digests differed; comparison with two readable backups proved only reconciliation metadata changed."
+  ]
+}
