@@ -2,6 +2,7 @@ import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
 import { createHash } from "node:crypto";
 import { DomainError } from "../domain/money";
 import { MAX_DOCUMENT_BYTES } from "../domain/evidence";
+import { assertProviderAccess } from "./provider-access";
 
 export interface StoredDocumentBytes { bytes: Buffer; contentType: string; pathname: string }
 export interface DocumentStorage {
@@ -10,6 +11,7 @@ export interface DocumentStorage {
 }
 export const privateDocumentStorage: DocumentStorage = {
   async read(pathname, maxBytes = MAX_DOCUMENT_BYTES) {
+    assertProviderAccess();
     if (!/^fieldproof\/[0-9a-f-]{36}\//.test(pathname) || pathname.includes("..")) throw new DomainError("DOCUMENT_PATH", "The document location could not be verified.", 409);
     const result = await get(pathname, { access: "private", useCache: false, abortSignal: AbortSignal.timeout(20_000) });
     if (!result || result.statusCode !== 200) throw new DomainError("UPLOAD_NOT_AVAILABLE", "The file has not arrived yet. Keep this draft and try checking again.", 409);
@@ -28,6 +30,7 @@ export const privateDocumentStorage: DocumentStorage = {
     return { bytes: Buffer.concat(chunks), contentType: result.blob.contentType.split(";")[0].trim(), pathname };
   },
   async write(pathname, bytes, contentType) {
+    assertProviderAccess();
     try {
       await put(pathname, bytes, { access: "private", addRandomSuffix: false, allowOverwrite: false,
         contentType, cacheControlMaxAge: 60, abortSignal: AbortSignal.timeout(20_000) });

@@ -52,7 +52,7 @@ async function outline(input, outputPath, sourceName) {
   assets.push({ source: sourceName, output: outputPath, sourceSha256: hash(input), sha256: hash(outlined), bytes: outlined.length });
 }
 for (const dir of ["public/samples/outlined", "public/proof-stamps", "public/asset-fonts"]) await mkdir(dir, { recursive: true });
-for (const name of ["eastside-sketch", "eastside-quotes", "eastside-alignment", "eastside-review-scope", "maria-receipt"]) {
+for (const name of ["eastside-sketch", "eastside-quotes", "eastside-alignment", "eastside-review-scope", "maria-receipt", ...["garden", "mutual-aid"].flatMap(prefix => ["sketch", "quotes", "alignment", "review-scope"].map(suffix => `${prefix}-${suffix}`))]) {
   const path = `public/samples/${name}.svg`;
   await outline(await readFile(path, "utf8"), `public/samples/outlined/${name}.svg`, path);
 }

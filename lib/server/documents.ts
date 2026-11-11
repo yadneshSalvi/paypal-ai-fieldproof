@@ -1,3 +1,4 @@
+import { requireMakerspaceScenario } from "./community-workspaces";
 import { randomUUID, createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -170,6 +171,7 @@ export async function documentOriginal(session: Session, id: string, storage: Do
 }
 export async function importSampleReceipt(session: Session, intentId: string, variant: "original" | "rotated" | "cropped" = "original", storage: DocumentStorage = privateDocumentStorage): Promise<DocumentView> {
   await assertUploader(session, "receipt");
+  await requireMakerspaceScenario(session);
   const original = await readFile(path.join(process.cwd(), "public/samples/outlined/maria-receipt.svg"));
   let image = sharp(original, { density: 192 });
   if (variant === "rotated") image = image.rotate(3, { background: "#ebe7db" });

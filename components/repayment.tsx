@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, CircleAlert, Clock3, FileCheck2, LockKeyhole, RefreshCw, Send, ShieldCheck, Undo2, Wallet, X } from "lucide-react";
@@ -24,7 +25,7 @@ const explanations: Record<string, string> = {
   PAYOUT_REVIEW_CHANGED: "A source, recipient or approval context changed. The original request stays intact for a fresh review.",
 };
 async function request<T>(url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, body === undefined ? { cache: "no-store", signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+  const response = await workspaceFetch(url, body === undefined ? { cache: "no-store", signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
   const value = await response.json();
   if (!response.ok) throw new Error(value.error ?? "This repayment could not be updated. Check its original status.");
   return value;

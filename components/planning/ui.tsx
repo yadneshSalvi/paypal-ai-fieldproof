@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { Check, Clock3, LockKeyhole, X } from "lucide-react";
@@ -6,7 +7,7 @@ import type { PlanningWorkspace } from "@/lib/planning/contracts";
 
 export class PlanningRequestError extends Error { constructor(message: string, readonly code: string, readonly status: number) { super(message); } }
 export async function planningRequest<T>(path = "", body?: unknown): Promise<T> {
-  const response = await fetch(`/api/planning${path ? `/${path}` : ""}`, { cache: "no-store", ...(body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) });
+  const response = await workspaceFetch(`/api/planning${path ? `/${path}` : ""}`, { cache: "no-store", ...(body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) });
   const result = await response.json();
   if (!response.ok) throw new PlanningRequestError(result.error ?? "The planning workspace could not finish this step.", result.code ?? "REQUEST_UNAVAILABLE", response.status);
   return result as T;

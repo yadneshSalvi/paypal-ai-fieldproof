@@ -1,13 +1,16 @@
+import { mandatoryDependencies } from "../community/templates";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import type { Response, ResponseInputContent } from "openai/resources/responses/responses";
 import { defaultRequirements, proposedPlanSchema } from "../planning/contracts";
 import { DomainError } from "../domain/money";
 import type { PlanBackgroundObservation, PlanModelInput } from "./planning-extraction";
+import { assertProviderAccess } from "./provider-access";
 
 export const PLAN_EXECUTION_REVISION = "durable-plan-v2";
 export const PLAN_BACKGROUND_DEADLINE_MS = 20 * 60_000;
 const client = () => {
+  assertProviderAccess();
   if (!process.env.OPENAI_API_KEY) throw new DomainError("MODEL_UNCONFIGURED", "OpenAI plan extraction is unavailable.", 503);
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 45_000, maxRetries: 0 });
 };
@@ -25,7 +28,7 @@ function observation(response: Response): PlanBackgroundObservation {
 }
 /** Submission returns an identity promptly. Polling this identity never starts another inference. */
 export async function beginOpenAIPlan(input: PlanModelInput, instructions: string): Promise<PlanBackgroundObservation> {
-  const content: ResponseInputContent[] = [{ type: "input_text", text: `Sketch document: ${input.sketchId}. Current package reference and mandatory requirements: ${JSON.stringify(input.packages.map(p => ({ ...p, requirements: defaultRequirements(p.packageId) })))}. Read actual quote amounts; the current budgets are references, not extracted facts.` }];
+  const content: ResponseInputContent[] = [{ type: "input_text", text: `Sketch document: ${input.sketchId}. Current package reference and mandatory requirements: ${JSON.stringify(input.packages.map(p => ({ ...p, requirements: defaultRequirements(p.packageId) })))}. Required prerequisites: ${JSON.stringify(mandatoryDependencies(input.packages.map(p => p.packageId)))}. Read actual quote amounts; the current budgets are references, not extracted facts.` }];
   for (const page of input.pages) content.push({ type: "input_text", text: `Document ${page.documentId}, page ${page.page}, purpose ${page.purpose}, source ${page.provenance}.` }, { type: "input_image", image_url: `data:image/png;base64,${page.bytes.toString("base64")}`, detail: "original" });
   return observation(await client().responses.create({ model: input.model, instructions, input: [{ role: "user", content }],
     background: true, store: false, reasoning: { effort: input.reasoningEffort }, max_output_tokens: 32768,

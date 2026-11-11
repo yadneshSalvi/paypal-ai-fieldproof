@@ -55,7 +55,7 @@ export interface PackageView extends FundingTotals {
   evidenceRequired: number;
   dependencies: string[];
   category: string;
-  icon: "spark" | "printer" | "laser" | "saw" | "shield" | "box";
+  icon: "spark" | "printer" | "laser" | "saw" | "shield" | "box" | "leaf" | "drop" | "path" | "hand" | "truck";
   zone: BlueprintZone;
 }
 export interface DonorObligation {
@@ -108,6 +108,8 @@ export interface ApprovalRecord {
   revokedAt: string | null;
 }
 export interface ProjectSnapshot {
+  templateId?: import("./community/templates").TemplateId;
+  templateWorkspace?: boolean;
   id: string;
   tenantId: string;
   slug: string;

@@ -56,6 +56,62 @@
       "bytes": 376718
     },
     {
+      "source": "public/samples/garden-sketch.svg",
+      "output": "public/samples/outlined/garden-sketch.svg",
+      "sourceSha256": "90de048cc83f597ab478adc797c146372db565f9265534ce44e875857c863484",
+      "sha256": "7432f417569594e207785b6b7e896e6bae3a7bfc45ea2ad4e050c232f3ec0292",
+      "bytes": 349893
+    },
+    {
+      "source": "public/samples/garden-quotes.svg",
+      "output": "public/samples/outlined/garden-quotes.svg",
+      "sourceSha256": "f53929220a9f9f77e60821a51fcfceaf25698c08fde13c09ec105dcfca30dafc",
+      "sha256": "e36390f69d3980d389345c4bfd444c331c2ee9f2592357b80da2f510a3c1e4a5",
+      "bytes": 694302
+    },
+    {
+      "source": "public/samples/garden-alignment.svg",
+      "output": "public/samples/outlined/garden-alignment.svg",
+      "sourceSha256": "35403e3c76bf0942752090ff7231d3ef7ec77e7761b666129a42a21abcdb26a5",
+      "sha256": "4f6f8562748ebd1b98fbf7a5f8828d10d2ba1b85b7adf5f8c15509683751977b",
+      "bytes": 396325
+    },
+    {
+      "source": "public/samples/garden-review-scope.svg",
+      "output": "public/samples/outlined/garden-review-scope.svg",
+      "sourceSha256": "62447d9cf22e7976ad20b074fe56b622601846c483c19eba8fd64fa20b33b618",
+      "sha256": "07d71706a727fb6bdfd5020cf5d88df19b45385bd3f12e09b90d9f15a23e8026",
+      "bytes": 467467
+    },
+    {
+      "source": "public/samples/mutual-aid-sketch.svg",
+      "output": "public/samples/outlined/mutual-aid-sketch.svg",
+      "sourceSha256": "ae2255ac6b5241c0a00008fa2eb5c93127b963ff55f712d03d52f7e691a8bb42",
+      "sha256": "45fcab4584af5b956034da02f396fe7ad1eb42d236059edeb76ab991e43143ce",
+      "bytes": 386877
+    },
+    {
+      "source": "public/samples/mutual-aid-quotes.svg",
+      "output": "public/samples/outlined/mutual-aid-quotes.svg",
+      "sourceSha256": "9188db56497659252f62e6a30ecaa8bba4bfcaa9b1c7bc8b5b7bdad7901fe1b2",
+      "sha256": "c6b8d2ec8a437fa8660c57aa26d819d8b9fd0ec014d45baa208ea4906f324041",
+      "bytes": 700270
+    },
+    {
+      "source": "public/samples/mutual-aid-alignment.svg",
+      "output": "public/samples/outlined/mutual-aid-alignment.svg",
+      "sourceSha256": "736c42a65fd0e47de40e23e629de94a880504afea48c719ccbc6a8c6cb7110f4",
+      "sha256": "3c357c0d8fb7648f062c3a62515b2d4219db0325b4aab5da1ac39dd43af85cc0",
+      "bytes": 433309
+    },
+    {
+      "source": "public/samples/mutual-aid-review-scope.svg",
+      "output": "public/samples/outlined/mutual-aid-review-scope.svg",
+      "sourceSha256": "1c4b6fe3cef129360e4746349d6bdbd72af07dd0fe42b7f3f25a16591dddbf6b",
+      "sha256": "f9144227338daeef87f8ebebfbcc16d9ad58990fd6cca15ce9c71e0962301784",
+      "bytes": 529001
+    },
+    {
       "source": "authored-sample-proof-stamp",
       "output": "public/proof-stamps/sample.svg",
       "sourceSha256": "83c87e15e64ac7a936298738d15587f96d4db000aa6b3d2a3297c36f2ef7b817",

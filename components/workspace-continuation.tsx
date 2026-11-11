@@ -1,10 +1,11 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, FileCheck2, LockKeyhole, LoaderCircle, ShieldCheck } from "lucide-react";
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const response = await workspaceFetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const value = await response.json();
   if (!response.ok) throw new Error(value.error ?? "The workspace could not continue yet. Your original records remain saved.");
   return value;

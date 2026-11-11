@@ -36,14 +36,14 @@ export async function readPlanningWorkspace(session: Session): Promise<PlanningW
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
     const { membershipVersion } = await requireCurrentRole(session, session.role, tx);
     const [membership] = await query<{ roles: Session["role"][] }>("SELECT roles FROM fp_memberships WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3", [session.tenantId, session.projectId, session.actorId], tx);
-    const [project] = await query<{ title: string; projection_version: number; as_of: Date; mode: Session["mode"] }>("SELECT p.metadata->>'subtitle' AS title,p.projection_version,transaction_timestamp() AS as_of,t.mode FROM fp_projects p JOIN fp_tenants t ON t.id=p.tenant_id WHERE p.id=$1 AND p.tenant_id=$2", [session.projectId, session.tenantId], tx);
+    const [project] = await query<{ title: string; projection_version: number; as_of: Date; template_id: import("../community/templates").TemplateId; mode: Session["mode"] }>("SELECT p.metadata->>'subtitle' AS title,COALESCE(p.metadata->>'templateId','makerspace') AS template_id,p.projection_version,transaction_timestamp() AS as_of,t.mode FROM fp_projects p JOIN fp_tenants t ON t.id=p.tenant_id WHERE p.id=$1 AND p.tenant_id=$2", [session.projectId, session.tenantId], tx);
     if (!project || project.mode !== session.mode) throw new DomainError("PROJECT_NOT_FOUND", "This planning workspace is unavailable.", 404);
     const head = await planningHead(session, tx), publication = await publishedPlan(session, tx);
     const current = session.role === "organizer" && head.current_plan_id ? await planVersionView(await requirePlan(session, head.current_plan_id, tx), tx) : null;
     const allAlignments = await alignmentViews(session, tx, true), allSignoffs = await signoffViews(session, tx, true);
     const funding = await planningFunding(session, tx);
     const rows = session.role === "organizer" ? await query<PlanRow & { reviewed: boolean }>("SELECT p.*,EXISTS(SELECT 1 FROM fp_plan_reviews r WHERE r.plan_id=p.id) AS reviewed FROM fp_plan_versions p WHERE tenant_id=$1 AND project_id=$2 ORDER BY revision DESC LIMIT 100", [session.tenantId, session.projectId], tx) : [];
-    return { role: session.role, allowedRoles: membership.roles, mode: session.mode, projectId: session.projectId, projectTitle: project.title, headVersion: head.version, projectionVersion: project.projection_version, asOf: project.as_of.toISOString(),
+    return { role: session.role, allowedRoles: membership.roles, mode: session.mode, projectId: session.projectId, projectTitle: project.title, templateId: project.template_id, headVersion: head.version, projectionVersion: project.projection_version, asOf: project.as_of.toISOString(),
       scope: planningHash({ tenantId: session.tenantId, projectId: session.projectId, actorId: session.actorId, role: session.role, membershipVersion }),
       sources: await sourcesView(session, tx), current, published: publication?.view ?? null,
       history: rows.map(row => ({ id: row.id, revision: row.revision, contentHash: row.content_hash, createdAt: row.created_at.toISOString(), origin: row.origin, reviewed: row.reviewed })),

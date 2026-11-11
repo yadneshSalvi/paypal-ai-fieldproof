@@ -41,7 +41,7 @@
   },
   "scripts": {
     "assets:outline": "node scripts/outline-sample-assets.mjs",
-    "assets:check": "node scripts/outline-sample-assets.mjs --check",
+    "assets:check": "node --import tsx scripts/community-source-assets.ts --check && node scripts/outline-sample-assets.mjs --check",
     "dev": "next dev --hostname 0.0.0.0 --port 4102",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 4102",
@@ -49,6 +49,7 @@
     "test": "node --env-file=.env --import tsx scripts/test-isolated.ts",
     "studio:qa": "node --env-file=.env --import tsx scripts/studio-qa.ts",
     "planning:qa": "node --import tsx scripts/planning-qa.ts",
+    "community:qa": "node --import tsx scripts/community-qa.ts",
     "db:seed": "node --env-file=.env --import tsx scripts/seed.ts"
   }
 }

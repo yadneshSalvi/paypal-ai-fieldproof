@@ -1,3 +1,4 @@
+import { assertProviderAccess } from "./provider-access";
 import { randomUUID, createHash } from "node:crypto";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -60,6 +61,7 @@ Return at most 120 lines and 20 documentWarnings. Descriptions are at most 240 c
 
 export const liveReceiptModel: ReceiptModel = {
   async extract(input) {
+    assertProviderAccess();
     const prompt = `Source class: ${input.provenance}. Pages are in order from 1. Package choices: ${JSON.stringify(input.packages)}. Extract the receipt for review.`;
     if (input.provider === "openai") {
       if (!process.env.OPENAI_API_KEY) throw new DomainError("MODEL_UNCONFIGURED", "OpenAI extraction is not configured.", 503);

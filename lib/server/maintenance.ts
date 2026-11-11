@@ -2,12 +2,13 @@ import { DomainError } from "../domain/money";
 import { database, initializeDatabase } from "./db";
 import { PRIVATE_HEADERS, routeFailure } from "./http";
 import { beginExecutionLease, finishExecutionLease, runtimeControl } from "./runtime-control";
+import { assertProviderAccess } from "./provider-access";
 
 export function isMutatingApiRequest(request: Request): boolean {
   let path: string;
   try { path = decodeURIComponent(new URL(request.url).pathname).replace(/\/+$/, ""); } catch { return true; }
   if (path === "/api/workspace/continue" && request.method === "POST") return false;
-  return !["GET", "HEAD", "OPTIONS"].includes(request.method) || path.startsWith("/api/cron/") || path === "/api/auth/paypal" || path.startsWith("/api/auth/paypal/");
+  return !["GET", "HEAD", "OPTIONS"].includes(request.method) || path.startsWith("/api/cron/") || path === "/api/community/workspaces" || path === "/api/auth/paypal" || path.startsWith("/api/auth/paypal/");
 }
 export async function withExecutionLease<T>(action: string, work: () => Promise<T>): Promise<T> {
   await initializeDatabase();
@@ -16,8 +17,16 @@ export async function withExecutionLease<T>(action: string, work: () => Promise<
   finally { await finishExecutionLease(database(), lease).catch(() => undefined); }
 }
 export async function guardedApi(request: Request, work: () => Promise<Response>): Promise<Response> {
-  if (!isMutatingApiRequest(request)) return work();
-  try { return await withExecutionLease(`${request.method} ${new URL(request.url).pathname}`, work); }
+  try {
+    const expected = request.headers.get("X-Fieldproof-Project");
+    if (expected !== null) {
+      const { getSession } = await import("./auth");
+      const current = await getSession();
+      if ((current?.projectId ?? "none") !== expected) throw new DomainError("WORKSPACE_CONTEXT_CHANGED", "The active workspace changed or its access ended. Open saved workspaces before continuing.", 409);
+    }
+    if (!isMutatingApiRequest(request)) return work();
+    return await withExecutionLease(`${request.method} ${new URL(request.url).pathname}`, work);
+  }
   catch (error) {
     if (error instanceof DomainError && error.code === "WORKSPACE_MAINTENANCE") return Response.json({ error: error.message, code: error.code }, { status: 503, headers: { ...PRIVATE_HEADERS, "Retry-After": "30" } });
     return routeFailure(error);
@@ -30,6 +39,7 @@ export async function assertProviderWritesAllowed(): Promise<void> {
 /** Preserve the exact SDK/REST Request and signal; inspect only method and URL. */
 export function guardedProviderTransport(transport: typeof fetch = fetch): typeof fetch {
   return async (input, init) => {
+    assertProviderAccess();
     const url = new URL(input instanceof Request ? input.url : String(input));
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
     const readSupport = ["/v1/oauth2/token", "/v1/notifications/verify-webhook-signature", "/v2/invoicing/search-invoices"].includes(url.pathname);

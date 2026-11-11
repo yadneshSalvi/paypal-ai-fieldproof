@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -8,19 +9,19 @@ import { formatMoney } from "@/lib/domain/money";
 import { ProofSheet } from "./proof-page";
 
 export function ProofDesk({ initial }: { initial: Desk }) {
-  const [desk, setDesk] = useState(initial), [packageId, setPackage] = useState("electronics"), [sourceId, setSource] = useState(initial.sources[0]?.id ?? ""), [pageNumber, setPage] = useState(1);
+  const [desk, setDesk] = useState(initial), [packageId, setPackage] = useState(initial.packages[0]?.id ?? ""), [sourceId, setSource] = useState(initial.sources[0]?.id ?? ""), [pageNumber, setPage] = useState(1);
   const [crop, setCrop] = useState<ProofRegion>({ x: 0, y: 0, width: 1, height: 1 }), [masks, setMasks] = useState<ProofRegion[]>([]), [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null), [notice, setNotice] = useState(""), [error, setError] = useState(false), [imageAck, setImageAck] = useState<string[]>([]), [snapshotAck, setSnapshotAck] = useState(false), [withdraw, setWithdraw] = useState<string | null>(null), [withdrawAck, setWithdrawAck] = useState(false), [previewId, setPreview] = useState<string | null>(null);
   const intents = useRef(new Map<string, string>()), pointer = useRef<{ x: number; y: number } | null>(null);
   const pkg = desk.packages.find(p => p.id === packageId) ?? desk.packages[0], source = desk.sources.find(s => s.id === sourceId), page = source?.pages.find(p => p.number === pageNumber);
   const derivatives = desk.derivatives.filter(d => d.packageId === pkg.id), snapshots = desk.snapshots.filter(s => s.payload.package.id === pkg.id), snapshot = snapshots.find(s => s.id === previewId) ?? snapshots[0];
-  async function refresh() { const r = await fetch("/api/proof", { cache: "no-store" }); if (!r.ok) throw new Error((await r.json()).error ?? "The proof desk could not be refreshed."); setDesk(await r.json()); }
+  async function refresh() { const r = await workspaceFetch("/api/proof", { cache: "no-store" }); if (!r.ok) throw new Error((await r.json()).error ?? "The proof desk could not be refreshed."); setDesk(await r.json()); }
   async function act(path: string, body: Record<string, unknown>, success: string) {
     if (busy) return;
     setBusy(path); setError(false); setNotice("");
     const key = JSON.stringify([path, body]), intentId = intents.current.get(key) ?? crypto.randomUUID(); intents.current.set(key, intentId);
     try {
-      const r = await fetch(`/api/proof/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, intentId }) }), result = await r.json();
+      const r = await workspaceFetch(`/api/proof/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, intentId }) }), result = await r.json();
       if (!r.ok) throw new Error(result.error ?? "This action could not finish.");
       await refresh(); intents.current.delete(key); setSnapshotAck(false); setWithdraw(null); setWithdrawAck(false); setNotice(success);
       if (path === "drafts") setPreview(result.id);
@@ -31,7 +32,7 @@ export function ProofDesk({ initial }: { initial: Desk }) {
   function regionControls(value: ProofRegion, set: (v: ProofRegion) => void, label: string) {
     return <fieldset className="pd-region"><legend>{label}</legend>{(["x", "y", "width", "height"] as const).map(k => <label key={k}>{k === "x" ? "Left" : k === "y" ? "Top" : k === "width" ? "Width" : "Height"}<input type="number" min={k === "width" || k === "height" ? 1 : 0} max="100" step="1" value={Math.round(value[k] * 100)} onChange={e => set({ ...value, [k]: Number(e.target.value) / 100 })}/><span>%</span></label>)}</fieldset>;
   }
-  return <main className="pd-shell"><a className="skip-link" href="#proof-desk-main">Skip to proof desk</a><header className="pd-header"><Link href="/" className="wordmark">fieldproof<span className="brand-dot">.</span></Link><nav><Link href="/organizer"><ArrowLeft size={14}/>Workspace</Link><Link href="/planning">Planning desk</Link><Link href="/studio">Proof Studio</Link></nav><span className="pp-badge"><LockKeyhole size={13}/>Private organizer desk</span></header>
+  return <main className="pd-shell"><a className="skip-link" href="#proof-desk-main">Skip to proof desk</a><header className="pd-header"><Link href="/" className="wordmark">fieldproof<span className="brand-dot">.</span></Link><nav><Link href="/organizer"><ArrowLeft size={14}/>Workspace</Link><Link href="/community?return=/proof-desk">Saved workspaces</Link><Link href="/planning">Planning desk</Link><Link href="/studio">Proof Studio</Link></nav><span className="pp-badge"><LockKeyhole size={13}/>Private organizer desk</span></header>
     <section className="pd-hero"><div><p className="pp-kicker">THE PUBLICATION DESK</p><h1>Good work deserves<br/>a clear record<span>.</span></h1><p>Decide what the community sees. Every public page begins with a private review.</p></div><div className="pd-seal"><ShieldCheck size={43} strokeWidth={1.2}/><span>PRIVATE ORIGINALS<br/>REVIEWED PUBLIC COPIES</span><i>fieldproof / evidence with care</i></div></section>
     <div className="pd-steps"><span><i>01</i>Choose a package</span><span><i>02</i>Prepare public evidence</span><span><i>03</i>Review the complete page</span><span><i>04</i>Publish & keep it current</span></div>
     <div className="pd-package-strip" role="group" aria-label="Choose a package">{desk.packages.map(p => <button key={p.id} aria-pressed={pkg.id === p.id} onClick={() => changePackage(p.id)}><span>{p.title}</span><small>{formatMoney(p.budgetMinor, true)} · {p.publicationState === "published" ? "Published" : p.publicationState === "withdrawn" ? "Withdrawn" : "Private"}</small></button>)}</div>

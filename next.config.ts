@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   reactStrictMode: true,
+  ...(process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_COMMUNITY_QA === "true" ? { distDir: ".next-community-qa" } : {}),
+  ...(!process.env.VERCEL && process.env.FIELDPROOF_COMMUNITY_BUILD === "true" ? { distDir: ".next-community-build" } : {}),
   ...(process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true" ? { distDir: ".next-planning-qa" } : {}),
   ...(!process.env.VERCEL && process.env.FIELDPROOF_PLANNING_BUILD === "true" ? { distDir: ".next-planning-build" } : {}),
   poweredByHeader: false,

@@ -5,9 +5,11 @@ import { DomainError } from "../domain/money";
 import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
+import { communityQaEnabled } from "./provider-access";
 
 export function sessionCookieName(): string {
   if (process.env.NODE_ENV === "production") return "fieldproof_session";
+  if (communityQaEnabled()) return "fieldproof_community_qa_session";
   if (process.env.FIELDPROOF_PLANNING_QA === "true") {
     const url = new URL(process.env.DATABASE_URL ?? "postgresql://invalid/invalid");
     if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !/^\/fp_planning_qa_[a-z0-9_]+$/.test(url.pathname))
@@ -30,7 +32,7 @@ export function tokenHash(token: string): string { return createHash("sha256").u
 export async function sessionForToken(token: string): Promise<Session | null> {
   await initializeDatabase();
   const [row] = await query<{id:string;tenant_id:string;project_id:string;actor_id:string;role:WorkspaceRole;expires_at:Date;mode:Session["mode"]}>(
-    "SELECT s.*,t.mode FROM fp_sessions s JOIN fp_tenants t ON t.id=s.tenant_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()", [tokenHash(token)]);
+    "SELECT s.*,t.mode FROM fp_sessions s JOIN fp_tenants t ON t.id=s.tenant_id JOIN fp_memberships m ON m.tenant_id=s.tenant_id AND m.project_id=s.project_id AND m.actor_id=s.actor_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND m.state='active' AND m.roles ? s.role", [tokenHash(token)]);
   return row ? {id:row.id,tenantId:row.tenant_id,projectId:row.project_id,actorId:row.actor_id,role:row.role,expiresAt:row.expires_at.toISOString(),mode:row.mode} : null;
 }
 export async function getSession(): Promise<Session | null> {
@@ -48,6 +50,8 @@ export async function requireSession(roles?: WorkspaceRole[]): Promise<Session> 
 }
 export async function startSession(mode: Session["mode"] = "sample"): Promise<Session> {
   await initializeDatabase();
+  const { rememberWorkspaceCookie } = await import("./community-workspaces");
+  await rememberWorkspaceCookie();
   // This deployment-wide backstop bounds anonymous workspace creation even after cookie resets.
   const bucket=`session:${new Date().toISOString().slice(0,13)}`;
   const claimed=await query("INSERT INTO fp_request_buckets(bucket_key,request_count) VALUES($1,1) ON CONFLICT(bucket_key) DO UPDATE SET request_count=fp_request_buckets.request_count+1 WHERE fp_request_buckets.request_count<200 RETURNING request_count",[bucket]);
@@ -60,6 +64,7 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'donor',$6)", [id,tokenHash(token),tenantId,projectId,actorId,expiresAt]);
     await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,$4::jsonb)", [tenantId,projectId,actorId,JSON.stringify(["donor","volunteer","organizer","auditor"])]);
   });
+  await rememberWorkspaceCookie(token);
   (await cookies()).set(sessionCookieName(),token,{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV === "production",path:"/",maxAge:12*60*60});
   return {id,tenantId,projectId,actorId,role:"donor",expiresAt,mode};
 }
@@ -74,11 +79,12 @@ export function assertSameOrigin(request: Request): void {
   // The isolated Studio review process never runs on the retired source writer's port.
   if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
   if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
+  if (communityQaEnabled()) allowed.push("http://localhost:4512");
   const host=request.headers.get("host");
   if (!origin || !allowed.includes(origin) || new URL(origin).host !== host) throw new DomainError("ORIGIN_DENIED", "Refresh this page before trying again.", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);
 }
 export async function setRole(session: Session, role: WorkspaceRole): Promise<void> {
   await requireMembership(session.tenantId,session.projectId,session.actorId,role);
-  await query("UPDATE fp_sessions SET role=$1 WHERE id=$2 AND revoked_at IS NULL AND expires_at>now()",[role,session.id]);
+  await query("UPDATE fp_sessions SET role=$1 WHERE id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp()",[role,session.id]);
 }

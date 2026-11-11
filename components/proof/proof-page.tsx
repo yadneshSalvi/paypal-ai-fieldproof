@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ export function PublicProofPage({ proof: initialProof, publicUrl }: { proof: Pub
       controller?.abort(); controller = new AbortController();
       const signal = controller.signal, revision = new URL(location.href).searchParams.get("revision");
       try {
-        const response = await fetch(`/api/public-proof/${encodeURIComponent(initialProof.slug)}${revision ? `?revision=${encodeURIComponent(revision)}` : ""}`, { cache: "no-store", signal });
+        const response = await workspaceFetch(`/api/public-proof/${encodeURIComponent(initialProof.slug)}${revision ? `?revision=${encodeURIComponent(revision)}` : ""}`, { cache: "no-store", signal });
         const current = await response.json() as PublicProof;
         if (active && !signal.aborted && [200, 404, 410].includes(response.status) && current.slug === initialProof.slug) { confirmedAt = Date.now(); setProof(current); }
         else if (active && !signal.aborted) setProof({ slug: initialProof.slug, state: "unavailable", currentRevision: null, snapshot: null, history: [] });

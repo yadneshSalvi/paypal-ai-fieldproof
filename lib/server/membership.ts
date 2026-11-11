@@ -11,7 +11,7 @@ export async function requireMembership(tenantId: string, projectId: string, act
 }
 export async function requireCurrentRole(session: Session, role: WorkspaceRole, tx: SqlConnection = database()): Promise<{ membershipVersion: number }> {
   if (session.role !== role) throw new DomainError("ROLE_DENIED", `Choose your ${role} view to perform this action.`, 403);
-  const rows = await query("SELECT id FROM fp_sessions WHERE id=$1 AND tenant_id=$2 AND project_id=$3 AND actor_id=$4 AND role=$5 AND revoked_at IS NULL AND expires_at>now()", [session.id, session.tenantId, session.projectId, session.actorId, role], tx);
+  const rows = await query("SELECT id FROM fp_sessions WHERE id=$1 AND tenant_id=$2 AND project_id=$3 AND actor_id=$4 AND role=$5 AND revoked_at IS NULL AND expires_at>clock_timestamp()", [session.id, session.tenantId, session.projectId, session.actorId, role], tx);
   if (!rows.length) throw new DomainError("ROLE_DENIED", "Your current session no longer allows this action.", 403);
   return { membershipVersion: (await requireMembership(session.tenantId, session.projectId, session.actorId, role, tx)).version };
 }

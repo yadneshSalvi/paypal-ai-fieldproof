@@ -1,3 +1,4 @@
+import { requireMakerspaceScenario } from "./community-workspaces";
 import { randomUUID } from "node:crypto";
 import { canonicalJson, payloadHash, sha256, type PaymentAction, type PaymentCommand, type PaymentCore, type PaymentOperation, type ProviderAdapter, type ProviderResource, type SqlConnection } from "@fracture/paypal-core";
 import type { ApprovalRecord, SettlementReceipt } from "../contracts";
@@ -65,6 +66,7 @@ export async function collectionView(session: Session, id?: string): Promise<Col
 
 
 export async function freezeCollection(session: Session, input: { expectedVersion: number; intentId: string; automatic?: boolean }): Promise<CollectionView> {
+  await requireMakerspaceScenario(session);
   if (session.mode !== "live_sandbox") throw new DomainError("LIVE_COLLECTION_REQUIRED", "Real collection uses a live sandbox project with actual supporter approvals.");
   await initializeDatabase();
   const id = await database().transaction(async tx => {

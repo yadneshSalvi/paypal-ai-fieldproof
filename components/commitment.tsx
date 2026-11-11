@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,7 +14,7 @@ interface Overview {
   eligibleMinor: number; targetMinor: number; expiresAt: string;
 }
 async function request<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api/${path}`, body === undefined ? { cache: "no-store" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const response = await workspaceFetch(`/api/${path}`, body === undefined ? { cache: "no-store" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error ?? "This commitment could not be checked. Your saved request remains available.");
   return result as T;

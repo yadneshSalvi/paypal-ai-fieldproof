@@ -1,4 +1,5 @@
 "use client";
+import { adoptWorkspaceContext, workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,12 +9,13 @@ export function PlanningEntry() {
   async function open() {
     setBusy(true); setError(null);
     try {
-      const existing = await fetch("/api/snapshot", { cache: "no-store" }); if (!existing.ok) throw new Error("The current workspace could not be checked.");
+      const existing = await workspaceFetch("/api/snapshot", { cache: "no-store" }); if (!existing.ok) throw new Error("The current workspace could not be checked.");
       const state = await existing.json();
       if (!state.session) {
-        const created = await fetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "sample" }) });
+        const created = await workspaceFetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "sample" }) });
         if (!created.ok) { const value = await created.json(); throw new Error(value.error ?? "The sample workspace could not be opened."); }
-        const role = await fetch("/api/session/role", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "organizer" }) });
+        adoptWorkspaceContext((await created.json()).id);
+        const role = await workspaceFetch("/api/session/role", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "organizer" }) });
         if (!role.ok) throw new Error("The organizer view could not be selected. Open your workspace and choose a current role.");
       }
       router.refresh();

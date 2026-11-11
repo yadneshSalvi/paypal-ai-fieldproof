@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -30,7 +31,7 @@ interface Overview extends CollectionReview {
   refunds: RefundView[];
 }
 async function request<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(
+  const response = await workspaceFetch(
     `/api/${path}`,
     body === undefined
       ? { cache: "no-store" }

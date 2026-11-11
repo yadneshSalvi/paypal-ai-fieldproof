@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import { useRef, useState, type FormEvent, type PointerEvent } from "react";
 import { ArrowUpRight, FileImage, FilePlus2, FileText, LockKeyhole, ScanLine, Upload, X } from "lucide-react";
@@ -25,7 +26,7 @@ export function SourceLibrary({ onOpen }: { onOpen: (source: PlanSourceView) => 
       else draft = (await mutate<{ document: DocumentView; pathname: string }>("sources", { filename: file.name, contentType: file.type, size: file.size, sha256: hash, purpose, permissionConfirmed: true }, { label: "Saving a private source draft" })).document;
       if (draft.state === "awaiting_upload" && draft.uploadPathname) {
         if (workspace.uploadMode === "isolated_local") {
-          const response = await fetch(`/api/planning/sources/${draft.id}/content`, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+          const response = await workspaceFetch(`/api/planning/sources/${draft.id}/content`, { method: "POST", headers: { "Content-Type": file.type }, body: file });
           if (!response.ok) { const error = await response.json(); throw new Error(error.error ?? "The original could not be stored."); } setProgress(100);
         } else { const { upload } = await import("@vercel/blob/client"); await upload(draft.uploadPathname, file, { access: "private", contentType: file.type, handleUploadUrl: "/api/documents/upload", clientPayload: JSON.stringify({ documentId: draft.id }), onUploadProgress: value => setProgress(Math.round(value.percentage)) }); }
       }

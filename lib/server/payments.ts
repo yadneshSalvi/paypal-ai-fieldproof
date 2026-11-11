@@ -1,3 +1,5 @@
+import { requireMakerspaceScenario } from "./community-workspaces";
+import { assertProviderAccess } from "./provider-access";
 import { randomUUID } from "node:crypto";
 import {
   PaymentCore, SandboxPayPalProvider, SqlPaymentStore, canonicalJson, payloadHash, sha256,
@@ -24,6 +26,7 @@ export function applicationOrigin(): string {
   return value;
 }
 export function providerConfiguration() {
+  assertProviderAccess();
   if (process.env.PAYPAL_ENVIRONMENT !== "sandbox" || process.env.PAYPAL_PROJECT_ISOLATED !== "true") throw new DomainError("PAYPAL_NOT_ISOLATED","This sandbox connection has not passed its isolation check.",503);
   const clientId = process.env.PAYPAL_CLIENT_ID, clientSecret = process.env.PAYPAL_CLIENT_SECRET;
   if(!clientId || !clientSecret) throw new DomainError("PAYPAL_NOT_CONFIGURED","The sandbox payment connection is not configured.",503);
@@ -196,11 +199,13 @@ export function paymentView(operation:PaymentOperation) {
 }
 export type PaymentView = ReturnType<typeof paymentView>;
 export async function createCheckout(session:Session,intentId:string){
+  await requireMakerspaceScenario(session);
   const operation=await paymentCore().execute(await commandFor(session,intentId,"create"));
   await ingestPaymentOperation(operation);
   return paymentView(operation);
 }
 export async function captureCheckout(session:Session,intentId:string,orderId:string){
+  await requireMakerspaceScenario(session);
   const operation=await paymentCore().execute(await commandFor(session,intentId,"capture",orderId));
   await ingestPaymentOperation(operation);
   return paymentView(operation);

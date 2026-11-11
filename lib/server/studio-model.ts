@@ -1,3 +1,4 @@
+import { assertProviderAccess } from "./provider-access";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import type { ResponseInput } from "openai/resources/responses/responses";
@@ -60,6 +61,7 @@ export function studioModelName(): string {
 }
 export const liveStudioModel: StudioModel = {
   async respond(request) {
+    assertProviderAccess();
     if (!process.env.OPENAI_API_KEY) throw new DomainError("STUDIO_MODEL_UNCONFIGURED", "The report assistant is not configured yet.", 503);
     const effort = z.enum(["low", "medium", "high", "xhigh", "max"]).parse(process.env.OPENAI_REASONING_EFFORT ?? "max");
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 240_000 });

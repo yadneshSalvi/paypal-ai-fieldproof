@@ -1,5 +1,6 @@
 import type { AffineMatrix, AnchorPair, PlanIssue, PlanPoint, PlanSourceBinding, PlanValidation, ProposedPlan } from "./contracts";
 import { defaultRequirements } from "./contracts";
+import { mandatoryDependencies } from "../community/templates";
 
 const EPS = 1e-9;
 export const samePoint = (a: PlanPoint, b: PlanPoint) => Math.abs(a.x - b.x) < EPS && Math.abs(a.y - b.y) < EPS;
@@ -140,7 +141,7 @@ export function validatePlan(plan: ProposedPlan, sources: PlanSourceBinding[], p
     if (pkg.reviewState !== "reviewed") add("PACKAGE_REVIEW_NEEDED", `packages.${pkg.packageId}`, "Check the quoted amount and evidence requirements.", "review");
     unique(pkg.requirements.map(r => r.id), `packages.${pkg.packageId}.requirements`);
     for (const requirement of pkg.requirements) {
-      const requiredScope = { photo_association: null, installation_review: "equipment_setup", ventilation_check: "ventilation", electrical_check: "electrical_safety", laser_safety_check: "laser_safety" }[requirement.kind];
+      const requiredScope = { photo_association: null, installation_review: "equipment_setup", ventilation_check: "ventilation", electrical_check: "electrical_safety", laser_safety_check: "laser_safety", site_review: "soil_suitability", access_review: "site_access", water_review: "water_safety", food_handling_review: "food_safety", distribution_review: "distribution_safety" }[requirement.kind];
       if (requirement.scope !== requiredScope) add("EVIDENCE_SCOPE_INVALID", `packages.${pkg.packageId}`, "The evidence requirement needs its corresponding reviewer competence.");
     }
     if (!pkg.requirements.some(r => r.kind === "photo_association")) add("PHOTO_REQUIREMENT_MISSING", `packages.${pkg.packageId}`, "Retain the reviewed image association requirement.");
@@ -182,6 +183,7 @@ export function validatePlan(plan: ProposedPlan, sources: PlanSourceBinding[], p
   };
   if (packageIds.some(id => !visit(id))) add("DEPENDENCY_CYCLE", "dependencies", "The prerequisites form a loop. A package cannot depend on itself through another package.");
   if (packageIds.includes("laser") && packageIds.includes("safety") && !plan.dependencies.some(d => d.packageId === "laser" && d.prerequisiteId === "safety" && d.kind === "safety_signoff")) add("SAFETY_PREREQUISITE_REQUIRED", "dependencies", "Laser Station must retain the qualified Safety & Ventilation prerequisite.");
+  for (const baseline of mandatoryDependencies(packageIds)) if (!plan.dependencies.some(d => d.packageId === baseline.packageId && d.prerequisiteId === baseline.prerequisiteId && d.kind === baseline.kind)) add("TEMPLATE_PREREQUISITE_REQUIRED", "dependencies", "Retain every template prerequisite and its acceptance kind; evidence cannot be replaced by a purchase.");
   const geometryValid = !issues.some(i => i.severity === "error" && /outline|zones|walls|openings|scale/.test(i.path));
   const reviewReady = !issues.some(i => i.severity === "error");
   return { issues, geometryValid, reviewReady, publishable: reviewReady && !issues.some(i => i.severity === "review") && (!publication || plan.packages.every(p => p.budgetMinor !== null)) };

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { DocumentView } from "../domain/evidence";
 import type { WorkspaceRole } from "../contracts";
+import { packageTemplate } from "../community/templates";
 
 export const PLAN_SCHEMA_VERSION = 1;
 export const PLAN_PROMPT_VERSION = "source-plan-v1";
@@ -15,10 +16,10 @@ export const citationSchema = z.object({
   kind: z.enum(["sketch", "quote", "note"]),
 }).strict();
 export type PlanCitation = z.infer<typeof citationSchema>;
-export const competencyScopeSchema = z.enum(["equipment_setup", "ventilation", "electrical_safety", "laser_safety"]);
+export const competencyScopeSchema = z.enum(["equipment_setup", "ventilation", "electrical_safety", "laser_safety", "soil_suitability", "site_access", "water_safety", "food_safety", "distribution_safety"]);
 export type CompetencyScope = z.infer<typeof competencyScopeSchema>;
 export const evidenceRequirementSchema = z.object({
-  id: key, label: z.string().trim().min(1).max(120), kind: z.enum(["photo_association", "installation_review", "ventilation_check", "electrical_check", "laser_safety_check"]),
+  id: key, label: z.string().trim().min(1).max(120), kind: z.enum(["photo_association", "installation_review", "ventilation_check", "electrical_check", "laser_safety_check", "site_review", "access_review", "water_review", "food_handling_review", "distribution_review"]),
   scope: competencyScopeSchema.nullable(),
 }).strict();
 export type EvidenceRequirement = z.infer<typeof evidenceRequirementSchema>;
@@ -113,6 +114,7 @@ export interface PackageReadiness {
   blockers: string[]; provenance: "sample" | "reviewer_attested" | "unreviewed";
 }
 export interface PlanningWorkspace {
+  templateId?: import("../community/templates").TemplateId;
   role: WorkspaceRole; allowedRoles: WorkspaceRole[]; mode: "sample" | "live_sandbox"; projectId: string; projectTitle: string; scope: string;
   headVersion: number; projectionVersion: number; asOf: string;
   sources: PlanSourceView[]; current: PlanVersionView | null; published: PublishedPlanView | null;
@@ -122,7 +124,7 @@ export interface PlanningWorkspace {
   modelConfigured: { openai: boolean; gemini: boolean }; storageConfigured: boolean; uploadMode: "private_blob" | "isolated_local";
 }
 export interface ReviewerAccessView { id: string; version: number; label: string; scopes: CompetencyScope[]; state: "invited" | "joined" | "revoked" | "expired"; expiresAt: string; joinedAt: string | null; createdAt: string; }
-export const reviewerInviteSchema = z.object({ intentId: z.uuid(), label: z.string().trim().min(2).max(120), scopes: z.array(competencyScopeSchema).min(1).max(4), expiresHours: z.number().int().min(1).max(72), acknowledged: z.literal(true) }).strict();
+export const reviewerInviteSchema = z.object({ intentId: z.uuid(), label: z.string().trim().min(2).max(120), scopes: z.array(competencyScopeSchema).min(1).max(9), expiresHours: z.number().int().min(1).max(72), acknowledged: z.literal(true) }).strict();
 export const reviewerInviteRevokeSchema = z.object({ intentId: z.uuid(), expectedVersion: z.number().int().min(1), reason: z.string().trim().min(8).max(1000) }).strict();
 export const reviewerRedeemSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{64}$/), redemptionNonce: z.uuid(), acknowledged: z.literal(true) }).strict();
 export const savePlanSchema = z.object({ intentId: z.uuid(), expectedVersion: z.number().int().min(0), plan: proposedPlanSchema,
@@ -150,8 +152,11 @@ export const signoffInputSchema = z.object({ intentId: z.uuid(), planId: z.uuid(
 
 export const scopeLabels: Record<CompetencyScope, string> = {
   equipment_setup: "Equipment setup", ventilation: "Ventilation", electrical_safety: "Electrical safety", laser_safety: "Laser safety",
+  soil_suitability: "Soil suitability", site_access: "Site and collection-point access", water_safety: "Water-source suitability", food_safety: "Food handling", distribution_safety: "Supply handling and distribution",
 };
 export function defaultRequirements(packageId: string): EvidenceRequirement[] {
+  const defined = packageTemplate(packageId);
+  if (defined) return structuredClone(defined.requirements);
   const photo: EvidenceRequirement = { id: "photo", label: "Reviewed image association", kind: "photo_association", scope: null };
   if (packageId === "safety") return [photo,
     { id: "ventilation", label: "Ventilation inspection", kind: "ventilation_check", scope: "ventilation" },

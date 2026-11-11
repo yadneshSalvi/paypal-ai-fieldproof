@@ -1,4 +1,5 @@
 "use client";
+import { adoptWorkspaceContext, workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -14,12 +15,13 @@ export function StudioEntry() {
     try {
       // A different tab may have opened a workspace since this page rendered.
       // Preserve that session instead of replacing it with an illustrative one.
-      const current = await fetch("/api/snapshot", { cache: "no-store" });
+      const current = await workspaceFetch("/api/snapshot", { cache: "no-store" });
       if (!current.ok) throw new Error("Your workspace could not be checked. Please try again.");
       const snapshot = await current.json();
       if (!snapshot.session) {
-        const response = await fetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "sample" }) });
+        const response = await workspaceFetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "sample" }) });
         if (!response.ok) { const result = await response.json(); throw new Error(result.error ?? "Your workspace could not be opened. Please try again."); }
+        adoptWorkspaceContext((await response.json()).id);
       }
       router.refresh();
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Your workspace could not be opened. Please try again."); setBusy(false); }

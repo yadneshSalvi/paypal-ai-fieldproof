@@ -1,3 +1,4 @@
+import { WorkspaceScope } from "@/components/community/workspace-scope";
 import Link from "next/link";
 import { StudioWorkspace } from "@/components/studio/studio-workspace";
 import { StudioEntry } from "@/components/studio/studio-entry";
@@ -14,7 +15,7 @@ export default async function StudioPage() {
   if (!session) return <StudioUnavailable start title="A shared picture starts with your workspace." text="Explore the evidence, arrange a report, and build a shared view for the next board meeting."/>;
   try {
     const [snapshot, report] = await Promise.all([readStudioSnapshot(session), readStudioReport(session)]);
-    return <StudioWorkspace initial={snapshot} report={report} license={process.env.AG_STUDIO_LICENSE_KEY ?? ""}/>;
+    return <><WorkspaceScope projectId={session.projectId}/><StudioWorkspace initial={snapshot} report={report} license={process.env.AG_STUDIO_LICENSE_KEY ?? ""}/></>;
   } catch (error) {
     if (!(error instanceof DomainError)) throw error;
     return <StudioUnavailable title="This report needs a current workspace role." text={error.message}/>;

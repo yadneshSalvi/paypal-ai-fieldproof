@@ -5,6 +5,8 @@ import { DomainError, fundingTotals } from "../domain/money";
 import { database, query } from "./db";
 import { ensurePublicProject, PUBLIC_PROJECT, sampleReceipt } from "./seed";
 import type { Session } from "./auth";
+import { requireMakerspaceScenario } from "./community-workspaces";
+import { requireCurrentRole } from "./membership";
 
 export async function appendEvent(tx: SqlConnection, session: Pick<Session,"tenantId"|"projectId"|"mode">, type: string, title: string, detail: string): Promise<void> {
   const id = randomUUID();
@@ -13,12 +15,13 @@ export async function appendEvent(tx: SqlConnection, session: Pick<Session,"tena
   await tx.query("INSERT INTO fp_outbox(id,tenant_id,project_id,kind,data,status) VALUES($1,$2,$3,'projection.changed',$4::jsonb,'delivered')",[randomUUID(),session.tenantId,session.projectId,JSON.stringify({eventId:id})]);
 }
 export async function projectSnapshot(session: Session | null = null): Promise<ProjectSnapshot> {
+  if (session) await requireCurrentRole(session, session.role);
   await ensurePublicProject();
   const projectId = session?.projectId ?? PUBLIC_PROJECT;
   const [project] = await query<{id:string;tenant_id:string;slug:string;version:number;projection_version:number;tour_step:number;metadata:Record<string,unknown>;mode:"sample"|"live_sandbox"}>("SELECT p.*,t.mode FROM fp_projects p JOIN fp_tenants t ON t.id=p.tenant_id WHERE p.id=$1",[projectId]);
   if (!project) throw new DomainError("PROJECT_NOT_FOUND","This project is no longer available.",404);
   const [packageRows,obligationRows,receiptRows,evidenceRows,eventRows] = await Promise.all([
-    query<{id:string;version:number;budget_minor:string;data:PackageView}>("SELECT * FROM fp_packages WHERE project_id=$1 ORDER BY CASE id WHEN 'electronics' THEN 0 WHEN 'printing' THEN 1 WHEN 'woodworking' THEN 2 WHEN 'safety' THEN 3 WHEN 'laser' THEN 4 ELSE 5 END",[projectId]),
+    query<{id:string;version:number;budget_minor:string;data:PackageView}>("SELECT * FROM fp_packages WHERE project_id=$1 ORDER BY COALESCE((data->>'order')::integer,CASE id WHEN 'electronics' THEN 0 WHEN 'printing' THEN 1 WHEN 'woodworking' THEN 2 WHEN 'safety' THEN 3 WHEN 'laser' THEN 4 ELSE 5 END),id",[projectId]),
     query<{id:string;package_id:string;amount_minor:string;channel:DonorObligation["channel"];consent_version:number;purpose:DonorObligation["purpose"];created_at:Date;data:{donorLabel:string;provenance:DonorObligation["provenance"];eligible?:boolean}}>("SELECT * FROM fp_obligations WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
     query<{data:SettlementReceipt}>("SELECT data FROM fp_settlement_receipts WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
     query<{data:EvidenceItem}>("SELECT data FROM fp_evidence WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
@@ -39,6 +42,7 @@ export async function addSamplePledge(session: Session, input:{amountMinor:numbe
   if(session.mode!=="sample") throw new DomainError("CONSENT_CAPABILITY_PENDING","Conditional wallet collection is still being qualified. Use the explicit sandbox checkout to test a payment.");
   if(session.role!=="donor") throw new DomainError("ROLE_DENIED","Choose the donor role to make your own sample pledge.",403);
   await database().transaction(async tx=>{
+    await requireCurrentRole(session,"donor",tx);
     const [item] = await query<{version:number}>("SELECT version FROM fp_packages WHERE project_id=$1 AND id=$2 FOR UPDATE",[session.projectId,input.packageId],tx);
     if(!item) throw new DomainError("PACKAGE_NOT_FOUND","That package is not part of this project.",404);
     if(item.version!==input.expectedVersion) throw new DomainError("VERSION_CHANGED","The plan changed. Review the current package before pledging.");
@@ -55,6 +59,7 @@ export async function addSamplePledge(session: Session, input:{amountMinor:numbe
 export async function advanceTour(session: Session, step: number): Promise<void> {
   if(session.mode!=="sample") throw new DomainError("SAMPLE_ONLY","The walkthrough runs in a separate sample workspace.");
   await database().transaction(async tx=>{
+    await requireMakerspaceScenario(session,tx);
     const [project] = await query<{tour_step:number}>("SELECT tour_step FROM fp_projects WHERE id=$1 FOR UPDATE",[session.projectId],tx);
     if(!project || step<=project.tour_step) return;
     if(step>project.tour_step+1) throw new DomainError("TOUR_SEQUENCE","Continue from the current walkthrough step.");

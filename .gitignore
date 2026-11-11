@@ -13,6 +13,8 @@ node_modules/
 .next/
 .next-planning-qa/
 .next-planning-build/
+.next-community-qa/
+.next-community-build/
 .vercel/
 out/
 dist/

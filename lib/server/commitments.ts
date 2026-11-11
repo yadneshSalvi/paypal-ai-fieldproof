@@ -1,3 +1,4 @@
+import { requireMakerspaceScenario } from "./community-workspaces";
 import { randomUUID } from "node:crypto";
 import { canonicalJson, sha256, type SqlConnection } from "@fracture/paypal-core";
 import type { PaymentTokenResponse, SetupTokenRequest, SetupTokenResponse } from "paypal";
@@ -74,6 +75,7 @@ export async function commitmentView(session: Session, id: string): Promise<Cons
 }
 export async function commitmentOverview(session: Session): Promise<{ commitments: ConsentView[]; slots: { index: number; amountMinor: number; available: boolean }[]; eligibleMinor: number; targetMinor: number; expiresAt: string }> {
   await initializeDatabase();
+  await requireMakerspaceScenario(session);
   const [owned, occupied] = await Promise.all([
     query<ConsentRow>(`SELECT c.*,o.channel FROM fp_conditional_consents c JOIN fp_obligations o ON o.id=c.obligation_id
       WHERE c.tenant_id=$1 AND c.project_id=$2 AND c.actor_id=$3 ORDER BY c.created_at`, [session.tenantId, session.projectId, session.actorId]),
@@ -86,6 +88,7 @@ export async function commitmentOverview(session: Session): Promise<{ commitment
     targetMinor: CONDITIONAL_TARGET_MINOR, expiresAt: CONSENT_EXPIRES_AT };
 }
 export async function createCommitment(session: Session, input: { slotIndex: number; expectedVersion: number; intentId: string; accepted: true; policyVersion: 1 }): Promise<ConsentView> {
+  await requireMakerspaceScenario(session);
   assertSession(session);
   const policy = conditionalPolicy(input.slotIndex, input.expectedVersion);
   if (input.accepted !== true || input.policyVersion !== policy.version) throw new DomainError("CONSENT_REQUIRED", "Read and accept the exact collection policy first.", 400);

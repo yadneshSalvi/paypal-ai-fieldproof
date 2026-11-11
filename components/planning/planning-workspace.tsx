@@ -1,10 +1,12 @@
 "use client";
+import { bindWorkspaceContext, workspaceFetch } from "@/lib/community/workspace-fetch";
 
 import Link from "next/link";
 import { useCallback, useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, CircleHelp, FileImage, GitBranch, History, LayoutGrid, LockKeyhole, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { PlanningWorkspace as Workspace, ProposedPlan } from "@/lib/planning/contracts";
 import { draftReducer, initialDraft, type DraftState } from "./draft";
+import { WorkspaceScope } from "../community/workspace-scope";
 import { PlanEditor } from "./plan-editor";
 import { SourceLibrary, SourcePreview } from "./source-library";
 import { ScenarioWorkspace } from "./scenario-workspace";
@@ -21,6 +23,7 @@ const sections: { id: PlanningSection; title: string; number: string; icon: type
 ];
 const roleLabels = { organizer: "Organizer", volunteer: "Volunteer reviewer", donor: "Donor", auditor: "Auditor · read only" };
 export function PlanningWorkspace({ initial, initialSection = "layout" }: { initial: Workspace; initialSection?: PlanningSection }) {
+  bindWorkspaceContext(initial.projectId);
   const [workspace, setWorkspace] = useState<Workspace | null>(initial), [busy, setBusy] = useState<string | null>(null), [message, setMessage] = useState<{ text: string; error: boolean } | null>(null), [unavailable, setUnavailable] = useState<string | null>(null);
   const latest = useRef<Workspace | null>(initial), locked = useRef(false), intents = useRef(new Map<string, string>()), pollRunning = useRef(false);
   const notify = useCallback((text: string, error = false) => setMessage({ text, error }), []);
@@ -69,7 +72,7 @@ export function PlanningWorkspace({ initial, initialSection = "layout" }: { init
     if (locked.current) return;
     locked.current = true; setBusy("Changing the authorized workspace role");
     try {
-      const response = await fetch("/api/session/role", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }) });
+      const response = await workspaceFetch("/api/session/role", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }) });
       if (!response.ok) { const error = await response.json(); throw new PlanningRequestError(error.error ?? "This role is unavailable.", error.code ?? "ROLE_DENIED", response.status); }
       await reload();
     } catch (error) { handleError(error); } finally { locked.current = false; setBusy(null); }
@@ -82,7 +85,7 @@ function ScopedWorkspace({ workspace, busy, initialSection, onRoleChange, status
   const loadDraft = (value: { plan: ProposedPlan; origin: DraftState["origin"]; runId?: string | null }) => { dispatch({ type: "load", plan: value.plan, version: workspace.headVersion, planId: workspace.current?.id ?? null, origin: value.origin, sourceRunId: value.runId ?? null, dirty: true }); go("layout"); };
   const replaceDraft = (plan: ProposedPlan, origin: DraftState["origin"], runId?: string | null) => { const value = { plan, origin, runId }; if (draft.dirty) setReplacement(value); else loadDraft(value); };
   useEffect(() => { if (!draft.dirty) return; const listener = (event: BeforeUnloadEvent) => { event.preventDefault(); }; window.addEventListener("beforeunload", listener); return () => window.removeEventListener("beforeunload", listener); }, [draft.dirty]);
-  return <div className="pl-shell"><a href="#planning-main" className="skip-link">Skip to planning workspace</a><header className="pl-header"><Link className="wordmark" href="/" aria-label="Fieldproof home"><span className="brand-mark"><i/><i/><i/><i/></span>fieldproof<span className="brand-dot">.</span></Link><nav aria-label="Project workspace"><Link href="/organizer">Project workspace</Link><Link href="/studio">Proof studio <ArrowRight size={13}/></Link></nav><label className="pl-role-select"><span>Viewing as</span><select value={workspace.role} disabled={!!busy} onChange={event => { const role = event.target.value as Workspace["role"]; if (draft.dirty) setRoleChoice(role); else void onRoleChange(role); }}>{workspace.allowedRoles.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label></header>
+  return <div className="pl-shell"><WorkspaceScope projectId={workspace.projectId}/><a href="#planning-main" className="skip-link">Skip to planning workspace</a><header className="pl-header"><Link className="wordmark" href="/" aria-label="Fieldproof home"><span className="brand-mark"><i/><i/><i/><i/></span>fieldproof<span className="brand-dot">.</span></Link><nav aria-label="Project workspace"><Link href="/community?return=/planning">Saved workspaces</Link><Link href="/update-desk">Update desk</Link><Link href="/organizer">Project workspace</Link><Link href="/studio">Proof studio <ArrowRight size={13}/></Link></nav><label className="pl-role-select"><span>Viewing as</span><select value={workspace.role} disabled={!!busy} onChange={event => { const role = event.target.value as Workspace["role"]; if (draft.dirty) setRoleChoice(role); else void onRoleChange(role); }}>{workspace.allowedRoles.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label></header>
     <div className="pl-context"><div><Link href="/packages">{workspace.projectTitle}</Link><span>/</span><span>The planning desk</span></div><div><Status state={workspace.mode === "sample" ? "warm" : "muted"}>{workspace.mode === "sample" ? "Sample project" : "Live sandbox project"}</Status><Status><LockKeyhole size={11}/> Private workspace</Status></div></div>
     <div className="pl-desk-heading"><div><span className="pl-kicker">FROM A ROUGH SKETCH TO REVIEWED PROOF</span><h1>A place for<br/>every possibility<span>.</span></h1><p>Give each work package a shape, a source, and a clear next step.</p></div><div className="pl-desk-stamp"><span className="pl-stamp-cross" aria-hidden="true">+</span><strong>{workspace.published?.state === "current" ? `R${String(workspace.published.revision).padStart(2, "0")}` : "DRAFT"}</strong><span>{workspace.published?.state === "current" ? "REVIEWED SHARED PLAN" : "A PLAN IN PROGRESS"}</span><i>Sources. Scope. Human review.</i></div></div>
     <nav className="pl-tabs" aria-label="Planning steps">{sections.filter(item => item.id !== "sources" || privateRole).map(item => <button type="button" key={item.id} className={section === item.id ? "active" : ""} aria-current={section === item.id ? "page" : undefined} onClick={() => go(item.id)}><span>{item.number}</span><item.icon size={16}/>{item.title}{item.id === "layout" && draft.dirty && <i className="pl-unsaved-dot" aria-label="Unsaved draft"/>}</button>)}<button className="pl-help-button" aria-label="Explain review boundaries" onClick={() => setHelp(true)}><CircleHelp size={19}/></button></nav>

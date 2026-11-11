@@ -1,4 +1,5 @@
 "use client";
+import { workspaceFetch } from "@/lib/community/workspace-fetch";
 import {useEffect,useRef,useState} from "react";
 import { ArrowUpRight, Check, Clock3, RotateCw, ShieldCheck } from "lucide-react";
 import type {ProjectSnapshot} from "@/lib/contracts";
@@ -7,7 +8,7 @@ import type {PaymentView} from "@/lib/server/payments";
 interface PayPalButtons {render(element:HTMLElement):Promise<void>;close():Promise<void>}
 interface PayPalApi {Buttons(options:{style:Record<string,unknown>;createOrder:()=>Promise<string>;onApprove:(data:{orderID:string})=>Promise<void>;onCancel:()=>void;onError:()=>void}):PayPalButtons}
 declare global {interface Window {paypal?:PayPalApi}}
-async function post<T>(url:string,body:unknown):Promise<T>{const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error??"The request could not finish.");return value as T;}
+async function post<T>(url:string,body:unknown):Promise<T>{const response=await workspaceFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error??"The request could not finish.");return value as T;}
 let sdkPromise:Promise<void>|undefined;
 function loadPayPal(clientId:string):Promise<void>{
   if(window.paypal)return Promise.resolve();
@@ -38,7 +39,7 @@ export function SandboxCheckout({snapshot,onStart,onRefresh}:{snapshot:ProjectSn
     (async()=>{
       try{
         setLoading(true);setError(null);
-        const response=await fetch("/api/paypal/config"),config=await response.json();
+        const response=await workspaceFetch("/api/paypal/config"),config=await response.json();
         if(!response.ok || !config.clientId)throw new Error(config.error??"The PayPal sandbox connection is not available.");
         await loadPayPal(config.clientId);
         if(disposed || !mount.current || !window.paypal)return;

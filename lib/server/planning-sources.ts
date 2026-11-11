@@ -13,8 +13,12 @@ import { createUploadDocument, documentPreview, finalizeDocument, requireDocumen
 import { privateDocumentStorage, type DocumentStorage } from "./document-storage";
 import { lockPlanningAuthority, planningAction, sourceControl, sourcesView } from "./planning-store";
 import { appendEvent } from "./repository";
+import { communityQaEnabled } from "./provider-access";
+import { communityTemplate, type TemplateId } from "../community/templates";
+import { query } from "./db";
 
 export function planningQaEnabled(): boolean {
+  if (communityQaEnabled()) return true;
   if (process.env.NODE_ENV === "production" || process.env.FIELDPROOF_PLANNING_QA !== "true") return false;
   const url = new URL(process.env.DATABASE_URL ?? "postgresql://invalid/invalid");
   if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) || !/^\/fp_planning_qa_[a-z0-9_]+$/.test(url.pathname))
@@ -23,7 +27,7 @@ export function planningQaEnabled(): boolean {
 }
 function localPath(pathname: string): string {
   if (!planningQaEnabled() || !/^fieldproof\/[0-9a-f-]{36}\/[a-zA-Z0-9._/-]+$/.test(pathname) || pathname.includes("..")) throw new DomainError("DOCUMENT_PATH", "This private source location is unavailable.", 409);
-  return resolve(".local/planning-qa/documents", pathname);
+  return resolve(communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
 }
 const localPlanningStorage: DocumentStorage = {
   async read(pathname, maxBytes = MAX_DOCUMENT_BYTES) {
@@ -79,11 +83,13 @@ function derivedIntent(intent: string, name: string): string {
 }
 export async function importSamplePlanningSources(session: Session, intentId: string, storage: DocumentStorage = planningDocumentStorage()): Promise<PlanSourceView[]> {
   if (session.mode !== "sample" || session.role !== "organizer") throw new DomainError("SAMPLE_ONLY", "Open an organizer view in a sample workspace to use the illustrated planning pack.", 403);
+  const [project] = await query<{ metadata: { templateId?: TemplateId } }>("SELECT metadata FROM fp_projects WHERE id=$1 AND tenant_id=$2", [session.projectId, session.tenantId]);
+  const template = communityTemplate(project?.metadata.templateId);
   const assets = [
-    { name: "eastside-sketch", purpose: "sketch" as const, title: "Sample · Eastside room sketch.png" },
-    { name: "eastside-quotes", purpose: "quote" as const, title: "Sample · Supplier quotes.png" },
-    { name: "eastside-alignment", purpose: "photo" as const, title: "Sample · Alignment illustration.png" },
-    { name: "eastside-review-scope", purpose: "signoff" as const, title: "Sample · Reviewer scope exercise.png" },
+    { name: `${template.assetPrefix}-sketch`, purpose: "sketch" as const, title: `Sample · ${template.name} sketch.png` },
+    { name: `${template.assetPrefix}-quotes`, purpose: "quote" as const, title: `Sample · ${template.name} supplier quotes.png` },
+    { name: `${template.assetPrefix}-alignment`, purpose: "photo" as const, title: `Sample · ${template.name} alignment illustration.png` },
+    { name: `${template.assetPrefix}-review-scope`, purpose: "signoff" as const, title: `Sample · ${template.name} reviewer scope exercise.png` },
   ];
   for (const asset of assets) {
     const svg = await readFile(resolve(`public/samples/outlined/${asset.name}.svg`)), bytes = await sharp(svg, { density: 128 }).png().toBuffer();

@@ -17,6 +17,7 @@ async function fixture(): Promise<Session> {
   await database().transaction(async tx => {
     await createProject(tx, session.tenantId, session.projectId, `consent-test-${randomUUID()}`, "live_sandbox");
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'donor',$6)", [session.id, randomUUID(), session.tenantId, session.projectId, session.actorId, session.expiresAt]);
+    await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,'[\"donor\"]'::jsonb)", [session.tenantId, session.projectId, session.actorId]);
   });
   fixtures.push(session);
   return session;
@@ -100,7 +101,7 @@ async function savedConsent(session: Session, slotIndex = 7) {
 before(initializeDatabase);
 after(async () => {
   for (const session of fixtures) {
-    for (const table of ["fp_provider_operations", "fp_conditional_consents", "fp_outbox", "fp_events", "fp_obligations", "fp_sessions"]) await query(`DELETE FROM ${table} WHERE tenant_id=$1`, [session.tenantId]);
+    for (const table of ["fp_provider_operations", "fp_conditional_consents", "fp_outbox", "fp_events", "fp_obligations", "fp_sessions", "fp_memberships"]) await query(`DELETE FROM ${table} WHERE tenant_id=$1`, [session.tenantId]);
     await query("DELETE FROM fp_packages WHERE project_id=$1", [session.projectId]);
     await query("DELETE FROM fp_projects WHERE id=$1", [session.projectId]);
     await query("DELETE FROM fp_tenants WHERE id=$1", [session.tenantId]);
