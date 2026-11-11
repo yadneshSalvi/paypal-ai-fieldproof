@@ -2,7 +2,9 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import type { z } from "zod";
 import type { SettlementReceipt } from "../contracts";
-import { DomainError, fundingTotals } from "../domain/money";
+import { DomainError } from "../domain/money";
+import { packagePositionTotals } from "../domain/funding-positions";
+import { readFundingProjection } from "./funding-positions";
 import { proofDerivativeInput, proofDerivativeReview, proofDraftInput, proofDecisionInput, proofWithdrawInput, type ProofDesk, type ProofEvidence, type ProofPayload, type ProofSnapshotView, type PublicProof } from "../proof/contracts";
 import type { Session } from "./auth";
 import { database, initializeDatabase, query } from "./db";
@@ -109,9 +111,12 @@ async function projection(session: Session, packageId: string, ids: string[], re
   const [project] = await query<{ metadata: { title: string }; projection_version: number }>("SELECT metadata,projection_version FROM fp_projects WHERE tenant_id=$1 AND id=$2 FOR SHARE", scope(session), tx);
   const [pkg] = await query<{ version: number; budget_minor: string; data: { title: string } }>("SELECT version,budget_minor,data FROM fp_packages WHERE project_id=$1 AND id=$2 FOR SHARE", [session.projectId, packageId], tx);
   if (!project || !pkg) throw new DomainError("PROOF_PACKAGE_UNAVAILABLE", "This package is no longer available.", 404);
-  const receipts = (await query<{ data: SettlementReceipt }>(`SELECT r.data FROM fp_settlement_receipts r JOIN fp_obligations o ON o.id=r.obligation_id AND o.project_id=r.project_id
-    WHERE r.tenant_id=$1 AND r.project_id=$2 AND r.package_id=$3 AND o.purpose='conditional_pledge' ORDER BY r.id FOR SHARE OF r,o`, [...scope(session), packageId], tx)).map(r => r.data).filter(r => r.provenance === session.mode);
-  const totals = fundingTotals(receipts, Number(pkg.budget_minor), session.mode);
+  const allocation=await readFundingProjection({tenantId:session.tenantId,projectId:session.projectId,provenance:session.mode},tx);
+  const positions=allocation.positions.filter(p=>p.packageId===packageId);
+  const receiptIds=positions.map(p=>p.receiptId);
+  const receipts = (await query<{ data: SettlementReceipt }>(`SELECT r.data FROM fp_settlement_receipts r JOIN fp_obligations o ON o.id=r.obligation_id AND o.project_id=r.project_id AND o.tenant_id=r.tenant_id
+    WHERE r.tenant_id=$1 AND r.project_id=$2 AND r.id=ANY($3::text[]) AND o.purpose='conditional_pledge' ORDER BY r.id FOR SHARE OF r,o`, [...scope(session), receiptIds], tx)).map(r => r.data).filter(r => r.provenance === session.mode);
+  const totals = packagePositionTotals(positions,packageId,Number(pkg.budget_minor));
   const images: ProofEvidence[] = [];
   for (const id of [...new Set(ids)].sort()) {
     const row = await getDerivative(session, id, tx);
@@ -123,9 +128,9 @@ async function projection(session: Session, packageId: string, ids: string[], re
   const payload: ProofPayload = {
     schema: "fieldproof.public-proof.v1", revision, cutoff, mode: session.mode,
     projectTitle: String(project.metadata.title).slice(0, 160), package: { id: packageId, title: String(pkg.data.title).slice(0, 160), version: pkg.version, targetMinor: Number(pkg.budget_minor) },
-    funding: { ...totals, ordersMinor: receipts.filter(r => r.sourceKind === "orders_capture").reduce((n, r) => n + r.creditedMinor - r.completedAttributedRefundMinor, 0),
-      invoiceMinor: receipts.filter(r => r.sourceKind === "invoice_payment").reduce((n, r) => n + r.creditedMinor - r.completedAttributedRefundMinor, 0),
-      refundedMinor: receipts.reduce((n, r) => n + r.completedAttributedRefundMinor, 0), excludedMinor: receipts.reduce((n, r) => n + r.excludedMinor, 0), paymentCount: receipts.length,
+    funding: { ...totals, ordersMinor: positions.filter(r => r.sourceKind === "orders_capture").reduce((n, r) => n + r.collectedMinor, 0),
+      invoiceMinor: positions.filter(r => r.sourceKind === "invoice_payment").reduce((n, r) => n + r.collectedMinor, 0),
+      refundedMinor: positions.reduce((n, r) => n + r.refundedMinor, 0), excludedMinor: positions.reduce((n, r) => n + r.excludedMinor, 0), paymentCount: receipts.length,
       referenceSuffixes: receipts.slice(0, 20).map(r => r.actualProviderPaymentRef.replace(/[^a-zA-Z0-9]/g, "").slice(-4)) },
     evidence: images,
     signoffs: signoffs.map(s => ({ scope: s.scope, decision: s.decision, observedAt: s.observedAt, provenance: s.provenance, label: "Scoped project reviewer" })),

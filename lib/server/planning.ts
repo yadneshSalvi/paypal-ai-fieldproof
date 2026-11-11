@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import { z } from "zod";
-import type { SettlementReceipt } from "../contracts";
-import { DomainError, fundingTotals } from "../domain/money";
+import { DomainError } from "../domain/money";
+import { packagePositionTotals } from "../domain/funding-positions";
 import { publishPlanSchema, reviewPlanSchema, savePlanSchema, type PlanningWorkspace, type ProposedPlan } from "../planning/contracts";
 import { validatePlan } from "../planning/geometry";
 import { solveScenario, type FundingPool } from "../planning/solver";
 import type { Session } from "./auth";
 import { database, query } from "./db";
 import { requireCurrentRole } from "./membership";
+import { readFundingProjection } from "./funding-positions";
 import { sealPrivate } from "./private-values";
 import { appendEvent } from "./repository";
 import { alignmentViews, packageReadiness, qualificationViews, signoffViews } from "./planning-evidence";
@@ -20,15 +21,14 @@ import { currentSourceCheck, expectedHead, insertPlan, lockPlanningAuthority, pa
 
 export async function planningFunding(session: Pick<Session, "tenantId" | "projectId" | "mode">, tx: SqlConnection) {
   const packages = await packageBindings(session.projectId, tx);
-  const receipts = await query<{ data: SettlementReceipt }>(`SELECT r.data FROM fp_settlement_receipts r JOIN fp_obligations o ON o.id=r.obligation_id AND o.tenant_id=r.tenant_id AND o.project_id=r.project_id
-    WHERE r.tenant_id=$1 AND r.project_id=$2 AND o.purpose='conditional_pledge' ORDER BY r.id`, [session.tenantId, session.projectId], tx);
-  const uses = await query<{ package_id: string; amount: string }>("SELECT package_id,sum(amount_minor) AS amount FROM fp_receipt_allocations WHERE tenant_id=$1 AND project_id=$2 AND state IN ('reserved','paid') GROUP BY package_id", [session.tenantId, session.projectId], tx);
+  const funding = await readFundingProjection({tenantId:session.tenantId,projectId:session.projectId,provenance:session.mode},tx);
+  const closedPackages=new Set((await query<{id:string}>("SELECT id FROM fp_packages WHERE project_id=$1 AND data->>'fundingState'='cancelled'",[session.projectId],tx)).map(p=>p.id));
   const rounds = await query<{ package_id: string; package_version: number; state: string }>("SELECT package_id,package_version,state FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 ORDER BY collection_started_at DESC", [session.tenantId, session.projectId], tx);
   return packages.map(pkg => {
-    const totals = fundingTotals(receipts.filter(r => r.data.packageId === pkg.packageId).map(r => r.data), pkg.budgetMinor, session.mode);
+    const totals = packagePositionTotals(funding.positions,pkg.packageId,pkg.budgetMinor);
     const round = rounds.find(r => r.package_id === pkg.packageId && r.package_version === pkg.version);
-    const complete = totals.shortfallMinor === 0 && (session.mode === "sample" || round?.state === "funded");
-    return { packageId: pkg.packageId, collectedMinor: totals.collectedMinor, eligibleMinor: complete ? Math.max(0, totals.fundingEligibleMinor - Number(uses.find(u => u.package_id === pkg.packageId)?.amount ?? 0)) : 0, complete };
+    const complete = !closedPackages.has(pkg.packageId) && !["compensating","cancelled"].includes(round?.state??"") && totals.shortfallMinor === 0 && (session.mode === "sample" || round?.state === "funded");
+    return { packageId: pkg.packageId, collectedMinor: totals.collectedMinor, eligibleMinor: complete ? funding.positions.filter(p=>p.packageId===pkg.packageId).reduce((sum,p)=>sum+p.availableMinor,0) : 0, complete };
   });
 }
 export async function readPlanningWorkspace(session: Session): Promise<PlanningWorkspace> {

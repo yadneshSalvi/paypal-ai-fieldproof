@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { canonicalJson, sha256, type SqlConnection, type SqlDatabase } from "@fracture/paypal-core";
 import type { EvidenceItem, PackageView, SettlementReceipt, WorkspaceRole } from "../contracts";
-import { assertMinor, DomainError, fundingTotals } from "../domain/money";
+import { assertMinor, DomainError } from "../domain/money";
+import { packagePositionTotals } from "../domain/funding-positions";
 import { STUDIO_FIELDS, STUDIO_SEMANTIC_VERSION, STUDIO_TABLES, type AllocationRow, type EvidenceRow, type ExceptionRow, type PackageRow, type SettlementRow, type StudioData, type StudioSnapshot } from "../studio/contracts";
 import type { Session } from "./auth";
 import { claimPrivate, type ClaimRow } from "./claims";
 import { database, query } from "./db";
 import { requireCurrentRole } from "./membership";
+import { readFundingProjection } from "./funding-positions";
 import { openPrivate, sealPrivate } from "./private-values";
 import { publishedPlan } from "./planning-store";
 import { alignmentViews, packageReadiness, signoffViews } from "./planning-evidence";
@@ -110,8 +112,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       FROM fp_claim_line_reviews l JOIN fp_claims c ON c.id=l.claim_id JOIN fp_documents d ON d.id=c.document_id
       WHERE c.tenant_id=$1 AND c.project_id=$2 AND l.review_version=c.version ORDER BY l.claim_id,l.claim_line_id`, params, tx);
     const work = await query<WorkSource>("SELECT data FROM fp_evidence WHERE tenant_id=$1 AND project_id=$2 ORDER BY id", params, tx);
-    const allocationTotals = await query<{ package_id: string; allocated: string }>(`SELECT package_id,sum(amount_minor) AS allocated FROM fp_receipt_allocations
-      WHERE tenant_id=$1 AND project_id=$2 AND state IN ('reserved','paid') GROUP BY package_id`, params, tx);
+    const funding=await readFundingProjection({tenantId:session.tenantId,projectId:session.projectId,provenance:session.mode},tx);
     const delivered = await query<{ package_id: string; paid: string }>(`SELECT l.package_id,sum(l.amount_minor) AS paid FROM fp_payable_lines l JOIN fp_payables p ON p.id=l.payable_id
       WHERE p.tenant_id=$1 AND p.project_id=$2 AND p.principal_paid_at IS NOT NULL AND p.principal_returned_at IS NULL GROUP BY l.package_id`, params, tx);
     const rounds = await query<{ id: string; package_id: string; package_version: number; state: string; recovery_ends_at: Date }>(
@@ -121,23 +122,23 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
     const workReviews = plan ? await signoffViews(session, tx, true) : [];
     const readiness = plan ? packageReadiness(plan.payload, plan.view.state === "current", photoReviews, workReviews, []) : [];
     const packageRows: PackageRow[] = packages.map(pkg => {
-      const conditional = receipts.filter(row => row.purpose === "conditional_pledge" && row.data.packageId === pkg.id).map(row => row.data);
-      const total = fundingTotals(conditional, amount(pkg.budget_minor), project.mode);
-      const allocated = amount(allocationTotals.find(row => row.package_id === pkg.id)?.allocated ?? 0);
+      const positions=funding.positions.filter(row=>row.packageId===pkg.id);
+      const total = packagePositionTotals(positions,pkg.id,amount(pkg.budget_minor));
+      const allocated = positions.reduce((sum,row)=>sum+row.reservedMinor+row.paidMinor,0);
       const round = rounds.find(row => row.package_id === pkg.id && row.package_version === pkg.version);
       const currentReviews = reviews.filter(row => row.package_id === pkg.id && row.decision === "approved");
       const physicallyAccepted = work.filter(row => row.data.state === "accepted" && row.data.packageIds.includes(pkg.id) && ["photo", "signoff"].includes(row.data.kind)).length;
       const reviewedWork = readiness.find(item => item.packageId === pkg.id);
       // A complete collection does not imply a funded round or permission to spend.
-      const allocatable = total.shortfallMinor === 0 && (project.mode === "sample" || round?.state === "funded");
+      const allocatable = pkg.data.fundingState!=="cancelled" && !["compensating","cancelled"].includes(round?.state??"") && total.shortfallMinor === 0 && (project.mode === "sample" || round?.state === "funded");
       return { id: pkg.id, packageId: pkg.id, title: pkg.data.title, shortTitle: pkg.data.shortTitle,
         budgetMinor: amount(pkg.budget_minor), pledgedMinor: obligations.filter(row => row.package_id === pkg.id && eligibleCommitment(row, pkg, project.mode, cutoff)).reduce((sum, row) => sum + amount(row.amount_minor), 0),
-        ...total, completedRefundMinor: conditional.reduce((sum, row) => sum + row.completedAttributedRefundMinor, 0),
+        ...total, completedRefundMinor: positions.reduce((sum, row) => sum + row.refundedMinor, 0),
         allocationReservedMinor: allocated, availableAllocationMinor: allocatable ? Math.max(0, total.fundingEligibleMinor - allocated) : 0,
         approvedExpenseMinor: currentReviews.reduce((sum, row) => sum + amount(row.approved_minor), 0),
         paidExpenseMinor: amount(delivered.find(row => row.package_id === pkg.id)?.paid ?? 0),
         reviewedItemCount: reviewedWork?.acceptedCount ?? physicallyAccepted, requiredItemCount: reviewedWork?.requiredCount ?? pkg.data.evidenceRequired, reviewedExpenseLineCount: currentReviews.length,
-        fundingState: round?.state ?? (total.shortfallMinor === 0 ? "collected" : pkg.data.fundingState),
+        fundingState: pkg.data.fundingState==="cancelled" ? "cancelled" : round?.state ?? (total.shortfallMinor === 0 ? "collected" : pkg.data.fundingState),
         workState: reviewedWork ? plan?.view.state !== "current" ? "plan_review_required" : !reviewedWork.prerequisitesMet ? "prerequisites_needed" : reviewedWork.accepted ? reviewedWork.provenance === "sample" ? "sample_review_complete" : "accepted_within_scope" : "evidence_needed" : pkg.data.workState,
         geometryRef: plan ? `${pkg.id}:${plan.view.contentHash}:${plan.view.state}` : pkg.id, provenance: project.mode };
     });

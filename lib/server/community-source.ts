@@ -4,10 +4,12 @@ import { COMMUNITY_CONTRACT, type BriefAudience, type BriefSource, type BriefSou
 import { communityTemplate, type TemplateId } from "../community/templates";
 import { assertStatementSources } from "../community/content";
 import { DomainError, fundingTotals } from "../domain/money";
+import { packagePositionTotals } from "../domain/funding-positions";
 import { defaultRequirements } from "../planning/contracts";
 import type { Session } from "./auth";
 import { query } from "./db";
 import { requireCurrentRole } from "./membership";
+import { readFundingProjection } from "./funding-positions";
 import { alignmentViews, packageReadiness, signoffViews } from "./planning-evidence";
 import { planningHash, publishedPlan } from "./planning-store";
 
@@ -35,7 +37,8 @@ export async function communitySource(session: Session, audience: BriefAudience,
     WHERE r.project_id=$1 AND r.tenant_id=$2 ORDER BY r.id`, [session.projectId, session.tenantId], tx);
   const conditional = receipts.filter(r => r.purpose === "conditional_pledge"), target = packages.reduce((sum,pkg) => sum+Number(pkg.budget_minor),0);
   const obligations=await query<{id:string;version:number;amount_minor:string;channel:string}>("SELECT id,version,amount_minor,channel FROM fp_obligations WHERE tenant_id=$1 AND project_id=$2 AND purpose='conditional_pledge' ORDER BY id",[session.tenantId,session.projectId],tx);
-  const totals = fundingTotals(conditional.map(r => r.data), target, session.mode);
+  const allocation = await readFundingProjection({tenantId:session.tenantId,projectId:session.projectId,provenance:session.mode},tx);
+  const totals = {...allocation.totals,shortfallMinor:Math.max(0,target-allocation.totals.fundingEligibleMinor)};
   const completed = conditional.filter(r=>r.data.provenance===session.mode && r.data.authoritativeObservedState==="COMPLETED");
   const separate = fundingTotals(receipts.filter(r=>r.purpose==="sandbox_test").map(r=>r.data),0,session.mode);
   const rows: BriefSourceRow[] = [], statements: BriefStatement[] = [];
@@ -45,7 +48,7 @@ export async function communitySource(session: Session, audience: BriefAudience,
   statements.push(sentence("project:provenance", "project", session.mode === "sample" ? "This is a fictional sample workspace; its records do not establish real payments or physical work." : "This is a live sandbox workspace using test funds; payment records do not establish physical work.", session.mode === "sample" ? "Este espacio contiene ejemplos ficticios; sus registros no acreditan pagos reales ni trabajo físico." : "Este espacio usa fondos de prueba en un entorno de pruebas; los registros de pago no acreditan trabajo físico.", [],[projectRow]));
   const pledges=add(sourceRow("funding:pledges","pledge_summary","Recorded conditional pledges","/my-contribution",{recordedMinor:obligations.reduce((n,o)=>n+Number(o.amount_minor),0),recordCount:obligations.length,obligationHashes:obligations.map(o=>planningHash(o)),collectedFundsClaimed:false}));
   statements.push(sentence("funding:pledges","funding","Saved conditional contribution records total {{recorded_pledges}}; this recorded amount is separate from collected funds and current collection eligibility.","Los registros guardados de aportaciones condicionadas suman {{recorded_pledges}}; este importe registrado es independiente de los fondos recaudados y de la elegibilidad actual para el cobro.",[money("recorded_pledges",Number(pledges.fields.recordedMinor))],[pledges]));
-  const funding = add(sourceRow("funding:conditional", "funding_summary", "Conditional funding calculation", "/collection", { ...totals, targetMinor:target, receiptCount:completed.length, contributorIdentityCount:new Set(completed.map(r=>r.actor_id)).size, receiptHashes:conditional.map(r=>planningHash({id:r.id,version:r.version,data:r.data})), separateCheckoutExcluded:true, providerLiquidityChecked:false }));
+  const funding = add(sourceRow("funding:conditional", "funding_summary", "Conditional funding calculation", "/collection", { ...totals, targetMinor:target, receiptCount:completed.length, contributorIdentityCount:new Set(completed.map(r=>r.actor_id)).size, receiptHashes:conditional.map(r=>planningHash({id:r.id,version:r.version,data:r.data})), positionHash:planningHash(allocation.positions), separateCheckoutExcluded:true, providerLiquidityChecked:false }));
   statements.push(sentence("funding:collected", "funding", "Conditional support has {{collected}} in net credited funds across {{receipt_count}} completed settlement records and {{identity_count}} recorded contributor identities.", "El apoyo condicionado tiene {{collected}} en fondos netos acreditados, en {{receipt_count}} registros de liquidación completados y {{identity_count}} identidades de contribuyentes registradas.", [money("collected",totals.collectedMinor),count("receipt_count",completed.length),count("identity_count",new Set(completed.map(r=>r.actor_id)).size)],[funding]));
   statements.push(sentence("funding:eligibility", "funding", "The records contain {{eligible}} eligible for package funding, with {{refund_reserve}} reserved for pending refunds; provider liquidity is not established by this total.", "Los registros contienen {{eligible}} elegibles para financiar los paquetes, con {{refund_reserve}} reservados para reembolsos pendientes; este total no acredita la liquidez del proveedor.", [money("eligible",totals.fundingEligibleMinor),money("refund_reserve",totals.pendingRefundMinor)],[funding]));
   const checkout = add(sourceRow("funding:checkout", "separate_checkout", "Separate test checkout", "/sandbox", { collectedMinor:separate.collectedMinor, excludedFromConditionalSupport:true, receiptHashes:receipts.filter(r=>r.purpose==="sandbox_test").map(r=>planningHash({id:r.id,version:r.version,data:r.data})) }));
@@ -53,7 +56,7 @@ export async function communitySource(session: Session, audience: BriefAudience,
   const publication = await publishedPlan(session,tx), alignments = await alignmentViews(session,tx,true), signoffs = await signoffViews(session,tx,true);
   const readiness = packageReadiness(publication?.payload??null,publication?.view.state==="current",alignments,signoffs,[]);
   for (const pkg of packages) {
-    const result=fundingTotals(conditional.filter(r=>r.data.packageId===pkg.id).map(r=>r.data),Number(pkg.budget_minor),session.mode), ready=readiness.find(r=>r.packageId===pkg.id);
+    const result=packagePositionTotals(allocation.positions,pkg.id,Number(pkg.budget_minor)), ready=readiness.find(r=>r.packageId===pkg.id);
     const row=add(sourceRow(`package:${pkg.id}`,"package",pkg.data.title,`/packages#${encodeURIComponent(pkg.id)}`,{ packageId:pkg.id,version:pkg.version,title:pkg.data.title,budgetMinor:Number(pkg.budget_minor),...result,dependencies:pkg.data.dependencies??[],requirementCount:ready?.requiredCount??defaultRequirements(pkg.id).length,acceptedReviewCount:ready?.acceptedCount??0,reviewProvenance:ready?.provenance??"unreviewed",planCurrent:publication?.view.state==="current" }));
     const titled=template.packages.find(p=>p.id===pkg.id&&p.title===pkg.data.title);
     statements.push(sentence(`package:${pkg.id}:funding`,"funding","{{package_name}} has {{package_collected}} in net credited support against a budget of {{package_budget}}.","{{package_name}} tiene {{package_collected}} de apoyo neto acreditado frente a un presupuesto de {{package_budget}}.",[plain("package_name",pkg.data.title,titled?.titleEs),money("package_collected",result.collectedMinor),money("package_budget",Number(pkg.budget_minor))],[row]));

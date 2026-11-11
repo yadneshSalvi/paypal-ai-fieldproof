@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import type { DonorObligation, EvidenceItem, PackageView, ProjectEvent, ProjectSnapshot, SettlementReceipt } from "../contracts";
-import { DomainError, fundingTotals } from "../domain/money";
+import { DomainError } from "../domain/money";
+import { packagePositionTotals } from "../domain/funding-positions";
 import { database, query } from "./db";
 import { ensurePublicProject, PUBLIC_PROJECT, sampleReceipt } from "./seed";
 import type { Session } from "./auth";
 import { requireMakerspaceScenario } from "./community-workspaces";
 import { requireCurrentRole } from "./membership";
+import { readFundingProjection } from "./funding-positions";
 
 export async function appendEvent(tx: SqlConnection, session: Pick<Session,"tenantId"|"projectId"|"mode">, type: string, title: string, detail: string): Promise<void> {
   const id = randomUUID();
@@ -18,25 +20,31 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   if (session) await requireCurrentRole(session, session.role);
   await ensurePublicProject();
   const projectId = session?.projectId ?? PUBLIC_PROJECT;
-  const [project] = await query<{id:string;tenant_id:string;slug:string;version:number;projection_version:number;tour_step:number;metadata:Record<string,unknown>;mode:"sample"|"live_sandbox"}>("SELECT p.*,t.mode FROM fp_projects p JOIN fp_tenants t ON t.id=p.tenant_id WHERE p.id=$1",[projectId]);
+  const snapshot=await database().transaction(async tx=>{
+  await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+  if(session) await requireCurrentRole(session,session.role,tx);
+  const [project] = await query<{id:string;tenant_id:string;slug:string;version:number;projection_version:number;tour_step:number;metadata:Record<string,unknown>;mode:"sample"|"live_sandbox"}>("SELECT p.*,t.mode FROM fp_projects p JOIN fp_tenants t ON t.id=p.tenant_id WHERE p.id=$1",[projectId],tx);
   if (!project) throw new DomainError("PROJECT_NOT_FOUND","This project is no longer available.",404);
   const [packageRows,obligationRows,receiptRows,evidenceRows,eventRows] = await Promise.all([
-    query<{id:string;version:number;budget_minor:string;data:PackageView}>("SELECT * FROM fp_packages WHERE project_id=$1 ORDER BY COALESCE((data->>'order')::integer,CASE id WHEN 'electronics' THEN 0 WHEN 'printing' THEN 1 WHEN 'woodworking' THEN 2 WHEN 'safety' THEN 3 WHEN 'laser' THEN 4 ELSE 5 END),id",[projectId]),
-    query<{id:string;package_id:string;amount_minor:string;channel:DonorObligation["channel"];consent_version:number;purpose:DonorObligation["purpose"];created_at:Date;data:{donorLabel:string;provenance:DonorObligation["provenance"];eligible?:boolean}}>("SELECT * FROM fp_obligations WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
-    query<{data:SettlementReceipt}>("SELECT data FROM fp_settlement_receipts WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
-    query<{data:EvidenceItem}>("SELECT data FROM fp_evidence WHERE project_id=$1 ORDER BY created_at,id",[projectId]),
-    query<{id:string;sequence:string;type:string;occurred_at:Date;data:Omit<ProjectEvent,"id"|"sequence"|"type"|"occurredAt">}>("SELECT * FROM fp_events WHERE project_id=$1 ORDER BY sequence DESC LIMIT 30",[projectId]),
+    query<{id:string;version:number;budget_minor:string;data:PackageView}>("SELECT * FROM fp_packages WHERE project_id=$1 ORDER BY COALESCE((data->>'order')::integer,CASE id WHEN 'electronics' THEN 0 WHEN 'printing' THEN 1 WHEN 'woodworking' THEN 2 WHEN 'safety' THEN 3 WHEN 'laser' THEN 4 ELSE 5 END),id",[projectId],tx),
+    query<{id:string;package_id:string;amount_minor:string;channel:DonorObligation["channel"];consent_version:number;purpose:DonorObligation["purpose"];created_at:Date;data:{donorLabel:string;provenance:DonorObligation["provenance"];eligible?:boolean}}>("SELECT * FROM fp_obligations WHERE project_id=$1 ORDER BY created_at,id",[projectId],tx),
+    query<{data:SettlementReceipt}>("SELECT data FROM fp_settlement_receipts WHERE project_id=$1 ORDER BY created_at,id",[projectId],tx),
+    query<{data:EvidenceItem}>("SELECT data FROM fp_evidence WHERE project_id=$1 ORDER BY created_at,id",[projectId],tx),
+    query<{id:string;sequence:string;type:string;occurred_at:Date;data:Omit<ProjectEvent,"id"|"sequence"|"type"|"occurredAt">}>("SELECT * FROM fp_events WHERE project_id=$1 ORDER BY sequence DESC LIMIT 30",[projectId],tx),
   ]);
+  const funding=await readFundingProjection({tenantId:project.tenant_id,projectId,provenance:project.mode},tx);
   const receipts = receiptRows.map(row => row.data);
   const obligations: DonorObligation[] = obligationRows.map(row=>({id:row.id,packageId:row.package_id,amountMinor:Number(row.amount_minor),channel:row.channel,consentVersion:row.consent_version,donorLabel:row.data.donorLabel,provenance:row.data.provenance,createdAt:row.created_at.toISOString(),purpose:row.purpose}));
   const packages: PackageView[] = packageRows.map(row=>{
-    const contributionIds = new Set(obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge").map(o=>o.id));
-    const totals = fundingTotals(receipts.filter(r=>r.packageId===row.id && contributionIds.has(r.donorObligationId)),Number(row.budget_minor),project.mode);
+    const totals = packagePositionTotals(funding.positions,row.id,Number(row.budget_minor));
     const pledgedMinor = obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge" && (project.mode==="sample" || o.data.eligible===true)).reduce((sum,o)=>sum+Number(o.amount_minor),0);
-    return {...row.data,...totals,id:row.id,budgetMinor:Number(row.budget_minor),version:row.version,pledgedMinor,fundingState:totals.fundingEligibleMinor>=Number(row.budget_minor)?"funded":row.data.fundingState};
+    return {...row.data,...totals,id:row.id,budgetMinor:Number(row.budget_minor),version:row.version,pledgedMinor,fundingState:row.data.fundingState==="cancelled"?"cancelled":totals.fundingEligibleMinor>=Number(row.budget_minor)?"funded":row.data.fundingState};
   });
   const metadata = project.metadata as unknown as Pick<ProjectSnapshot,"title"|"subtitle"|"organizer"|"location"|"currency"|"targetMinor"|"deadline">;
   return {...metadata,id:project.id,tenantId:project.tenant_id,slug:project.slug,mode:project.mode,version:project.version,projectionVersion:project.projection_version,packages,obligations,receipts,evidence:evidenceRows.map(row=>row.data),events:eventRows.map(row=>({...row.data,id:row.id,sequence:Number(row.sequence),type:row.type,occurredAt:row.occurred_at.toISOString()})),tourStep:project.tour_step,session:session?{role:session.role,actorId:session.actorId,expiresAt:session.expiresAt}:null,capabilities:{checkoutConfigured:!!process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_PROJECT_ISOLATED === "true",savedWalletQualified:false,payoutQualified:false,invoiceQualified:false,studioConfigured:!!process.env.AG_STUDIO_LICENSE_KEY}};
+  });
+  if(session) await requireCurrentRole(session,session.role);
+  return snapshot;
 }
 export async function addSamplePledge(session: Session, input:{amountMinor:number;packageId:string;expectedVersion:number;intentId:string}): Promise<void> {
   if(session.mode!=="sample") throw new DomainError("CONSENT_CAPABILITY_PENDING","Conditional wallet collection is still being qualified. Use the explicit sandbox checkout to test a payment.");

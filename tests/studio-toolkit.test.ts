@@ -18,8 +18,8 @@ before(async () => {
 });
 after(async () => { for (const key of envKeys) { if (original[key] === undefined) delete process.env[key]; else process.env[key] = original[key]; } await database().close(); });
 const code = (value: string) => (error: unknown) => typeof error === "object" && error !== null && "code" in error && error.code === value;
-async function fixture(role: Session["role"] = "organizer") {
-  const session: Session = { id: randomUUID(), tenantId: randomUUID(), projectId: randomUUID(), actorId: randomUUID(), role, mode: "live_sandbox", expiresAt: new Date(Date.now() + 3600000).toISOString() };
+async function fixture(role: Session["role"] = "organizer", mode: Session["mode"] = "live_sandbox") {
+  const session: Session = { id: randomUUID(), tenantId: randomUUID(), projectId: randomUUID(), actorId: randomUUID(), role, mode, expiresAt: new Date(Date.now() + 3600000).toISOString() };
   await database().transaction(async tx => {
     await createProject(tx, session.tenantId, session.projectId, `toolkit-fixture-${randomUUID()}`, session.mode);
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)", [session.id, randomUUID(), session.tenantId, session.projectId, session.actorId, role, session.expiresAt]);
@@ -27,9 +27,9 @@ async function fixture(role: Session["role"] = "organizer") {
   });
   const obligation = randomUUID(), order = "5O190127TN364715T";
   const receipt = sampleReceipt(session.tenantId, session.projectId, obligation, "electronics", 3500, randomUUID());
-  receipt.provenance = "live_sandbox"; receipt.sourceOrderId = order;
+  receipt.provenance = mode; receipt.sourceOrderId = order;
   await query("INSERT INTO fp_obligations(id,tenant_id,project_id,package_id,actor_id,amount_minor,channel,purpose,data) VALUES($1,$2,$3,'electronics',$4,3500,'collected','conditional_pledge','{}')", [obligation, session.tenantId, session.projectId, session.actorId]);
-  await query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,'electronics',$5,'live_sandbox',$6::jsonb)", [receipt.id, session.tenantId, session.projectId, obligation, receipt.actualProviderPaymentRef, JSON.stringify(receipt)]);
+  await query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,'electronics',$5,$6,$7::jsonb)", [receipt.id, session.tenantId, session.projectId, obligation, receipt.actualProviderPaymentRef, mode, JSON.stringify(receipt)]);
   // Unique per fixture, while provider identity is a deterministic SDK-shaped fixture.
   await query("INSERT INTO fp_provider_orders(order_id,tenant_id,project_id,obligation_id,operation_id,observed_state) VALUES($1,$2,$3,$4,$5,'COMPLETED') ON CONFLICT(order_id) DO UPDATE SET tenant_id=$2,project_id=$3,obligation_id=$4,operation_id=$5", [order, session.tenantId, session.projectId, obligation, randomUUID()]);
   return { session, receipt, order, obligation, snapshot: await materializeStudioDataset(session) };
@@ -90,11 +90,8 @@ describe("exact owned PayPal Toolkit reads", () => {
     const f = await fixture();
     const reader: ToolkitReader = { async read(_tool, id) { await query("UPDATE fp_memberships SET state='revoked',version=version+1 WHERE project_id=$1", [f.session.projectId]); return { id, status: "COMPLETED" }; } };
     await assert.rejects(readOwnedToolkitResource(f.session, f.snapshot, { tool: "get_order", receiptId: f.receipt.id }, reader), code("MEMBERSHIP_DENIED"));
-    const sample = await fixture();
-    await query("UPDATE fp_tenants SET mode='sample' WHERE id=$1", [sample.session.tenantId]);
-    sample.session.mode = "sample";
-    const sampleCutoff = await materializeStudioDataset(sample.session);
-    await assert.rejects(readOwnedToolkitResource(sample.session, sampleCutoff, { tool: "get_order", receiptId: sample.receipt.id }, reader), code("TOOLKIT_SAMPLE_SOURCE"));
+    const sample = await fixture("organizer", "sample");
+    await assert.rejects(readOwnedToolkitResource(sample.session, sample.snapshot, { tool: "get_order", receiptId: sample.receipt.id }, reader), code("TOOLKIT_SAMPLE_SOURCE"));
     const volunteer = await fixture("volunteer");
     await assert.rejects(readOwnedToolkitResource(volunteer.session, volunteer.snapshot, { tool: "get_order", receiptId: volunteer.receipt.id }, reader), code("TOOLKIT_ROLE_DENIED"));
   });
