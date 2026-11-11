@@ -1,0 +1,80 @@
+{
+  "checkedAt": "2026-11-11T09:16:48.642Z",
+  "sourceCommit": "39cb3dc",
+  "deploymentId": "dpl_DGnZMLrivtdMz7drMjyLcCa49LgJ",
+  "stableUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "passed": true,
+  "scope": "A separate fictional Sample workspace; original project and stored evidence bytes unchanged.",
+  "findingsResolved": [
+    "Cloud rasterizer lacked fonts for Sample text and public-copy labels. Authored text is now bundled as vector outlines; existing records are not rewritten.",
+    "Hosted public QR and text link used a local fallback. Both now resolve to the stable public hostname, independent of preview or request Host."
+  ],
+  "tests": {
+    "imageAndDocumentCases": 48,
+    "originCases": 3,
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "generatedAssetByteCheck": "passed",
+    "hostedReadOnlyChecks": 6
+  },
+  "native": {
+    "privacyReview": "Exact fictional image checked and approved through the private desk",
+    "editionReview": "Full fictional edition reviewed separately before explicit publication",
+    "publication": "Edition 1 at stable host",
+    "imageSha256": "f897c3ad1828fbfa82814e8eff786ebee0e1af7f8868bcd490f3d740dd6b4b09",
+    "snapshotSha256": "eaee353ba703688c820e9abf6ff3c5eb720c5f5ee4e2c32a84257b38a62f1ad4",
+    "temporaryPreviewCookiesRemoved": true,
+    "originalSessionUntouched": true
+  },
+  "print": [
+    {
+      "layout": "record-a4",
+      "pages": 2,
+      "pageSizePoints": [
+        594.96,
+        841.92
+      ],
+      "decodedQr": "https://paypal-ai-fieldproof.vercel.app/proof/29lz8JhluE8U34mfSJz3xxhY"
+    },
+    {
+      "layout": "record-letter",
+      "pages": 2,
+      "pageSizePoints": [
+        612,
+        792
+      ],
+      "decodedQr": "https://paypal-ai-fieldproof.vercel.app/proof/29lz8JhluE8U34mfSJz3xxhY"
+    },
+    {
+      "layout": "poster-a4",
+      "pages": 1,
+      "pageSizePoints": [
+        594.96,
+        841.92
+      ],
+      "decodedQr": "https://paypal-ai-fieldproof.vercel.app/proof/29lz8JhluE8U34mfSJz3xxhY"
+    },
+    {
+      "layout": "poster-letter",
+      "pages": 1,
+      "pageSizePoints": [
+        612,
+        792
+      ],
+      "decodedQr": "https://paypal-ai-fieldproof.vercel.app/proof/29lz8JhluE8U34mfSJz3xxhY"
+    }
+  ],
+  "qr": {
+    "decodedUrl": "https://paypal-ai-fieldproof.vercel.app/proof/29lz8JhluE8U34mfSJz3xxhY",
+    "passed": true,
+    "decoder": "OpenCV 4.13.0"
+  },
+  "actualModelSubmissions": 0,
+  "actualFinancialProviderWrites": 0,
+  "actualPhysicalInspections": 0,
+  "limits": [
+    "Automated fictional qualification is not independent human privacy review.",
+    "Print and image copies cannot be recalled; QR current-state checking remains necessary.",
+    "The broader product plans and evaluation/research gates remain in scope."
+  ]
+}
