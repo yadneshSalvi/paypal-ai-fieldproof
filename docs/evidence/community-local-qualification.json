@@ -1,0 +1,82 @@
+{
+  "qualifiedAt": "2026-11-11T12:04:41.759Z",
+  "sourceBase": "4cfdb5f77dc7a52382d3116bd6c87765f927f3cd",
+  "focusFixHashes": {
+    "components/community/source-reading.tsx": "9c435b207c978dd1f3853f262e911544bbed6175c0bfe760525330a6b749b5af",
+    "components/planning/source-library.tsx": "62d21595838cd6f0485aa84ee3a626b405273877bfbc08b8ed1fc808bcb461c2",
+    "components/planning/ui.tsx": "e1ec4cea9baf848c24e82353537853193b00241fd75d5be68ebc3a6ec671c6b6"
+  },
+  "scope": "Local in-app-browser walkthrough in a dedicated PostgreSQL Sample workspace; all external provider credentials disabled.",
+  "observed": [
+    "Inspected all three template budgets; created separate garden (USD 4860) and mutual-aid (USD 5800) workspaces.",
+    "A stale tab returned to the workspace chooser after switching; returning to a saved project retained its original session expiry.",
+    "Imported four labelled fictional garden sources; compared six zone geometries, quote values and required review scopes; saved, recorded a disclosed automated plan comparison and separately shared revision 1 within the project.",
+    "Overview and native Proof Studio used the current revision; physical review count remained zero of twelve. Publication desk required a separate private snapshot and review. Collection route denied unenabled financial authority.",
+    "Saved a four-sentence supporter draft; authored Spanish revision 2 with protected source values, a separate English back-translation, and a Sample-only comparison review. Both preview languages retained exact figures, fictional provenance, no-fluent-review status and no-message-sent disclosure.",
+    "Saved a separate treasurer draft; no supporter-preview control was available for restricted treasurer facts.",
+    "Withdrew the fictional quote permission. Old snapshots, drafts, translations and review became stale; current preview disappeared and historical records remained.",
+    "Donor role could not read the private update desk or source library; auditor retained readable history with mutation controls disabled.",
+    "Spanish preview had no document overflow at 390 and 360 CSS pixels. At 360 the source dialog was 322 by 770 pixels with internal scrolling. Reduced-motion mode was exercised.",
+    "Citation Escape and Close restored the exact trigger. Planning source-dialog Escape restored the source trigger after the final focus correction and hard reload."
+  ],
+  "controlledRecords": [
+    {
+      "title": "Harbour Mutual Aid \u00b7 Sample QA",
+      "budgetMinor": 580000,
+      "counts": {
+        "fp_packages": 6,
+        "fp_provider_orders": 0,
+        "fp_provider_operations": 0,
+        "fp_obligations": 0,
+        "fp_community_snapshots": 0,
+        "fp_community_drafts": 0,
+        "fp_community_translations": 0,
+        "fp_community_runs": 0,
+        "fp_community_update_previews": 0,
+        "fp_plan_versions": 0,
+        "fp_plan_reviews": 0,
+        "fp_plan_publications": 0,
+        "fp_work_signoffs": 0
+      },
+      "translationReviews": []
+    },
+    {
+      "title": "Sundial Community Garden \u00b7 Sample QA",
+      "budgetMinor": 486000,
+      "counts": {
+        "fp_packages": 6,
+        "fp_provider_orders": 0,
+        "fp_provider_operations": 0,
+        "fp_obligations": 0,
+        "fp_community_snapshots": 2,
+        "fp_community_drafts": 2,
+        "fp_community_translations": 3,
+        "fp_community_runs": 0,
+        "fp_community_update_previews": 1,
+        "fp_plan_versions": 1,
+        "fp_plan_reviews": 1,
+        "fp_plan_publications": 1,
+        "fp_work_signoffs": 0
+      },
+      "translationReviews": [
+        {
+          "kind": "sample_exercise",
+          "decision": "approved",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "baseTests": 333,
+    "baseSuites": 53,
+    "baseHttpChecks": 54,
+    "finalOptimizedBuild": "passed, including TypeScript",
+    "nativeFocusFix": "passed; no additional domain behavior changed"
+  },
+  "limitations": [
+    "Automated software exercise; no independent human usability or Spanish fluency review.",
+    "No actual AI inference or payment in this native fixture. Actual model qualification and hosted migration/deployment remain separate gates.",
+    "This community milestone does not complete the full Fieldproof product plan."
+  ]
+}

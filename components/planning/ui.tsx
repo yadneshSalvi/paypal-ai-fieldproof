@@ -28,7 +28,25 @@ export function EmptyState({ eyebrow, title, children, action }: { eyebrow?: str
 export function PrivateNote({ children }: { children: ReactNode }) { return <p className="pl-private-note"><LockKeyhole size={14}/><span>{children}</span></p>; }
 export function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const dialog = ref.current; if (!dialog) return; dialog.showModal(); return () => dialog.close(); }, []);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (!returnFocus.current && document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
+    const returnTo = returnFocus.current;
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      requestAnimationFrame(() => {
+        // Restore the original trigger even when development effects run twice.
+        // Do not interrupt a newly opened dialog or a deliberate focus change.
+        const active = document.activeElement;
+        if ((!dialog.isConnected || !dialog.open) && returnTo?.isConnected && (active === document.body || !active || dialog.contains(active))) {
+          returnTo.focus({ preventScroll: true });
+        }
+      });
+    };
+  }, []);
   return <dialog ref={ref} className={`pl-modal ${wide ? "wide" : ""}`} onCancel={event => { event.preventDefault(); onClose(); }} aria-label={title}>
     <div className="pl-modal-head"><h2>{title}</h2><button type="button" className="pl-icon-button" aria-label="Close dialog" onClick={onClose}><X size={20}/></button></div>{children}
   </dialog>;
