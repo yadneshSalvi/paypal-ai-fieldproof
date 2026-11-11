@@ -1,0 +1,2289 @@
+{
+  "observedAt": "2026-11-11T04:51:47.776Z",
+  "status": "Native Studio Sample browser/model unit and targeted role/mobile matrix qualified. Full-product and provider gates remain open.",
+  "provenance": "Actual root-controlled native browser actions and actual model calls, corroborated by read-only PostgreSQL records. Financial inputs are explicitly fictional Sample data.",
+  "environment": {
+    "origin": "http://localhost:4202",
+    "database": "new isolated disposable PostgreSQL database",
+    "cookie": "fieldproof_studio_qa_session",
+    "originalPort4102": "stopped and untouched",
+    "deployed": false,
+    "providerConfiguration": "PayPal and private Blob disabled in QA child; actual model configuration remains server-only",
+    "versions": {
+      "agStudio": "3.1.0",
+      "agStudioReact": "3.1.0",
+      "openai": "7.55.0",
+      "paypalAgentToolkit": "1.11.0"
+    }
+  },
+  "source": {
+    "algorithm": "SHA-256 over sorted path, NUL, file bytes, NUL",
+    "scope": "app/components/lib/scripts/tests/vendor and package/runtime configuration; excludes documentation/evidence/private state",
+    "files": 148,
+    "fingerprint": "8ebfb134a433ca43ed103a86cae4e4c15362dcaaa536098a435279f404743142"
+  },
+  "localValidation": {
+    "tests": 218,
+    "suites": 30,
+    "passed": 218,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 43930.493708,
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "databaseScope": "fresh fp_suite_* schema in the separate QA database; dropped afterward",
+    "logSha256": {
+      "tests": "6d2e0c77b949651e31133214e043445d58de723c9e7d5ed3c19bd57cf5434e50",
+      "typecheck": "4970e3551d11256804da840c5d0dfcfa102e3428e8768da05fd0547f977cd8e9",
+      "productionBuild": "ee4dc65925bbfe50c1442321ede86a0a0758d788ddda0fc0278e160049849ab1"
+    }
+  },
+  "browserObservations": [
+    {
+      "check": "Six native widgets",
+      "result": "All six render with visible titles, meaningful empty allocation state and no inactive overlay dash. Baseline budget 841000, committed 491500, collected 212500, expenses/allocations/repayments 0, accepted work 0/18."
+    },
+    {
+      "check": "Native package cross-filter",
+      "result": "Electronics selection filters all connected views to budget 96000, eligible collection 92500 and accepted work 0/3. Clearing restores totals."
+    },
+    {
+      "check": "Scoped evidence and focus return",
+      "result": "The Sample receipt summary accurately distinguishes review from physical acceptance. Escape restores the actual invoking button; no private original is fabricated."
+    },
+    {
+      "check": "Actual Steward server reads",
+      "result": "Snapshot, evidence and exception tools completed as native server tools; the corrected factual turn succeeded and the first failure remained visible after reload."
+    },
+    {
+      "check": "Actual Page/Widget delegation",
+      "result": "Corrected run uses one exact parent dataset/cutoff. Page applied three placement patches and read back rings at x0/span10, blueprint at x10/span14. Widget applied and read back Evidence for our next review; all six widgets remain."
+    },
+    {
+      "check": "Full native history",
+      "result": "Undo 8→7 restores the earlier evidence title; automatic save and reload preserve 7 Undo and the Redo stack. Redo restores the new title and 8 Undo. Earlier 3→2→3 history cycle also passed."
+    },
+    {
+      "check": "Actual independent Auditor",
+      "result": "Exact parent-bound Auditor completed independent snapshot/evidence/exception server reads, no report mutation, and truthfully separated funding, expense review, physical acceptance and stale provider observation."
+    },
+    {
+      "check": "Automatic native live update",
+      "result": "Controlled Sample tour advance automatically changes collected 212500→216000 and Electronics 92500→96000, removes the old 3500 exception, keeps accepted work 0/18 and preserves History8/title/layout. No browser reload."
+    },
+    {
+      "check": "Focused assistant and save hydration",
+      "result": "Fresh root reload then Explore→Ask→Back→Compose→Explore stays Saved, History8, projection4 and unchanged revision17/hash. Ask focuses the message input. Root observed full-width mobile390 assistant, no document overflow and Back to report."
+    },
+    {
+      "check": "Actual role separation",
+      "result": "Root selected all four roles with correct scope labels. Non-Organizer views begin with History0; Contributor Ask opens a fresh chat without Organizer messages. Auditor receipt detail exposes only the scoped summary and no private original. Returning to Organizer restores History8, new title, collected216000, projection4 and Saved."
+    },
+    {
+      "check": "Targeted responsive and accessibility matrix",
+      "result": "Root observed no document overflow at widths360/390/640/1280. At390 the message textbox is342px wide, receives focus and has a full-width assistant with Back to report. Escape returns to the exact detail trigger. Reduced-motion media preference is honored. All per-tab emulation overrides were cleared. This is not a complete keyboard, screen-reader or zoom audit."
+    }
+  ],
+  "preservedFailures": [
+    {
+      "runId": "97a2facb-b576-4fc9-8420-c936452dae66",
+      "outcome": "STUDIO_MODEL_UNAVAILABLE after four actual model responses, three successful server reads and browser rename. Earlier handler did not retain underlying provider/protocol diagnostics; cause remains unclassified. No record was rewritten.",
+      "correction": "Subsequent actual factual turn succeeded. Future failures retain a safe structured SDK/code/stage diagnostic; no automatic model retry."
+    },
+    {
+      "runIds": [
+        "267dfef5-35ab-4411-89a4-81ca4ffb72be",
+        "a165b5ed-8310-47a8-b4f8-2be43fb9ee86",
+        "ec1b547a-f443-4aa9-a8aa-53d268442c71"
+      ],
+      "outcome": "Actual first Page/Widget tools ran, but backend parent fields were null and each delegate materialized a different cutoff. This is not qualified parent-bound delegation.",
+      "correction": "The adapter now binds full native run_started identity because installed directLlmRunner omits parent fields from its turn trace; corrected runs and immutable receipts are separate."
+    },
+    {
+      "outcome": "A generic configuration warning appeared during the corrected Page swap; original native details were not captured by the former UI. Final readback showed no widget issues and no overlap. Native intermediate collision repair is a source-supported inference, not a captured original error. Root later saw a transient warning before an Auditor role change following Compose/Explore; it cleared on role change and was not reproduced in the final cycle, with no captured exact details.",
+      "correction": "UI now preserves the actual warning type/time/details for the page session and distinguishes it from current validity. No claim that an uncaptured historical warning has been definitively diagnosed."
+    },
+    {
+      "outcome": "Idle reload/HMR showed a CAS warning without a user edit. Saved revision17/historyhash remained unchanged. A secondary tab had existed but was not proven the sole cause.",
+      "correction": "Automatic save compares durable content plus every Undo/Redo entry, ignoring only native ephemeral view fields. Full explicit saves and genuine conflicts remain guarded. Save acknowledgements are read while the write lock is held to avoid inheriting an unseen writer revision. Root fresh-reload/panel-cycle passed; read-only revision/hash corroboration passed."
+    }
+  ],
+  "liveUpdate": {
+    "observedAt": "2026-11-11T04:24:07.444Z",
+    "provenance": "controlled_sample_fixture",
+    "projectId": "ed036fc0-de43-4973-a6bf-cb53c2cc81ba",
+    "method": "Existing guarded advanceTour domain function, steps1 and2 as needed; fictional invoice sample only. Provider configuration removed before imports.",
+    "before": {
+      "projection": 1,
+      "packages": 6,
+      "receipts": 8,
+      "allocations": 0,
+      "exceptions": 1,
+      "collectedMinor": 212500,
+      "electronics": [
+        {
+          "collectedMinor": 92500,
+          "availableAllocationMinor": 0,
+          "reviewedItemCount": 0
+        }
+      ]
+    },
+    "after": {
+      "projection": 4,
+      "packages": 6,
+      "receipts": 9,
+      "allocations": 0,
+      "exceptions": 0,
+      "collectedMinor": 216000,
+      "electronics": [
+        {
+          "collectedMinor": 96000,
+          "availableAllocationMinor": 96000,
+          "reviewedItemCount": 0
+        }
+      ]
+    },
+    "beforeReport": {
+      "revision": 17,
+      "history_hash": "88b6831cf2eebab2bd5703241fd31f6a592db03cf5929cbe0fcc821c02935461"
+    },
+    "afterReport": {
+      "revision": 17,
+      "history_hash": "88b6831cf2eebab2bd5703241fd31f6a592db03cf5929cbe0fcc821c02935461"
+    },
+    "reportUnchanged": true
+  },
+  "runs": [
+    {
+      "id": "97a2facb-b576-4fc9-8420-c936452dae66",
+      "agentId": "fieldproof-steward",
+      "runKey": "run-b6e130c4-a392-4170-8822-265f8b6a3f05",
+      "threadId": "thread-67041cd9-7ba9-410c-8c6d-352046709a48",
+      "state": "failed",
+      "clientOutcome": "error",
+      "clientFinishedAt": "2026-11-11T03:53:21.309Z",
+      "clientHistoryHash": "608e4f187f26a72c780853f4084e449800816fde4e811571b8e0ee288659118e",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "0dd49824-9220-4f6d-9253-2960362de6f2",
+      "cutoff": "2026-11-11T03:53:01.616Z",
+      "sourceContentHash": "3bf8de54102fa1b7a2d035159d0da7c91ff5c9b93ca90a31b9b3c917895744d8",
+      "originalInputHash": "323933afd7138a83bd41646e30c8e0e76e0b1569a46952633ac3535369321de7",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 4,
+        "clientTools": 1,
+        "inputTokens": 200366,
+        "serverTools": 3,
+        "outputTokens": 101
+      },
+      "terminalCode": "STUDIO_MODEL_UNAVAILABLE",
+      "createdAt": "2026-11-11T03:53:01.673Z",
+      "updatedAt": "2026-11-11T03:53:21.309Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_0de054bf32653b00016af3e69ddf0487d29e6b76b4aa832ec6",
+          "model": "gpt-6.1-sol",
+          "at": 1794369182000,
+          "inputHash": "c8c95c947b54c6b8935cfe046c15148469c4c59b558763cd05d389a903803bcb",
+          "outputHash": "c5daccfcfff0920894c8308cffe66e4dc3dfe2b60ea4fb59ad867b6096126161",
+          "usage": {
+            "inputTokens": 47482,
+            "outputTokens": 54,
+            "totalTokens": 47536
+          }
+        },
+        {
+          "providerId": "resp_09a48f7f670cb5f6016af3e6a10d3887d2bb55c03053e2b9d9",
+          "model": "gpt-6.1-sol",
+          "at": 1794369185000,
+          "inputHash": "cf37bccdc940ca2a954c76035ec35372050843ad28089a1a5dbfcdaa67b80264",
+          "outputHash": "fe792b23be0c1df4918a2e5a89401ac8d4f309d9a906e1128c76c194d992c4d8",
+          "usage": {
+            "inputTokens": 47615,
+            "outputTokens": 15,
+            "totalTokens": 47630
+          }
+        },
+        {
+          "providerId": "resp_0efc01c3b28c847a016af3e6a35c0c87d29a32cbefd1a1c298",
+          "model": "gpt-6.1-sol",
+          "at": 1794369187000,
+          "inputHash": "143f8369adb0d4428c135c43f39693db2fd3a506b025749517746af40cacacbb",
+          "outputHash": "9bedce59ba6fe841effd62b8aaa0ce3aaa23a68be15087990f2a1ee4d085f76b",
+          "usage": {
+            "inputTokens": 52216,
+            "outputTokens": 16,
+            "totalTokens": 52232
+          }
+        },
+        {
+          "providerId": "resp_0e0b7d1ecbe2ced9016af3e6a58e9c87d286af6ee15efdd3be",
+          "model": "gpt-6.1-sol",
+          "at": 1794369189000,
+          "inputHash": "70b7a78bbb48b388131d47fa8203ac3f343a566b83e7c578aecff7cba9bf01b1",
+          "outputHash": "6cade3e252e84f1b40c06de36623913aef86c6ef4334c7a039978c15aea81326",
+          "usage": {
+            "inputTokens": 53053,
+            "outputTokens": 16,
+            "totalTokens": 53069
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_ufV6RHAjK2V0u9gFzWUTYrtz",
+          "name": "rename_thread",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "74bb0affae9c60e85d0ba3c6d66ed3ef056e622b3f4aac879a7fa9ac66c4bd3c",
+          "outputHash": "f8eeba8485a80a98c7db5e1a5d001b12c4047846388237047bf58caef91390b5",
+          "at": "2026-11-11T03:53:04.866Z"
+        },
+        {
+          "callId": "call_d5YC4RCNOZG3LdcfCp1VBtKE",
+          "name": "fieldproof_snapshot",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "faa7655677b13eb51a1412f15b893df5fa11cc0279a748e9fd63a3380e7499f0",
+          "at": "2026-11-11T03:53:06.861Z"
+        },
+        {
+          "callId": "call_FYYybkb44GPBg5g9uPSan06O",
+          "name": "fieldproof_evidence",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "2aaca35f7796268d68b0b4db180093355cf717b86b5965316567c170a5e346dc",
+          "at": "2026-11-11T03:53:09.335Z"
+        },
+        {
+          "callId": "call_n1tsmukiUh0Cb4AxlxlfdOSf",
+          "name": "fieldproof_exceptions",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "6a1144e22aa16ac1f2ffca565e77137075cc95c795e3772f990c4c8f768c87ad",
+          "at": "2026-11-11T03:53:11.144Z"
+        }
+      ]
+    },
+    {
+      "id": "513a937d-dc56-4757-b842-cf241303f7a0",
+      "agentId": "fieldproof-steward",
+      "runKey": "run-46b2d162-a055-4e4e-b74b-5b2aefe30f3a",
+      "threadId": "thread-67041cd9-7ba9-410c-8c6d-352046709a48",
+      "state": "succeeded",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:02:29.587Z",
+      "clientHistoryHash": "608e4f187f26a72c780853f4084e449800816fde4e811571b8e0ee288659118e",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "89dbd4cc-1614-4791-98dc-02f27488f8b7",
+      "cutoff": "2026-11-11T04:01:18.742Z",
+      "sourceContentHash": "d93583189d12c7058c688a6b551181da3b14269ae383193185ea7345d9cca537",
+      "originalInputHash": "817823bbcf92dff1588d36d00c5499c3630b5265ad60471dd0638d8f32ed834d",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 5,
+        "clientTools": 1,
+        "inputTokens": 292320,
+        "serverTools": 3,
+        "outputTokens": 3155
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:01:18.765Z",
+      "updatedAt": "2026-11-11T04:02:29.587Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_0e77786830026b59016af3e88ef34087d2a77c703b06c3a327",
+          "model": "gpt-6.1-sol",
+          "at": 1794369679000,
+          "inputHash": "d8b8ab35fe3fc635efc59f25853a6ceaf07b73df35c9c0cbfc2fc2643a5d8059",
+          "outputHash": "8157067a359c762e0f2dab9267a7639d6aa54844b324ee6bb584a2a8378e7416",
+          "usage": {
+            "inputTokens": 54145,
+            "outputTokens": 56,
+            "totalTokens": 54201
+          }
+        },
+        {
+          "providerId": "resp_02d02c04c2ca20ce016af3e8916b8487d28dea36cb3971e2e0",
+          "model": "gpt-6.1-sol",
+          "at": 1794369681000,
+          "inputHash": "029fc1eb4c9fd7f91dd43b4a64b9b8846edd9e08da7aa23f2c765540be1de5fa",
+          "outputHash": "afcc0985808ba73dd1a43cb1bd2b1c7ff28132550c4301fe245f1dd79b07de5d",
+          "usage": {
+            "inputTokens": 58778,
+            "outputTokens": 16,
+            "totalTokens": 58794
+          }
+        },
+        {
+          "providerId": "resp_02d49fdb151e3a90016af3e893c3c487d2b894a5dd56a93e20",
+          "model": "gpt-6.1-sol",
+          "at": 1794369683000,
+          "inputHash": "fea30c1d04223b573a3763b88b451197cc02f47bfa00d7a0e6c53e50e819052a",
+          "outputHash": "63019db0b25986ea25f892770ffd9a82d1f1aa93d668d182f72dc7b5e0289ca5",
+          "usage": {
+            "inputTokens": 59606,
+            "outputTokens": 16,
+            "totalTokens": 59622
+          }
+        },
+        {
+          "providerId": "resp_0aac8514e7ee3c94016af3e8963e9887d2aae42298e5a59b4f",
+          "model": "gpt-6.1-sol",
+          "at": 1794369686000,
+          "inputHash": "7deda0c4febc787826c690a2304ad7b76b63e57c18ae750fdc559e14e124188a",
+          "outputHash": "92cc1e120d698a97bde2b56a4c788596a614839984b234d89b693d972e281bb9",
+          "usage": {
+            "inputTokens": 59845,
+            "outputTokens": 540,
+            "totalTokens": 60385
+          }
+        },
+        {
+          "providerId": "resp_0924344019e0c78b016af3e8a3166887d2843db7ea7c815a8e",
+          "model": "gpt-6.1-sol",
+          "at": 1794369699000,
+          "inputHash": "c7b2df504807b3e6945f0fa50e2d076b3558dc6b1cb9e5aa0f2fa697bf2a78b1",
+          "outputHash": "2118296d830ffefb190849f3033ed5b519899792e6642b5becdcb28a8f5a209e",
+          "usage": {
+            "inputTokens": 59946,
+            "outputTokens": 2527,
+            "totalTokens": 62473
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_cVnna2H2bi0ByytZzMqIkDob",
+          "name": "fieldproof_snapshot",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "8dbf27bcef9489346dca82879aa58899d593585f42e2a032a8d58d69c05435f8",
+          "at": "2026-11-11T04:01:21.250Z"
+        },
+        {
+          "callId": "call_9g1dIvSw4oGM54tQidNg49BE",
+          "name": "fieldproof_evidence",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "2bd9b08d62f76eafb4483f44cc5b5341d46f1a6ce67d0c09dfae2695f24025a6",
+          "at": "2026-11-11T04:01:23.611Z"
+        },
+        {
+          "callId": "call_EXQiYsbj92XxsXnTBZsfhou4",
+          "name": "fieldproof_exceptions",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "97165aafece6adeb350bf8557ee5e6358e3522a035d03a615ed1eb7fbc3e979c",
+          "at": "2026-11-11T04:01:26.092Z"
+        },
+        {
+          "callId": "call_QDaBiZN4bzc5tLJYyMQlKobU",
+          "name": "rename_thread",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "74bb0affae9c60e85d0ba3c6d66ed3ef056e622b3f4aac879a7fa9ac66c4bd3c",
+          "outputHash": "f8eeba8485a80a98c7db5e1a5d001b12c4047846388237047bf58caef91390b5",
+          "at": "2026-11-11T04:01:38.928Z"
+        }
+      ]
+    },
+    {
+      "id": "267dfef5-35ab-4411-89a4-81ca4ffb72be",
+      "agentId": "fieldproof-steward",
+      "runKey": "run-d03f5757-c69a-4e78-a81b-1b17affa140f",
+      "threadId": "thread-67041cd9-7ba9-410c-8c6d-352046709a48",
+      "state": "succeeded",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:05:30.478Z",
+      "clientHistoryHash": "a24f019f221b06568017bc01e060a4eac84cbb0875104a09e0fc9c74f79e23da",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "48dd5013-9254-4240-b80b-d65f5a11b803",
+      "cutoff": "2026-11-11T04:03:03.416Z",
+      "sourceContentHash": "c1f4ff5cba29658907ae71c0ad5b555508d7f904bc14c7b6790468b28ef84fc6",
+      "originalInputHash": "50e43e0ed4fa7a800d12fb8dbf3be396c3b98c6c051b31b638bb57da0c3e6ff1",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 21,
+        "clientTools": 20,
+        "inputTokens": 1362570,
+        "serverTools": 0,
+        "outputTokens": 1929
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:03:03.437Z",
+      "updatedAt": "2026-11-11T04:05:30.478Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_07184c1d3621fa9a016af3e8f79c9087d2b016032947c128a2",
+          "model": "gpt-6.1-sol",
+          "at": 1794369783000,
+          "inputHash": "548a14e8feff6b3d5ab56e3dbda56d946672fcff4b0c25643fa2bd99c93e24ef",
+          "outputHash": "ff62542d1afc652791ed5de4fec80782581a9a4e6e11ecf6ca060d22d3a42825",
+          "usage": {
+            "inputTokens": 61277,
+            "outputTokens": 72,
+            "totalTokens": 61349
+          }
+        },
+        {
+          "providerId": "resp_029982f3cb1f7f0b016af3e8fae3bc87d2b61013465233afb8",
+          "model": "gpt-6.1-sol",
+          "at": 1794369787000,
+          "inputHash": "c29a2e7270617f3c6fceb994eb8eb347c62a64e32e87e37397af1ba4b47929dc",
+          "outputHash": "2497beb0eb141dbe0881d2d70416d6ffb522eb76f28402f28689fbf17a234aac",
+          "usage": {
+            "inputTokens": 61430,
+            "outputTokens": 14,
+            "totalTokens": 61444
+          }
+        },
+        {
+          "providerId": "resp_04c3cb20116b87b9016af3e8fd3f3087d28ce2810dfc6e70bc",
+          "model": "gpt-6.1-sol",
+          "at": 1794369789000,
+          "inputHash": "5cb55b14f3763ddfa27f23d894ea2c4332888bcc90e59ddc97c7fe7aade13a63",
+          "outputHash": "1c72b29fde4331243e7b7fdaf88203f53135f90e0d822fa553df2a5b52eb5533",
+          "usage": {
+            "inputTokens": 61562,
+            "outputTokens": 14,
+            "totalTokens": 61576
+          }
+        },
+        {
+          "providerId": "resp_0342412bc902dead016af3e8ff0b6487d28530ab55802ffa77",
+          "model": "gpt-6.1-sol",
+          "at": 1794369791000,
+          "inputHash": "41cb268c6abb560674895b5726f8909942b0cd41b9479bf46a3ccb2f41e07f2e",
+          "outputHash": "cd9fd4f7c1cfb4c68302d2fd839e3bb2327e9eddcaf504fef052ee63282c2305",
+          "usage": {
+            "inputTokens": 63537,
+            "outputTokens": 14,
+            "totalTokens": 63551
+          }
+        },
+        {
+          "providerId": "resp_06ad5f3a99aac4b9016af3e90119f887d2824a33d7f9796a9a",
+          "model": "gpt-6.1-sol",
+          "at": 1794369793000,
+          "inputHash": "2be8f41d0f3f98b758af5811b6912667749dc4f4697bea2cb61009fc2aedeb73",
+          "outputHash": "0094bc6661bee03b081accaa15f66018d3c79a1e9a7d54a765593504106eaa63",
+          "usage": {
+            "inputTokens": 64085,
+            "outputTokens": 20,
+            "totalTokens": 64105
+          }
+        },
+        {
+          "providerId": "resp_0f981271d03331c9016af3e904257887d28c3232b72d6bcba6",
+          "model": "gpt-6.1-sol",
+          "at": 1794369796000,
+          "inputHash": "228c5af2ececd9d86ea717429a6a1f559ce6f369750700a38503ff0f464aa065",
+          "outputHash": "1f9b49dce019727a899cf982f1ee0ce2ebed035db009b264945fa1fa4c2232b7",
+          "usage": {
+            "inputTokens": 64235,
+            "outputTokens": 19,
+            "totalTokens": 64254
+          }
+        },
+        {
+          "providerId": "resp_042d9009064ba748016af3e907088887d2b187c8074c0f459c",
+          "model": "gpt-6.1-sol",
+          "at": 1794369799000,
+          "inputHash": "c898674c5bb5ce90319915af2b0738a950fa75beb7bc139540691b2d2c5299fc",
+          "outputHash": "741d6db4e440e7f847fbb1253a580da3fdaa795936771183e48d9bbce0f7db16",
+          "usage": {
+            "inputTokens": 64385,
+            "outputTokens": 19,
+            "totalTokens": 64404
+          }
+        },
+        {
+          "providerId": "resp_01a3cfd2fe75e472016af3e909e5c887d2b6c6405873ce560e",
+          "model": "gpt-6.1-sol",
+          "at": 1794369802000,
+          "inputHash": "276e5004d67f4ac69b920745d235c6abf7e1b6c861cca3c1cbb7979e00def387",
+          "outputHash": "5d6e7e8d6f5534a7de152f14ca48cacd32917bab09b8ecfbebe11405750464ed",
+          "usage": {
+            "inputTokens": 64533,
+            "outputTokens": 20,
+            "totalTokens": 64553
+          }
+        },
+        {
+          "providerId": "resp_0b30391a57b49244016af3e90d1f3887d2958ab0f870b3f0ee",
+          "model": "gpt-6.1-sol",
+          "at": 1794369805000,
+          "inputHash": "3f099e8301c49f8619400d96bc1fbd4a5ac01e3d30fbbdd28c0b1ae67e8cba52",
+          "outputHash": "057f3d04bef63eeeae5d8df72a219b828d884e6083edf83d8009c301fb8c4830",
+          "usage": {
+            "inputTokens": 64684,
+            "outputTokens": 19,
+            "totalTokens": 64703
+          }
+        },
+        {
+          "providerId": "resp_02e8797e10522959016af3e90fba5087d2bece5515c9868dc2",
+          "model": "gpt-6.1-sol",
+          "at": 1794369807000,
+          "inputHash": "6f688040337530a746616fbb7d3930bfd8c289673f15b3b40e9783b7aa4b8ec0",
+          "outputHash": "448995c26f6ef03027e5a4795ceb9f900dca234b0772d2b64dc31f2056f77eec",
+          "usage": {
+            "inputTokens": 64833,
+            "outputTokens": 19,
+            "totalTokens": 64852
+          }
+        },
+        {
+          "providerId": "resp_046d59c8086109e0016af3e9127cd887d2ac7f99b3d880ccf1",
+          "model": "gpt-6.1-sol",
+          "at": 1794369810000,
+          "inputHash": "3c06da6c22e9cbee45c90f9d15bb3645b551609611ae57c17c21214c5bbe5fb5",
+          "outputHash": "1f702642f34c3594cc9412c914c06052eadabb4beea3262af707c2ef52f6f073",
+          "usage": {
+            "inputTokens": 64981,
+            "outputTokens": 575,
+            "totalTokens": 65556
+          }
+        },
+        {
+          "providerId": "resp_0e64124f1011dd44016af3e933a64487d28af3e549c53382a9",
+          "model": "gpt-6.1-sol",
+          "at": 1794369843000,
+          "inputHash": "8d11d9ecabd983ce0b965324efd0c9855f51806e14e8ad95f0d41106c4201211",
+          "outputHash": "e15152e9e448f0a08f6b529fc5756c5bc4d3cc25941f4a08f5c792efae6b9b63",
+          "usage": {
+            "inputTokens": 65295,
+            "outputTokens": 211,
+            "totalTokens": 65506
+          }
+        },
+        {
+          "providerId": "resp_0928dce75f0b7be6016af3e9654ef087d28c9ac7e9eadc61b2",
+          "model": "gpt-6.1-sol",
+          "at": 1794369893000,
+          "inputHash": "7d6c7956f70905477c3a350420b7d770c8e91f02a434e369994332e115380469",
+          "outputHash": "4f69c8e3c5d611672abe0a65852741b1ff89057c08ef5be9ef4ef9d7828a6688",
+          "usage": {
+            "inputTokens": 65521,
+            "outputTokens": 125,
+            "totalTokens": 65646
+          }
+        },
+        {
+          "providerId": "resp_090f4dc10d288b6a016af3e969ccf487d2b893d7d7b8eda980",
+          "model": "gpt-6.1-sol",
+          "at": 1794369897000,
+          "inputHash": "0a701f555a261f653245de8db99960122579852825a607878fadacfb0d5c9b4d",
+          "outputHash": "877faa9972332c365a43c5c8f29a6e1f82fbd6d4d34ecc52fab6b7fae667ff41",
+          "usage": {
+            "inputTokens": 65653,
+            "outputTokens": 14,
+            "totalTokens": 65667
+          }
+        },
+        {
+          "providerId": "resp_058b6dfeb52505c5016af3e96cc89087d2a16b8655e1c09518",
+          "model": "gpt-6.1-sol",
+          "at": 1794369900000,
+          "inputHash": "2aa1b8c037e095add13992289308a3de6326c866296d30730c3132f54a6af03a",
+          "outputHash": "6c566751f1fc3b255d6328ce5091b123e6d4ff60df0090854a3b881c45becb1c",
+          "usage": {
+            "inputTokens": 66201,
+            "outputTokens": 20,
+            "totalTokens": 66221
+          }
+        },
+        {
+          "providerId": "resp_063bedacbcea0cac016af3e96f8c4c87d29b092ed72faca24b",
+          "model": "gpt-6.1-sol",
+          "at": 1794369903000,
+          "inputHash": "65ba8afc3c617e7a6949c0403948e80c7c9d8da45be025f199f8f7f6b559a5a3",
+          "outputHash": "f36cc2af61640af02ca93c67929544e9ee83ed6420bb21207423522fa1478805",
+          "usage": {
+            "inputTokens": 66353,
+            "outputTokens": 20,
+            "totalTokens": 66373
+          }
+        },
+        {
+          "providerId": "resp_0675b3dace32e773016af3e97233b487d2b236f20689507b00",
+          "model": "gpt-6.1-sol",
+          "at": 1794369906000,
+          "inputHash": "0f5145b3e5f82d68d6faa65b6a9ae01ae843d123821d672364971d4bc8890e54",
+          "outputHash": "b8530665f8c5dc033859d0ae76102372fdd6a993c1dbdbd5e4e1dd2dcd2e7793",
+          "usage": {
+            "inputTokens": 66503,
+            "outputTokens": 19,
+            "totalTokens": 66522
+          }
+        },
+        {
+          "providerId": "resp_054d2b437d0baa22016af3e97497e487d29c3eb138d3ea8e15",
+          "model": "gpt-6.1-sol",
+          "at": 1794369908000,
+          "inputHash": "0baeb2c0e40a2618b3f10368ca03789b0f4bdb660a3895f786f0311cb6ede589",
+          "outputHash": "cd7bec45e460daca24e597d79b03babeb7815a5f7beb05a02929cf4215703bf1",
+          "usage": {
+            "inputTokens": 66653,
+            "outputTokens": 19,
+            "totalTokens": 66672
+          }
+        },
+        {
+          "providerId": "resp_069bb7828bf0c550016af3e977a37887d2a175ffa0224ab13a",
+          "model": "gpt-6.1-sol",
+          "at": 1794369911000,
+          "inputHash": "fe519863ea6e5404fd18065ee87dfa2fefca8f2e982cef916c9e2fcfd743ea4b",
+          "outputHash": "283cc5a7a9e972b909de01b7487a4a1573a9301650e96c42c79e821f016ad544",
+          "usage": {
+            "inputTokens": 66801,
+            "outputTokens": 19,
+            "totalTokens": 66820
+          }
+        },
+        {
+          "providerId": "resp_0007d28951ad71f6016af3e97a494c87d2aa2f281411aac452",
+          "model": "gpt-6.1-sol",
+          "at": 1794369914000,
+          "inputHash": "b4d1509d966603df354b5920d6f90fb0406146c1f85b901cee9e999a2ebe8692",
+          "outputHash": "32475bb392ef72c18f21b0dea2defeb3a662125235e7eaa6a3906dac7d526646",
+          "usage": {
+            "inputTokens": 66950,
+            "outputTokens": 19,
+            "totalTokens": 66969
+          }
+        },
+        {
+          "providerId": "resp_090ca459bfe95fa9016af3e97cce1487d2a3dd7f641f62f772",
+          "model": "gpt-6.1-sol",
+          "at": 1794369916000,
+          "inputHash": "e3f5a4fe3a82227c47eb83149557e0a306220e97605cef76308272a7121bc541",
+          "outputHash": "2d8662884fa2a0cf1a7506ae586c60a7aed559d8c62b2019b2cf1fdad9e32c84",
+          "usage": {
+            "inputTokens": 67098,
+            "outputTokens": 658,
+            "totalTokens": 67756
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_WwgaG6Qu2H63HXaG2ITzPIAp",
+          "name": "rename_thread",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "8e81ee3c75bb30ffaf28ae191fce28636e996198e194126846b92f89fdf0d110",
+          "outputHash": "2e4588fcc8eda770e80b4a102ba60cd92dde7d2765ca331d7bba6ecb29083de4",
+          "at": "2026-11-11T04:03:06.727Z"
+        },
+        {
+          "callId": "call_kcApaX3DQ1YuXnnLruwGC3Cx",
+          "name": "view_report",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "1b23744aab15f2b7573eb26d073972eee960b6276390f4051d0279f153dab0e1",
+          "at": "2026-11-11T04:03:09.098Z"
+        },
+        {
+          "callId": "call_ZoyguM8k37K9JBJsh0EIMhZ9",
+          "name": "view_schema",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9cea03b0b60e66c570c2f4e6c284c8ad399313775ae7960a72c5ef858e0e0d18",
+          "at": "2026-11-11T04:03:10.885Z"
+        },
+        {
+          "callId": "call_4u7jixf6uHU19u1sqemTUbQV",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "291e8c45a9f99e3feefc9736abb56c87507212f28bec426c4ee4f0670d88a5ee",
+          "at": "2026-11-11T04:03:12.936Z"
+        },
+        {
+          "callId": "call_p2llAUU2LlkcSf0xQ560CPeL",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "67f10c68aad78f786ea76422f3dca3a11812ea5bb50e4df3fc20951f815f3216",
+          "outputHash": "3efd758e0d56da98584baf285136e31f0b7ea12c7b7e1dbb060f2a0b9c066f12",
+          "at": "2026-11-11T04:03:15.983Z"
+        },
+        {
+          "callId": "call_XVqkfxV7m73vIKVT8NZR23xc",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c76b8dab16f61a3787349865877c64ff326d9e5cfcf7687bf05e1acfc370e266",
+          "outputHash": "ca6f448666a9271d88e25fe9d8cccacc27ac71584cbadc785edbcc25d86a1a51",
+          "at": "2026-11-11T04:03:18.862Z"
+        },
+        {
+          "callId": "call_H9fUcAeFr95nehEtfrYsD72K",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c752e7721475d6cbcff6a7b72adc95ba571bd35e82105ab0d4540691fa95d40c",
+          "outputHash": "8fe7d5f330931261ecff5f47e911af19a7e451071005f28589e47e53fe448949",
+          "at": "2026-11-11T04:03:21.745Z"
+        },
+        {
+          "callId": "call_ynTcCDmlzQzwNftEGGgL1nex",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "ce429d7973779cc9e97582948d6021cccb511829a25c5e047623deac04a67b4b",
+          "at": "2026-11-11T04:03:24.943Z"
+        },
+        {
+          "callId": "call_URbqArCHepIzgQrPyN4zvBNu",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "31110b6a474437e646d60dee9d9887c4aef16b9924efc2290aa2cf66eae812d5",
+          "outputHash": "e0effcd23c7ec8f102618a11d7f0c3a20ab68ac7c6126ed1aefb226c716a93c7",
+          "at": "2026-11-11T04:03:27.576Z"
+        },
+        {
+          "callId": "call_Mxpmfh5cvTHw9sl2oA2oYhfP",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c516643bde37052058981f7e29686b2cd895a64fdd313039b09df32ecc56fa6a",
+          "outputHash": "40fba0e550fa303f63e8283303b7a9e4b282fe396b5f35bc03f576327518b997",
+          "at": "2026-11-11T04:03:30.320Z"
+        },
+        {
+          "callId": "call_iltLbLzHNVpcEffBQg7Xfw42",
+          "name": "delegate_to",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "8a82886dda5f15067aebe2d5e579ffa8a5f822caa9a636260677409a2f69e843",
+          "outputHash": "f4bab64b6247d941ef234ffad5e0afe706a1dc5fdcadf4e6b82a1e1479fdea52",
+          "at": "2026-11-11T04:04:03.455Z"
+        },
+        {
+          "callId": "call_ITb05gzCx64tjceT8yzHUJmj",
+          "name": "delegate_to",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "fe38935ead48724eb0f5f50918efab21e6345936c449e85bcaa941851681ae3f",
+          "outputHash": "e32b44a4b717fa2759973745ed73a5c4ca3528e66e361aa2645b8144313d6784",
+          "at": "2026-11-11T04:04:53.136Z"
+        },
+        {
+          "callId": "call_jMp5Skyo4DHoPU6tOjelxpX6",
+          "name": "view_report",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "1b23744aab15f2b7573eb26d073972eee960b6276390f4051d0279f153dab0e1",
+          "at": "2026-11-11T04:04:57.632Z"
+        },
+        {
+          "callId": "call_uCg5W9nll0GwE2OWSLtDJtWk",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "291e8c45a9f99e3feefc9736abb56c87507212f28bec426c4ee4f0670d88a5ee",
+          "at": "2026-11-11T04:05:00.615Z"
+        },
+        {
+          "callId": "call_DkFgSShOSlPHO2n22rjkBXQG",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "a3af6b7da80df02efc5ae51f1e478002166c3e1eb9025ea40c17132dda456fdf",
+          "at": "2026-11-11T04:05:03.373Z"
+        },
+        {
+          "callId": "call_Xi91IJmFSS3IVz56Kr4UJBx3",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "67f10c68aad78f786ea76422f3dca3a11812ea5bb50e4df3fc20951f815f3216",
+          "outputHash": "3efd758e0d56da98584baf285136e31f0b7ea12c7b7e1dbb060f2a0b9c066f12",
+          "at": "2026-11-11T04:05:06.017Z"
+        },
+        {
+          "callId": "call_xfJUD0t9nnNKzZQFyPSJTNPB",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c76b8dab16f61a3787349865877c64ff326d9e5cfcf7687bf05e1acfc370e266",
+          "outputHash": "ca6f448666a9271d88e25fe9d8cccacc27ac71584cbadc785edbcc25d86a1a51",
+          "at": "2026-11-11T04:05:08.418Z"
+        },
+        {
+          "callId": "call_Smcqb0XjhPH9hz6JGNdtP8iU",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c752e7721475d6cbcff6a7b72adc95ba571bd35e82105ab0d4540691fa95d40c",
+          "outputHash": "8fe7d5f330931261ecff5f47e911af19a7e451071005f28589e47e53fe448949",
+          "at": "2026-11-11T04:05:11.420Z"
+        },
+        {
+          "callId": "call_YY2rXmYfNQlxCiUYfwWv61uG",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "31110b6a474437e646d60dee9d9887c4aef16b9924efc2290aa2cf66eae812d5",
+          "outputHash": "e0effcd23c7ec8f102618a11d7f0c3a20ab68ac7c6126ed1aefb226c716a93c7",
+          "at": "2026-11-11T04:05:14.113Z"
+        },
+        {
+          "callId": "call_pSIStz8GgIzXX8Bwh68P7UIn",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c516643bde37052058981f7e29686b2cd895a64fdd313039b09df32ecc56fa6a",
+          "outputHash": "40fba0e550fa303f63e8283303b7a9e4b282fe396b5f35bc03f576327518b997",
+          "at": "2026-11-11T04:05:16.628Z"
+        }
+      ]
+    },
+    {
+      "id": "a165b5ed-8310-47a8-b4f8-2be43fb9ee86",
+      "agentId": "page",
+      "runKey": "run-5fc85722-35e1-4571-8e3f-96f2c8d6ecf3",
+      "threadId": "call_iltLbLzHNVpcEffBQg7Xfw42-sub",
+      "state": "client_completed",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:04:03.435Z",
+      "clientHistoryHash": "608e4f187f26a72c780853f4084e449800816fde4e811571b8e0ee288659118e",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "190663d4-12ca-47fe-b271-164774e7e97a",
+      "cutoff": "2026-11-11T04:03:43.151Z",
+      "sourceContentHash": "1a41f91cf3282df2279bbf906230d613acc125929c5abe275ef9ccdefa5c79ff",
+      "originalInputHash": "9bcf851e0c75128da1894da20f4f66ad2be38f012782a8718c3b55b7e22394cc",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 2,
+        "clientTools": 2,
+        "inputTokens": 16486,
+        "serverTools": 0,
+        "outputTokens": 948
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:03:43.180Z",
+      "updatedAt": "2026-11-11T04:04:03.435Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_023a4ddadd1bdee4016af3e91f4cd887d297231e14b5e9a046",
+          "model": "gpt-6.1-sol",
+          "at": 1794369823000,
+          "inputHash": "a142ee8d805d596acb4c5278129cd584da72e35b76342e81e8e8a4f077778519",
+          "outputHash": "2a74de85cc3e4421446d1fddf318bbc13427cdf67800e89ac7be2ae233c02132",
+          "usage": {
+            "inputTokens": 7969,
+            "outputTokens": 322,
+            "totalTokens": 8291
+          }
+        },
+        {
+          "providerId": "resp_085072b285b71716016af3e927dc2087d2b088ad897e1639c6",
+          "model": "gpt-6.1-sol",
+          "at": 1794369831000,
+          "inputHash": "a0b3f1be370d05fb6710a463491c0f09467dbe3f5252bdaf8cef192bd63ed23a",
+          "outputHash": "1ac0193d048ad0a2b831849f3a9797c2187449e8769077d8e7dabf144fd91835",
+          "usage": {
+            "inputTokens": 8517,
+            "outputTokens": 626,
+            "totalTokens": 9143
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_UHjQJfVYfYBb5EPOWpvevD6f",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "291e8c45a9f99e3feefc9736abb56c87507212f28bec426c4ee4f0670d88a5ee",
+          "at": "2026-11-11T04:03:51.703Z"
+        },
+        {
+          "callId": "call_2pFtjwS24oZcwdp2PoXHtkTV",
+          "name": "complete_task",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "ad8983d2e8d8700420015d26da1cfddb66ef17f504dbd8a8c425389dfafac3e8",
+          "outputHash": "bba15119bbc66eff402008a72966d5021eb52c1cd2550971ae3fb911231209cc",
+          "at": "2026-11-11T04:04:03.417Z"
+        }
+      ]
+    },
+    {
+      "id": "ec1b547a-f443-4aa9-a8aa-53d268442c71",
+      "agentId": "widget",
+      "runKey": "run-48f70ad9-c805-4400-bb9d-56ae45bccecf",
+      "threadId": "call_ITb05gzCx64tjceT8yzHUJmj-sub",
+      "state": "client_completed",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:04:53.126Z",
+      "clientHistoryHash": "a24f019f221b06568017bc01e060a4eac84cbb0875104a09e0fc9c74f79e23da",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "aba431da-b42a-4f2f-a3e7-118fade3646a",
+      "cutoff": "2026-11-11T04:04:09.240Z",
+      "sourceContentHash": "8cfd196d3e871119060db49c09975146a6a63db5ba0941862fc2dc87e5266a81",
+      "originalInputHash": "3cf710fab4d05c30f1309d7ccdbbd0dfefd751967b518f3a2d7d5d40a534dab0",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 5,
+        "clientTools": 5,
+        "inputTokens": 72363,
+        "serverTools": 0,
+        "outputTokens": 1924
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:04:09.275Z",
+      "updatedAt": "2026-11-11T04:04:53.126Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_0dedcd2e2624515f016af3e93965cc87d2ac436e82951148a4",
+          "model": "gpt-6.1-sol",
+          "at": 1794369849000,
+          "inputHash": "f394c24167df87a3e8249014fa474099099f60b10efaf887c674e3a8c0a8213e",
+          "outputHash": "3f41a3536f0528bc2bc8c967d09483b4b0e52f81bc9aadee5eb8a5d9c6cab494",
+          "usage": {
+            "inputTokens": 13062,
+            "outputTokens": 337,
+            "totalTokens": 13399
+          }
+        },
+        {
+          "providerId": "resp_026f95d1091a5b98016af3e940fc0c87d2bf5c003b3dc22334",
+          "model": "gpt-6.1-sol",
+          "at": 1794369857000,
+          "inputHash": "06333888d979113dc65ac36240d7b0a9652ae1dd5eb3eb5af41eff58fa77d12c",
+          "outputHash": "5c8d4e9b27d62da9e25c98531ea1136afbd74c28f528af64583207b73eb7983c",
+          "usage": {
+            "inputTokens": 13213,
+            "outputTokens": 520,
+            "totalTokens": 13733
+          }
+        },
+        {
+          "providerId": "resp_03b8bddc3dbef470016af3e94eac6087d2bef15f857a2e48ee",
+          "model": "gpt-6.1-sol",
+          "at": 1794369870000,
+          "inputHash": "1075cf7dc2d65d1cd2fab3e2fa01c8d99dff166f333debc86c248d75398f0088",
+          "outputHash": "8b1ac13f4834b5bd4d983777c2eea2a78133d85c2d86d3a44fc5525912d92aa4",
+          "usage": {
+            "inputTokens": 15188,
+            "outputTokens": 462,
+            "totalTokens": 15650
+          }
+        },
+        {
+          "providerId": "resp_08c3021bfc06479b016af3e958bbb887d29a6abc0c0ccbbaab",
+          "model": "gpt-6.1-sol",
+          "at": 1794369880000,
+          "inputHash": "cc2489ae255bbb0f89b2ff1b29a454fa06d1e3f3e74f96e55d4df1a733fd8a58",
+          "outputHash": "8b4d3247a21d8f172364d91ac18e5b15936d752b97e16d6315dd61e00cb50102",
+          "usage": {
+            "inputTokens": 15374,
+            "outputTokens": 20,
+            "totalTokens": 15394
+          }
+        },
+        {
+          "providerId": "resp_00bbcf6a8a7eb944016af3e95a83f487d2b6a080a3c9ade1d2",
+          "model": "gpt-6.1-sol",
+          "at": 1794369882000,
+          "inputHash": "8495148f12cd8c8848693559d34bf866bd1780829df8fa3673e35cec09e0159d",
+          "outputHash": "ddcbc51c02d4fdc842bb4e2a4e7fd53c07277a1600d4386f05b2da0bd3b56b06",
+          "usage": {
+            "inputTokens": 15526,
+            "outputTokens": 585,
+            "totalTokens": 16111
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_6i66dg7MNPr2jWLW1gDwRXw2",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "ce429d7973779cc9e97582948d6021cccb511829a25c5e047623deac04a67b4b",
+          "at": "2026-11-11T04:04:16.837Z"
+        },
+        {
+          "callId": "call_Gr5tfHDFNJDPMUi1UiaxRaRo",
+          "name": "view_schema",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9cea03b0b60e66c570c2f4e6c284c8ad399313775ae7960a72c5ef858e0e0d18",
+          "at": "2026-11-11T04:04:30.530Z"
+        },
+        {
+          "callId": "call_ozutZQkcJ2VKbQLor7YERbPf",
+          "name": "configure_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "efb700b218a1368fa6415bf4b32dc8c57175f54b1263267257ba5c9ef9494ab8",
+          "outputHash": "83e733019337721d2e7c687a72bc6f18e4006eb335769a7817a00117e91f61e2",
+          "at": "2026-11-11T04:04:40.555Z",
+          "fullHistoryHash": "a24f019f221b06568017bc01e060a4eac84cbb0875104a09e0fc9c74f79e23da",
+          "appliedArguments": {
+            "op": "patch",
+            "value": {
+              "type": "fieldproof-evidence",
+              "dataMapping": {
+                "rows": [
+                  {
+                    "id": "evidence.id"
+                  }
+                ],
+                "package": [
+                  {
+                    "id": "evidence.packageId"
+                  }
+                ]
+              },
+              "format": {
+                "title": {
+                  "text": "Evidence to review together"
+                },
+                "crossFilter": "filter",
+                "triggerCrossFilter": true
+              }
+            },
+            "widgetId": "evidence"
+          }
+        },
+        {
+          "callId": "call_mPhDofQHaKMZ3Nyp72EE8ZhC",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "a3af6b7da80df02efc5ae51f1e478002166c3e1eb9025ea40c17132dda456fdf",
+          "at": "2026-11-11T04:04:42.358Z"
+        },
+        {
+          "callId": "call_8vBsPG4tctkgQWKgTOQPeYFA",
+          "name": "complete_task",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "9b60fdc04f04e5f5036602bfb9fb67c677a9180035e75d988490f503b973591d",
+          "outputHash": "0f8afaf0c634d585374b49b706538389c54228da15b026e9fdde3922b782389f",
+          "at": "2026-11-11T04:04:53.105Z"
+        }
+      ]
+    },
+    {
+      "id": "99bf1652-97b8-4224-ab10-282aeb7a089e",
+      "agentId": "fieldproof-steward",
+      "runKey": "run-0558d0db-019c-48fe-871d-553639ce72b9",
+      "threadId": "thread-67041cd9-7ba9-410c-8c6d-352046709a48",
+      "state": "succeeded",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:17:10.144Z",
+      "clientHistoryHash": "b75f8aa4e2b26be2b8b3d79f74692e5261eb2332a8ebe33cdbf8e7d5177d77b2",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "08a34292-b88b-442f-bee1-f848de2caef9",
+      "cutoff": "2026-11-11T04:13:40.004Z",
+      "sourceContentHash": "175e68fa605cee530ba6def204d7090d9357d00fd4e8e44882947afea929d9eb",
+      "originalInputHash": "76b58edab459d2905338d82513fd4dcfe3e820eba509d86e726434296c971557",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 21,
+        "clientTools": 20,
+        "inputTokens": 1534443,
+        "serverTools": 0,
+        "outputTokens": 2976
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:13:40.032Z",
+      "updatedAt": "2026-11-11T04:17:10.144Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_00722670201937f8016af3eb7441e487d2a816bed0fedd2e1b",
+          "model": "gpt-6.1-sol",
+          "at": 1794370420000,
+          "inputHash": "34ba76a4013b130f34b182989d6d0d32f721708d20fe7528bd451f4fc79b4e3d",
+          "outputHash": "9aeee6a57d78ef1e139a8e5f780d8b8f3a37f7c4067413d570bec94e63735039",
+          "usage": {
+            "inputTokens": 69629,
+            "outputTokens": 66,
+            "totalTokens": 69695
+          }
+        },
+        {
+          "providerId": "resp_09ead9dc12379e1c016af3eb77861887d2b5f74aa1c5c3a69d",
+          "model": "gpt-6.1-sol",
+          "at": 1794370423000,
+          "inputHash": "38b535c0f666e78fd6e99d07f56d965bca986785f733af0b3fe01e3231745353",
+          "outputHash": "24ba13a1f9fd8f134b81862e71d81ccd01011c8bd36c041ec2f393c9cbae11c6",
+          "usage": {
+            "inputTokens": 69776,
+            "outputTokens": 14,
+            "totalTokens": 69790
+          }
+        },
+        {
+          "providerId": "resp_07f0222b9c142327016af3eb79ce6087d2a0f5e91121843b93",
+          "model": "gpt-6.1-sol",
+          "at": 1794370425000,
+          "inputHash": "dc447c2df884074c0ca60a20c77f9f2bb9f65e06819f8b190187b6b7adaed7fb",
+          "outputHash": "89b98436988b5a3a45c1e2adffba2f99012af40ad7dc33f7659e021258371626",
+          "usage": {
+            "inputTokens": 69908,
+            "outputTokens": 14,
+            "totalTokens": 69922
+          }
+        },
+        {
+          "providerId": "resp_0db012c2ce9c4c7c016af3eb7be19c87d291e2b7d6578a6f04",
+          "model": "gpt-6.1-sol",
+          "at": 1794370428000,
+          "inputHash": "ea24a8fb214d92fcf5a5ea48fc4b2c9198e7e9a6e20c0056f177f0d93309b5bb",
+          "outputHash": "7bda47c5fde36027903bf9b8e13060362c0f3f01406d7a7cd84d7e66677b2bc1",
+          "usage": {
+            "inputTokens": 70456,
+            "outputTokens": 532,
+            "totalTokens": 70988
+          }
+        },
+        {
+          "providerId": "resp_059180d6bfc5f3d9016af3eb89e4b487d2a936c07f024f6bde",
+          "model": "gpt-6.1-sol",
+          "at": 1794370442000,
+          "inputHash": "69bda81138a1540c683ac9206602d74b9fe71127cce8ddd6e0a00a2515f6db35",
+          "outputHash": "40963d99f07b08f18dd21cef91a272d7304eb86d5259bb6fdd1e300c46fccdb0",
+          "usage": {
+            "inputTokens": 72431,
+            "outputTokens": 511,
+            "totalTokens": 72942
+          }
+        },
+        {
+          "providerId": "resp_05b764dd9dca3562016af3eb969d4487d2b30cec758079d3a3",
+          "model": "gpt-6.1-sol",
+          "at": 1794370454000,
+          "inputHash": "bd1428b8f4eb8da25a6f2c3aa035353163b852d85ef832012f7db181d5c32df5",
+          "outputHash": "5aea57147b5f10e39f96c5b2b7704186b607a840145b75a4b9c0b0f6f9423f51",
+          "usage": {
+            "inputTokens": 72558,
+            "outputTokens": 19,
+            "totalTokens": 72577
+          }
+        },
+        {
+          "providerId": "resp_0dc0fe637257cc91016af3eb9d554487d2b67a6626232ea4ca",
+          "model": "gpt-6.1-sol",
+          "at": 1794370461000,
+          "inputHash": "9c3f49c0ace229eaa719be4d4cc78ef2c057c6d3e5da748a704e3dfdbe68d421",
+          "outputHash": "7b86bb0671522e7032017410463dc6792c93ccfbc39cfb1f943482ef24557425",
+          "usage": {
+            "inputTokens": 72683,
+            "outputTokens": 19,
+            "totalTokens": 72702
+          }
+        },
+        {
+          "providerId": "resp_0a683366cee5a95f016af3eb9fa6d087d295777ed5010d53de",
+          "model": "gpt-6.1-sol",
+          "at": 1794370463000,
+          "inputHash": "5711a7071afe23361f970f1f073622a0f4183552520e40ae01595e28e5e1074b",
+          "outputHash": "7756f14429ac469caa028f740af5e9589b7007013166db81624c47e6f30ae49e",
+          "usage": {
+            "inputTokens": 72808,
+            "outputTokens": 20,
+            "totalTokens": 72828
+          }
+        },
+        {
+          "providerId": "resp_0ba58a29e4a531ff016af3eba26e2c87d29c07c8dc4dad01d5",
+          "model": "gpt-6.1-sol",
+          "at": 1794370466000,
+          "inputHash": "0b84a53f432387e671c866432904b94fc86793b8eec0598e2059d6ec19c10d39",
+          "outputHash": "50b6bf03ccd38dfaf70047601be8b055ceac2edfc463468fce7ac1e732217ff8",
+          "usage": {
+            "inputTokens": 72949,
+            "outputTokens": 19,
+            "totalTokens": 72968
+          }
+        },
+        {
+          "providerId": "resp_09472ee05e3435ca016af3eba4bf1887d2a5587bb513330cd4",
+          "model": "gpt-6.1-sol",
+          "at": 1794370468000,
+          "inputHash": "0d2783f636ebe37fec608542783f610c92d961d9aabf305e4ea7d814da314dc9",
+          "outputHash": "d7d9a4cfd763e06a3b1ce455d77ea16eb80b2cd177aa017802d54021f7e10fef",
+          "usage": {
+            "inputTokens": 73076,
+            "outputTokens": 19,
+            "totalTokens": 73095
+          }
+        },
+        {
+          "providerId": "resp_0dc5d24b33a270d8016af3eba74ff087d2ac82df68e48eaace",
+          "model": "gpt-6.1-sol",
+          "at": 1794370471000,
+          "inputHash": "c004b3e67b1c5458d846ebb26ebeb02201f44a132022e1ad9874272863beec5c",
+          "outputHash": "4ca69d8baecd30c8c3cd563022476d1d6c1fb445a777c4b4341a10949e72e18d",
+          "usage": {
+            "inputTokens": 73201,
+            "outputTokens": 609,
+            "totalTokens": 73810
+          }
+        },
+        {
+          "providerId": "resp_007b75caed411d69016af3ebe65ed887d29459bbc9f429d0c6",
+          "model": "gpt-6.1-sol",
+          "at": 1794370534000,
+          "inputHash": "b293137d4a76801ca3b02f671a62b9e8551c2d6c71f9e170c6f5f0f65ff0e797",
+          "outputHash": "26fd1296b66fd68bba0f0c5506db4f46c1482e0db74bf8bec50be36a8837abcf",
+          "usage": {
+            "inputTokens": 73495,
+            "outputTokens": 230,
+            "totalTokens": 73725
+          }
+        },
+        {
+          "providerId": "resp_00ce763f0837eeba016af3ec22516887d29174e90cf13af48b",
+          "model": "gpt-6.1-sol",
+          "at": 1794370594000,
+          "inputHash": "393534e2826817c0b7dd37a985357999fcb03d1e85d4e1a03fb5ff725ffd0027",
+          "outputHash": "f7fe679589b4275ad0ed2c0eb2d6017e08b2576999d5069321643454bde18378",
+          "usage": {
+            "inputTokens": 73760,
+            "outputTokens": 105,
+            "totalTokens": 73865
+          }
+        },
+        {
+          "providerId": "resp_051a41dded994d7c016af3ec26cc7887d2a23a35945a29110c",
+          "model": "gpt-6.1-sol",
+          "at": 1794370598000,
+          "inputHash": "3736b198337ac22f0955bfdaf7b0048c11853397f0cbcbb0bb129c9c22061e1e",
+          "outputHash": "7a913a587132ea2568f475cb951735fdd8f831d62a2412e3a56f882e52214ade",
+          "usage": {
+            "inputTokens": 73892,
+            "outputTokens": 14,
+            "totalTokens": 73906
+          }
+        },
+        {
+          "providerId": "resp_051aa896fbfe15f9016af3ec295d5087d2b81f1b65b3b7b185",
+          "model": "gpt-6.1-sol",
+          "at": 1794370601000,
+          "inputHash": "d8cd34b0c57fc504225b2c5946328e87c144f3f6d13761127d4c4e38bba59145",
+          "outputHash": "e5fb5a6e318bc6dab9234067edb397ab3b13f8a707feec6f1b988e9048eacd31",
+          "usage": {
+            "inputTokens": 74440,
+            "outputTokens": 20,
+            "totalTokens": 74460
+          }
+        },
+        {
+          "providerId": "resp_0e4d23ca285acd51016af3ec2c2a9087d28cd67487c0a3911a",
+          "model": "gpt-6.1-sol",
+          "at": 1794370604000,
+          "inputHash": "fe73990ee8bc0faba1080f74fb88a38597c6fca00706fe67502e9343a9020ce8",
+          "outputHash": "50bcfdb564355fe9830ffcc39d6caa37db79bbf7ab71dd3fd9112891bdcd9cca",
+          "usage": {
+            "inputTokens": 74582,
+            "outputTokens": 20,
+            "totalTokens": 74602
+          }
+        },
+        {
+          "providerId": "resp_0b2240a7598a0af0016af3ec2f025c87d2bb04ad84ed030321",
+          "model": "gpt-6.1-sol",
+          "at": 1794370607000,
+          "inputHash": "c44c51032ed2e5f5849d12e43b5a2d2afb13bf0e4303756f7ac380b4cf5832ce",
+          "outputHash": "f2e213c1d58445d6b9e63fbf9bfe43b844665f7921e1ef37e71585853f274bcd",
+          "usage": {
+            "inputTokens": 74709,
+            "outputTokens": 19,
+            "totalTokens": 74728
+          }
+        },
+        {
+          "providerId": "resp_04acb8fbc159a556016af3ec31787887d29189bbf8300d09c0",
+          "model": "gpt-6.1-sol",
+          "at": 1794370609000,
+          "inputHash": "30c13ff92b27ba7174eab81882b7b391436d0e770dfba83959aec548471e8f52",
+          "outputHash": "47f3e76a6b6056d61f56366bc1cd63ebedcfd2f03910e7ff289e1dd123ac12f9",
+          "usage": {
+            "inputTokens": 74834,
+            "outputTokens": 19,
+            "totalTokens": 74853
+          }
+        },
+        {
+          "providerId": "resp_05e9f5ecf75df65c016af3ec33bde887d28ec512b9f7f8e4d5",
+          "model": "gpt-6.1-sol",
+          "at": 1794370611000,
+          "inputHash": "0108c5a76336b72426d46602d49fd2f8c0dd7daa8a1f0d8b6ea17435ddaa35e0",
+          "outputHash": "d49fdc6410643ab42ce9dd30c069a416f3a3faff8f8095a610021e813705d615",
+          "usage": {
+            "inputTokens": 74959,
+            "outputTokens": 19,
+            "totalTokens": 74978
+          }
+        },
+        {
+          "providerId": "resp_002d17955343c428016af3ec36de7087d2996ffda02ba8d8e3",
+          "model": "gpt-6.1-sol",
+          "at": 1794370615000,
+          "inputHash": "3531d937a2a06dc3134a6df6215ff55908a15a66962afd21d66846a7a0c38cc0",
+          "outputHash": "d670e08734b9b2dcaf89ae344646e8afc9da66b48e050f9e9525f8645cdec3cb",
+          "usage": {
+            "inputTokens": 75086,
+            "outputTokens": 19,
+            "totalTokens": 75105
+          }
+        },
+        {
+          "providerId": "resp_0744a6527359f5a5016af3ec39475487d29e35373505bcfa30",
+          "model": "gpt-6.1-sol",
+          "at": 1794370617000,
+          "inputHash": "c71387e7dd826d4c157b0bad7d0f0dc28f6c3950c595af413099fc5a86f2929f",
+          "outputHash": "587a7e40e36be54042e3bd8a04662fc3b04ff627ff506a2e40ed295c1d4713b2",
+          "usage": {
+            "inputTokens": 75211,
+            "outputTokens": 669,
+            "totalTokens": 75880
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_ks9ea4yzR1nRxRMlMqtKrufb",
+          "name": "rename_thread",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "b54313bed1726780121f5d60dcfe6938af7293b1bd487dd0559a40363b658d05",
+          "outputHash": "c07712f6dd57c431b133db6e5e4cab4227e2bb946c86349e977d6d4ad7c3b8bf",
+          "at": "2026-11-11T04:13:43.350Z"
+        },
+        {
+          "callId": "call_5tU5NR89nneAKrVpFB1FDMXr",
+          "name": "view_report",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "1b23744aab15f2b7573eb26d073972eee960b6276390f4051d0279f153dab0e1",
+          "at": "2026-11-11T04:13:45.649Z"
+        },
+        {
+          "callId": "call_JWczEuxTSOPleZ3WjREcKnbW",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "291e8c45a9f99e3feefc9736abb56c87507212f28bec426c4ee4f0670d88a5ee",
+          "at": "2026-11-11T04:13:47.718Z"
+        },
+        {
+          "callId": "call_N587VKH2y8WU6VQo4jPjDP8R",
+          "name": "view_schema",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9cea03b0b60e66c570c2f4e6c284c8ad399313775ae7960a72c5ef858e0e0d18",
+          "at": "2026-11-11T04:14:01.714Z"
+        },
+        {
+          "callId": "call_O9OUaPhKtuNdvvRjx0xe0Wok",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "67f10c68aad78f786ea76422f3dca3a11812ea5bb50e4df3fc20951f815f3216",
+          "outputHash": "2b34b16eb3dec0b548afbad54d364018790c86b26b09c5144a2abd51b74d8184",
+          "at": "2026-11-11T04:14:14.456Z"
+        },
+        {
+          "callId": "call_smsT2v4eWrxUQQE17ezhGw4l",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c76b8dab16f61a3787349865877c64ff326d9e5cfcf7687bf05e1acfc370e266",
+          "outputHash": "1b512d41e73cf32ebee51daa7ed5d4b26a0274c6709c518efab1d899e87c1ed1",
+          "at": "2026-11-11T04:14:21.160Z"
+        },
+        {
+          "callId": "call_zW9fNNyvIOdZvxS4xg6J14l4",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c752e7721475d6cbcff6a7b72adc95ba571bd35e82105ab0d4540691fa95d40c",
+          "outputHash": "36c9ccad2e9e683428e4f006d14efe264449889cfa7250ca8de3a283fd86dd1b",
+          "at": "2026-11-11T04:14:23.481Z"
+        },
+        {
+          "callId": "call_5ePFJ93Uq5xeponasi5na87M",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "7519161a0778c83e5c29251b2d246ab742f2c2f89e3bac82a47af468664eb6a1",
+          "at": "2026-11-11T04:14:26.250Z"
+        },
+        {
+          "callId": "call_Ss7izwqryjPsztTnuogviHVW",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "31110b6a474437e646d60dee9d9887c4aef16b9924efc2290aa2cf66eae812d5",
+          "outputHash": "abae588b1f21c2e85cecdb2bf79e36245af1ab605aede29f64a5260e76be72a0",
+          "at": "2026-11-11T04:14:28.586Z"
+        },
+        {
+          "callId": "call_nPwwdRna3FXTPffCxbklYIHx",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c516643bde37052058981f7e29686b2cd895a64fdd313039b09df32ecc56fa6a",
+          "outputHash": "38590b4dffbeea543cd1d7fc13aa241db5117636bde3d734d6ffc3e50d4780bb",
+          "at": "2026-11-11T04:14:31.154Z"
+        },
+        {
+          "callId": "call_icpZiaku0dzzBofW6KG3gSnX",
+          "name": "delegate_to",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "60184eb95c1177ed97d4ca128d6e9ba26c10174682c1103fb2605fb1339caa16",
+          "outputHash": "944fbcaf894c6d52f34eb1321bb913b36987bf4504031e817d0d49d4ddccf48d",
+          "at": "2026-11-11T04:15:34.184Z"
+        },
+        {
+          "callId": "call_Kz8IOQeZncnPHEfOw9eRvasx",
+          "name": "delegate_to",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "54787f9282ec3fa2fa646ba1801404c2dc2693e6f75c0bb22f05f0ba75ac1b74",
+          "outputHash": "3e3f19fe1c0d35cabe9c6599e492fafe020d79f57ea50d5032b03f19939c3640",
+          "at": "2026-11-11T04:16:34.148Z"
+        },
+        {
+          "callId": "call_dsdjjtXUHkyU9Fli1ImGnQnN",
+          "name": "view_report",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "1b23744aab15f2b7573eb26d073972eee960b6276390f4051d0279f153dab0e1",
+          "at": "2026-11-11T04:16:38.631Z"
+        },
+        {
+          "callId": "call_jFhcqKDGcG59R6dDUFQ9LjYR",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "faa84a9b5ea9b1eb39aea56517ddf0f2d9dc632077af389579a5fd43a211b312",
+          "at": "2026-11-11T04:16:41.194Z"
+        },
+        {
+          "callId": "call_RaLjy5ni3M3cjmig4aPHtltA",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "80307325192cd4af21a11ab91f632727b3f4030f5a097039654c59fd2c9c3ef3",
+          "at": "2026-11-11T04:16:43.980Z"
+        },
+        {
+          "callId": "call_pPqFSog7C7OKVTaTy8LndBwu",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "67f10c68aad78f786ea76422f3dca3a11812ea5bb50e4df3fc20951f815f3216",
+          "outputHash": "2b34b16eb3dec0b548afbad54d364018790c86b26b09c5144a2abd51b74d8184",
+          "at": "2026-11-11T04:16:46.845Z"
+        },
+        {
+          "callId": "call_YTpacj6lurY3mZ5hBurIM68V",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c76b8dab16f61a3787349865877c64ff326d9e5cfcf7687bf05e1acfc370e266",
+          "outputHash": "1b512d41e73cf32ebee51daa7ed5d4b26a0274c6709c518efab1d899e87c1ed1",
+          "at": "2026-11-11T04:16:49.298Z"
+        },
+        {
+          "callId": "call_8BK782e82I7mZqV5M0IX4uET",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c752e7721475d6cbcff6a7b72adc95ba571bd35e82105ab0d4540691fa95d40c",
+          "outputHash": "36c9ccad2e9e683428e4f006d14efe264449889cfa7250ca8de3a283fd86dd1b",
+          "at": "2026-11-11T04:16:51.566Z"
+        },
+        {
+          "callId": "call_MSlus0pgqiCx0FX6OkqJQuvZ",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "31110b6a474437e646d60dee9d9887c4aef16b9924efc2290aa2cf66eae812d5",
+          "outputHash": "abae588b1f21c2e85cecdb2bf79e36245af1ab605aede29f64a5260e76be72a0",
+          "at": "2026-11-11T04:16:54.684Z"
+        },
+        {
+          "callId": "call_D0Mpzh1uOZ9sTUgPJnwp5bIx",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "c516643bde37052058981f7e29686b2cd895a64fdd313039b09df32ecc56fa6a",
+          "outputHash": "38590b4dffbeea543cd1d7fc13aa241db5117636bde3d734d6ffc3e50d4780bb",
+          "at": "2026-11-11T04:16:57.090Z"
+        }
+      ]
+    },
+    {
+      "id": "9e41602d-7a08-4805-a047-33e1225bae63",
+      "agentId": "page",
+      "runKey": "run-4cbaa004-97b3-4544-a9b1-99fe76064bc4",
+      "threadId": "call_icpZiaku0dzzBofW6KG3gSnX-sub",
+      "state": "client_completed",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:15:34.172Z",
+      "clientHistoryHash": "cde45ada9387185546cc2623da905217e258457a581c6877a8ec8deb40936a9c",
+      "parentRunKey": "run-0558d0db-019c-48fe-871d-553639ce72b9",
+      "parentCallId": "call_icpZiaku0dzzBofW6KG3gSnX",
+      "datasetHandle": "08a34292-b88b-442f-bee1-f848de2caef9",
+      "cutoff": "2026-11-11T04:13:40.004Z",
+      "sourceContentHash": "175e68fa605cee530ba6def204d7090d9357d00fd4e8e44882947afea929d9eb",
+      "originalInputHash": "4c986d26ee7a645018bd3cd5bef8939ba2125d4cfaf4a46c6cccf285e91d42bf",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 7,
+        "clientTools": 7,
+        "inputTokens": 62202,
+        "serverTools": 0,
+        "outputTokens": 1987
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:14:43.315Z",
+      "updatedAt": "2026-11-11T04:15:34.172Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_07fcd5f39c29a3cb016af3ebb375d487d288691ce5c3195b85",
+          "model": "gpt-6.1-sol",
+          "at": 1794370483000,
+          "inputHash": "f5290d8c9d2e6819b0fc0b532d0566103f3c1e71e58cdce28e5cdfe858d1c6b5",
+          "outputHash": "2576251202daf3fb453cb770399f0c597eea1d6cda4801d172cea28565997597",
+          "usage": {
+            "inputTokens": 7929,
+            "outputTokens": 368,
+            "totalTokens": 8297
+          }
+        },
+        {
+          "providerId": "resp_0436c8d77b01812f016af3ebbcdc0487d2ad08f050305507df",
+          "model": "gpt-6.1-sol",
+          "at": 1794370492000,
+          "inputHash": "842498fdb1b44093879c80eb27b8393cd35f535178b092ea03c540753f73c5b8",
+          "outputHash": "003e6dabafef9b6e155aac23301cee500549996d6e31040f699badcaa200357c",
+          "usage": {
+            "inputTokens": 8477,
+            "outputTokens": 397,
+            "totalTokens": 8874
+          }
+        },
+        {
+          "providerId": "resp_09ea3dc7ae14caad016af3ebc675a887d2bf30edd008f8129b",
+          "model": "gpt-6.1-sol",
+          "at": 1794370502000,
+          "inputHash": "277cf92e144e2d77d4b27678f352b9de355b22f5a3de1333ddcbce25b7bfdf99",
+          "outputHash": "56a896d8647f75636441cba4d77abfdb8f7d979e3694e8aea4797faaf28984d4",
+          "usage": {
+            "inputTokens": 8586,
+            "outputTokens": 46,
+            "totalTokens": 8632
+          }
+        },
+        {
+          "providerId": "resp_074981efa1f1f896016af3ebc8f39087d2a6e8cb4530a56d79",
+          "model": "gpt-6.1-sol",
+          "at": 1794370505000,
+          "inputHash": "4ab7d917fa53a0340020f9a229895a3c276a66bbd21db56eaaf32dedb8a41b28",
+          "outputHash": "c5d22af8f4698b7f1f545972392884cbc559cd53483edb5ec1d1bddbfd73e752",
+          "usage": {
+            "inputTokens": 8697,
+            "outputTokens": 14,
+            "totalTokens": 8711
+          }
+        },
+        {
+          "providerId": "resp_0963ad7d0bcbbf0d016af3ebcae6b887d2b549c7f9e12fe401",
+          "model": "gpt-6.1-sol",
+          "at": 1794370507000,
+          "inputHash": "54720c164c065459a6c31c96aa9ba39c645e67e474383a4a870c98aab8daed1e",
+          "outputHash": "73736ee518fdb64809d3fdf47b59399c02c4b28808f20fb935c6c4bd337ddba4",
+          "usage": {
+            "inputTokens": 9249,
+            "outputTokens": 183,
+            "totalTokens": 9432
+          }
+        },
+        {
+          "providerId": "resp_0c66f3575301712d016af3ebd0ac5087d29bdec456ad9d6b26",
+          "model": "gpt-6.1-sol",
+          "at": 1794370512000,
+          "inputHash": "df72ba7be91f568e9f8e73fcd152f1bb3f4dac6d3e1c6e76fe2d3560e2c2b741",
+          "outputHash": "16a82332fc33388eaa135f4fd031c28857853de566e9427747ea93635a4b4cb8",
+          "usage": {
+            "inputTokens": 9358,
+            "outputTokens": 14,
+            "totalTokens": 9372
+          }
+        },
+        {
+          "providerId": "resp_02ffe4a04fee8529016af3ebd2b02087d2bc80c984b5d24118",
+          "model": "gpt-6.1-sol",
+          "at": 1794370514000,
+          "inputHash": "0fa5d89f011e66467291fb52a0a6cb15a592c5775e7354c53cf99212b984521a",
+          "outputHash": "f3f64d74e6fc81b40468ff53970871934098f67ca6889ed617a739f42e6f9ca9",
+          "usage": {
+            "inputTokens": 9906,
+            "outputTokens": 965,
+            "totalTokens": 10871
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_pVrt0O8NJPbTfCX5zOnEzfo8",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "291e8c45a9f99e3feefc9736abb56c87507212f28bec426c4ee4f0670d88a5ee",
+          "at": "2026-11-11T04:14:52.702Z"
+        },
+        {
+          "callId": "call_ERw0laKTqsoKQzrcFkSLHa52",
+          "name": "position_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "a0dcf7e2555c834962e4985220ec06f43b3be60965d067e38c09a4462c125fcb",
+          "outputHash": "878c5596601bcea5bc8b46796816a7678157f603cdfed132e2dfea4e739c5aab",
+          "at": "2026-11-11T04:15:02.220Z",
+          "fullHistoryHash": "f8395e099604d71f440c84d65d6e606d045385c3c479b2a0a116788bf9c5da19",
+          "appliedArguments": {
+            "op": "patch",
+            "value": {
+              "xTrack": 0,
+              "yTrack": 0,
+              "xSpan": 10,
+              "ySpan": 25
+            },
+            "widgetId": "rings"
+          }
+        },
+        {
+          "callId": "call_gb4kKe3vgEMmdhqPwnIc9zgJ",
+          "name": "position_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "2a11d1302c190c2989dc77c4a6c1c9c10a661835fbef66bd7f44d02feb4433ba",
+          "outputHash": "026cebd7747ff4126ead808b124679fbb6b59965c269d85c1a6880d5ad8a4c50",
+          "at": "2026-11-11T04:15:04.780Z",
+          "fullHistoryHash": "22167b0a18f333eb9d0f2e47b5760577d59a76a63a025bfd222dca19dc515221",
+          "appliedArguments": {
+            "op": "patch",
+            "value": {
+              "xTrack": 10,
+              "yTrack": 0,
+              "xSpan": 14,
+              "ySpan": 25
+            },
+            "widgetId": "blueprint"
+          }
+        },
+        {
+          "callId": "call_eqIBjzP9g8TLpVgGeORsrdhP",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "4cf511465c191182ead756c3c17dfddb02476c7ef1d27b4083d17bcc565f936f",
+          "at": "2026-11-11T04:15:06.730Z"
+        },
+        {
+          "callId": "call_68smB8voih0cP3DtNzDhZOtU",
+          "name": "position_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "a0dcf7e2555c834962e4985220ec06f43b3be60965d067e38c09a4462c125fcb",
+          "outputHash": "878c5596601bcea5bc8b46796816a7678157f603cdfed132e2dfea4e739c5aab",
+          "at": "2026-11-11T04:15:12.483Z",
+          "fullHistoryHash": "cde45ada9387185546cc2623da905217e258457a581c6877a8ec8deb40936a9c",
+          "appliedArguments": {
+            "op": "patch",
+            "value": {
+              "xTrack": 0,
+              "yTrack": 0,
+              "xSpan": 10,
+              "ySpan": 25
+            },
+            "widgetId": "rings"
+          }
+        },
+        {
+          "callId": "call_J3m34Frb6lPhcfZRJidZXjiS",
+          "name": "view_page",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "faa84a9b5ea9b1eb39aea56517ddf0f2d9dc632077af389579a5fd43a211b312",
+          "at": "2026-11-11T04:15:14.524Z"
+        },
+        {
+          "callId": "call_TCoCGPpSKFkDHihzyHwA8bxV",
+          "name": "complete_task",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "27e9633f06b41a4ad1313a548d0aa11c48251155972e17d8d34d5b2758172f87",
+          "outputHash": "9f822964e55f65f0d2a2544f3d8aee9912f63fbae4db37f0996e94a98caaf8f1",
+          "at": "2026-11-11T04:15:34.144Z"
+        }
+      ]
+    },
+    {
+      "id": "acf31ab6-cf82-4e28-8219-0d2d40eae9f6",
+      "agentId": "widget",
+      "runKey": "run-179a9238-e1e3-4c22-80a6-abf2de2ea1db",
+      "threadId": "call_Kz8IOQeZncnPHEfOw9eRvasx-sub",
+      "state": "client_completed",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:16:34.133Z",
+      "clientHistoryHash": "b75f8aa4e2b26be2b8b3d79f74692e5261eb2332a8ebe33cdbf8e7d5177d77b2",
+      "parentRunKey": "run-0558d0db-019c-48fe-871d-553639ce72b9",
+      "parentCallId": "call_Kz8IOQeZncnPHEfOw9eRvasx",
+      "datasetHandle": "08a34292-b88b-442f-bee1-f848de2caef9",
+      "cutoff": "2026-11-11T04:13:40.004Z",
+      "sourceContentHash": "175e68fa605cee530ba6def204d7090d9357d00fd4e8e44882947afea929d9eb",
+      "originalInputHash": "b0af12d1883ec947c21fcd0c9d39de581886d0ff0f0b4ad28c3eb01eed70f238",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 5,
+        "clientTools": 5,
+        "inputTokens": 72392,
+        "serverTools": 0,
+        "outputTokens": 2389
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:15:40.577Z",
+      "updatedAt": "2026-11-11T04:16:34.133Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_06a39c1120e912ab016af3ebecbb0087d2b30515481a2147d2",
+          "model": "gpt-6.1-sol",
+          "at": 1794370540000,
+          "inputHash": "2a394a2dd0c66fb41cf0745a205feba46383744443acb15a44e4b5d9ff080dc8",
+          "outputHash": "be8fa4f85d84c2391c4b300f97fa8ac747c4f376dbe91055609a003a128ff83e",
+          "usage": {
+            "inputTokens": 13099,
+            "outputTokens": 466,
+            "totalTokens": 13565
+          }
+        },
+        {
+          "providerId": "resp_0b1053815de16ebc016af3ebf726c087d2ad98989dd1ed39ac",
+          "model": "gpt-6.1-sol",
+          "at": 1794370551000,
+          "inputHash": "1386bb31a3a0c6f798a474568723c846c5af25226534316c9116178387cfc989",
+          "outputHash": "404d418f42b7347ec5ca179241b4310112e2beef41d4f6d6058252d4f395bf41",
+          "usage": {
+            "inputTokens": 13240,
+            "outputTokens": 707,
+            "totalTokens": 13947
+          }
+        },
+        {
+          "providerId": "resp_040eb98ec5806e3a016af3ec0643b087d28db9581200dda9ba",
+          "model": "gpt-6.1-sol",
+          "at": 1794370566000,
+          "inputHash": "5cbd0e47aeb93648b43a8db939c37bcd18e3be85c787dff4eff20d8251b45b03",
+          "outputHash": "380cbc5b75688dadc8e15b30c228f72b39b8faad337ff1348a1df28538ef661f",
+          "usage": {
+            "inputTokens": 15215,
+            "outputTokens": 516,
+            "totalTokens": 15731
+          }
+        },
+        {
+          "providerId": "resp_01545f1929573618016af3ec1236d487d299a2763f8266fc28",
+          "model": "gpt-6.1-sol",
+          "at": 1794370578000,
+          "inputHash": "7349e130b0d31667a1bda375ba72199e23ccb4d277871096f6361a9ebd0d0352",
+          "outputHash": "6b1e32fb584b8fe85ee462e651f5d4d790eb441954e50b78f5efe689629d7931",
+          "usage": {
+            "inputTokens": 15348,
+            "outputTokens": 63,
+            "totalTokens": 15411
+          }
+        },
+        {
+          "providerId": "resp_0a485c01b0f69615016af3ec160c3487d2a793d61da167d49c",
+          "model": "gpt-6.1-sol",
+          "at": 1794370582000,
+          "inputHash": "6a4743d8a1c1d5ba01869d5435b0743a5c377a0760e90fba439e498b69ac27ee",
+          "outputHash": "6af842905972fa9447a0d895d9bed260d6d3c15ca960a215c9d7abbb9fc30204",
+          "usage": {
+            "inputTokens": 15490,
+            "outputTokens": 637,
+            "totalTokens": 16127
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_P5Du6NFHHxI7WvN88WKpE6xc",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "7519161a0778c83e5c29251b2d246ab742f2c2f89e3bac82a47af468664eb6a1",
+          "at": "2026-11-11T04:15:50.994Z"
+        },
+        {
+          "callId": "call_KeEOOFQAePJNOb4pRCARo8GI",
+          "name": "view_schema",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9cea03b0b60e66c570c2f4e6c284c8ad399313775ae7960a72c5ef858e0e0d18",
+          "at": "2026-11-11T04:16:06.098Z"
+        },
+        {
+          "callId": "call_c1y69aixdqjr1bYGJb4aPuIA",
+          "name": "configure_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "b10752a12ea156eadf9935a67b4f5cd224af0a3746dc29c2478e9961d59221c1",
+          "outputHash": "9d9635546e25ea5ee4ad70d991b94f2384781a78fef9bc10fc2959fb989d7461",
+          "at": "2026-11-11T04:16:18.024Z",
+          "fullHistoryHash": "b75f8aa4e2b26be2b8b3d79f74692e5261eb2332a8ebe33cdbf8e7d5177d77b2",
+          "appliedArguments": {
+            "widgetId": "evidence",
+            "op": "patch",
+            "value": {
+              "format": {
+                "title": {
+                  "text": "Evidence for our next review"
+                }
+              }
+            }
+          }
+        },
+        {
+          "callId": "call_FVc8GpKQCJab7CVqqvD2RBMz",
+          "name": "view_widget",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "039f3ae545974f6502e7db56878482949c9dd6c1aa0feff9acae246511d99541",
+          "outputHash": "80307325192cd4af21a11ab91f632727b3f4030f5a097039654c59fd2c9c3ef3",
+          "at": "2026-11-11T04:16:21.895Z"
+        },
+        {
+          "callId": "call_HY5lxexXbEEyRRP2oeF9XrLu",
+          "name": "complete_task",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "92b5419357cc95883de0b6a66b64042ed1fa5f3812f1880f5ce9969009031c1c",
+          "outputHash": "155b3a6d4b11d52868792e9a7abbe598b1fc0781c571c89252611546c79d1edd",
+          "at": "2026-11-11T04:16:34.104Z"
+        }
+      ]
+    },
+    {
+      "id": "ec971e5c-c7a5-46a5-9f41-8ce06a20f0b1",
+      "agentId": "fieldproof-steward",
+      "runKey": "run-2d1de896-6fb0-45fa-8842-9a46f0dda1c0",
+      "threadId": "thread-6f074c5d-0a61-425d-9fab-e6de1444dc9c",
+      "state": "succeeded",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:21:40.787Z",
+      "clientHistoryHash": "88b6831cf2eebab2bd5703241fd31f6a592db03cf5929cbe0fcc821c02935461",
+      "parentRunKey": null,
+      "parentCallId": null,
+      "datasetHandle": "0152abdb-fa4a-4b37-8cbd-5b2ed7c151e7",
+      "cutoff": "2026-11-11T04:19:01.769Z",
+      "sourceContentHash": "a73363485ebdde3ad828843d5ffe759d8d830f463698fb148b78b3c9c980971d",
+      "originalInputHash": "d0897e49013f2649dc901f39d52e66cba3023477c084bc6e21a706c27a980d8f",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 6,
+        "clientTools": 2,
+        "inputTokens": 310642,
+        "serverTools": 3,
+        "outputTokens": 3013
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:19:01.792Z",
+      "updatedAt": "2026-11-11T04:21:40.787Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_0edc6b7a85cc5c91016af3ecb5f7f487d290e8b5b5972fc7c5",
+          "model": "gpt-6.1-sol",
+          "at": 1794370742000,
+          "inputHash": "e2aea18308b127028f62ff68dbd3b61502eabc02511c7ddd8fe6087dcae735e9",
+          "outputHash": "a2acbeb43c4d4fd379fe84ac158c57fd1f395a1da8a7c31a61c3d12f297b862d",
+          "usage": {
+            "inputTokens": 47516,
+            "outputTokens": 316,
+            "totalTokens": 47832
+          }
+        },
+        {
+          "providerId": "resp_0c89768558657595016af3ecbeef8887d28ccf0034099aeaf7",
+          "model": "gpt-6.1-sol",
+          "at": 1794370751000,
+          "inputHash": "4000e58a4dbc47cd156b39a76121e7291af5cc0b633a6a4857e0dc6802bb8429",
+          "outputHash": "3a0484b449669403db2e2854cead569fcccc162de96dbdede2123bdeea9fae93",
+          "usage": {
+            "inputTokens": 47661,
+            "outputTokens": 15,
+            "totalTokens": 47676
+          }
+        },
+        {
+          "providerId": "resp_05b7634c99bb71cb016af3ecc1d5dc87d2b61a687a07c5dc11",
+          "model": "gpt-6.1-sol",
+          "at": 1794370753000,
+          "inputHash": "d9120f1b2f4fcd9e24fb1e99c2c726afdc9ed0aa046679122515be0748f8e07d",
+          "outputHash": "72be7d0a7b1122aef42406a96966907beaf2c1c7b2b0e14ed39d9aa5baba2885",
+          "usage": {
+            "inputTokens": 52254,
+            "outputTokens": 169,
+            "totalTokens": 52423
+          }
+        },
+        {
+          "providerId": "resp_0b0691c7e1e6a07c016af3ed1a05dc87d2942f53dee4da7be9",
+          "model": "gpt-6.1-sol",
+          "at": 1794370842000,
+          "inputHash": "8f5cd81643dcf292df134e14570a58b9a73ccbd07c6569f69e65405b3582f2df",
+          "outputHash": "e17e41223c9eeef83d0971bf93ca32b0d66fe4373a26a6491641fdda60f40e10",
+          "usage": {
+            "inputTokens": 53771,
+            "outputTokens": 348,
+            "totalTokens": 54119
+          }
+        },
+        {
+          "providerId": "resp_0c517cd72435f030016af3ed24d21087d28e5e0f1e409aa86f",
+          "model": "gpt-6.1-sol",
+          "at": 1794370852000,
+          "inputHash": "75625280e5c6d3d10629835e1a5cff52b6e8b2f7a6b81b1fe026e5fd77f16155",
+          "outputHash": "b49b54ac93e15735a1efb93e1a77a71b275c6ee232a5490aab0e2e6dd39a63ad",
+          "usage": {
+            "inputTokens": 54600,
+            "outputTokens": 16,
+            "totalTokens": 54616
+          }
+        },
+        {
+          "providerId": "resp_0c84f6820972f2b7016af3ed2852cc87d28998556a73c9a32c",
+          "model": "gpt-6.1-sol",
+          "at": 1794370856000,
+          "inputHash": "c0d9bc50087d1c9ea5f8a44cd09b7f1a165e7c6d41d7924bfbc8c7e3ea335b79",
+          "outputHash": "0fb83748a3da4d15a741201d4603c723fcfd940db3d9555c08f300d6a0236985",
+          "usage": {
+            "inputTokens": 54840,
+            "outputTokens": 2149,
+            "totalTokens": 56989
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_QmNTd4B8pYFOHOAGhRSa3dx7",
+          "name": "rename_thread",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "68bbce1a10cdb158518c6db9d41c83e75f71fe848f3b541d009e17c13ac4dc78",
+          "outputHash": "3409125f874a2eacc01e3513a1bc42aba7ecc1ac5f6b71ed8d892706a3b5a3c3",
+          "at": "2026-11-11T04:19:10.280Z"
+        },
+        {
+          "callId": "call_RFxoTRyHSeXVzTl7N1JlV1MB",
+          "name": "fieldproof_snapshot",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9a87c6ee483c775a49a94502680717009bd235d0fcf8f79be074b8a0759593c8",
+          "at": "2026-11-11T04:19:13.665Z"
+        },
+        {
+          "callId": "call_aGnqGZBFJuv0K0iBuF8mmfTE",
+          "name": "delegate_to",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "00bb224ba1e32109c460eec64708724dfb1fbd17f7e5dde641aff3087aef5142",
+          "outputHash": "ffceb6ca0958a72100ff8fb520ebb0fc5283e6a445d1e5963860714063ed1346",
+          "at": "2026-11-11T04:20:41.868Z"
+        },
+        {
+          "callId": "call_QBENdHpHaixhfWLJ30ZCDYLh",
+          "name": "fieldproof_evidence",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "c1d77ba56467820d11081f6163d42cf1e15e7b9eeec4087460b44a5282d3cf96",
+          "at": "2026-11-11T04:20:52.650Z"
+        },
+        {
+          "callId": "call_RhnAObWYvopNDNNiluhOetOL",
+          "name": "fieldproof_exceptions",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "801e641dadbd18fcda536bde0a7e1275fcf7bab1e97ee19a867feabdd4b1a106",
+          "at": "2026-11-11T04:20:56.177Z"
+        }
+      ]
+    },
+    {
+      "id": "7ad9a4f8-bf67-4b09-b4ed-3595a4e966d7",
+      "agentId": "fieldproof-auditor",
+      "runKey": "run-037b6664-f648-41ec-9720-0d08735e29c3",
+      "threadId": "call_aGnqGZBFJuv0K0iBuF8mmfTE-sub",
+      "state": "client_completed",
+      "clientOutcome": "ok",
+      "clientFinishedAt": "2026-11-11T04:20:41.855Z",
+      "clientHistoryHash": "88b6831cf2eebab2bd5703241fd31f6a592db03cf5929cbe0fcc821c02935461",
+      "parentRunKey": "run-2d1de896-6fb0-45fa-8842-9a46f0dda1c0",
+      "parentCallId": "call_aGnqGZBFJuv0K0iBuF8mmfTE",
+      "datasetHandle": "0152abdb-fa4a-4b37-8cbd-5b2ed7c151e7",
+      "cutoff": "2026-11-11T04:19:01.769Z",
+      "sourceContentHash": "a73363485ebdde3ad828843d5ffe759d8d830f463698fb148b78b3c9c980971d",
+      "originalInputHash": "38801d20505b6f9179e0550034592e4bc41f0746cbec11357081ada68536a21d",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "fieldproof-native-studio-v1",
+      "stats": {
+        "modelTurns": 4,
+        "clientTools": 1,
+        "inputTokens": 184569,
+        "serverTools": 3,
+        "outputTokens": 4494
+      },
+      "terminalCode": null,
+      "createdAt": "2026-11-11T04:19:18.565Z",
+      "updatedAt": "2026-11-11T04:20:41.855Z",
+      "providerResponses": [
+        {
+          "providerId": "resp_0eb35ab1bab7aa7a016af3ecc6b58087d2a3ff5e7dfe96a4da",
+          "model": "gpt-6.1-sol",
+          "at": 1794370758000,
+          "inputHash": "0344c0cf5d6f6075b07fe37c16467cd411ed1b3d21796fe9d077243ffc78020f",
+          "outputHash": "750286730366a02945c776dd2eaeb2203d2d99c5016d7cd402c23c6ac93d0342",
+          "usage": {
+            "inputTokens": 42223,
+            "outputTokens": 15,
+            "totalTokens": 42238
+          }
+        },
+        {
+          "providerId": "resp_04f813bdf4d790b8016af3ecc9994c87d28cb7c5b7058ad937",
+          "model": "gpt-6.1-sol",
+          "at": 1794370761000,
+          "inputHash": "a5843f6b1617a82f02cc0275e697869525020e5bf5569b214a47bbccc3308981",
+          "outputHash": "609b863f6f8cfc4d8068315380d17e09a483d74a85bbea6f2a9abf7e75df2c40",
+          "usage": {
+            "inputTokens": 46816,
+            "outputTokens": 16,
+            "totalTokens": 46832
+          }
+        },
+        {
+          "providerId": "resp_003530f1b76b3fe7016af3eccc535887d287a30e8563307dee",
+          "model": "gpt-6.1-sol",
+          "at": 1794370764000,
+          "inputHash": "d994f5f1ba382ea907da79b6bc2c1400e19369fd41e99a29b498add4d5b991e4",
+          "outputHash": "11f3c3e4b40c09cf52fbebbd2c6bbffc7e348a4586dc03c0be57dc1e21e04c66",
+          "usage": {
+            "inputTokens": 47645,
+            "outputTokens": 16,
+            "totalTokens": 47661
+          }
+        },
+        {
+          "providerId": "resp_0c6bef33ceb573b3016af3ecce71ac87d2a50980c288056e15",
+          "model": "gpt-6.1-sol",
+          "at": 1794370766000,
+          "inputHash": "7b5dfa3774932af0049ee25a9e05232d3c26fc1e00620becf0739d31a9c9092c",
+          "outputHash": "3980958f5e0f8c1a4309e9a557dba6432a7b2dcb223aa2ecbbfe8e1469b89cd3",
+          "usage": {
+            "inputTokens": 47885,
+            "outputTokens": 4447,
+            "totalTokens": 52332
+          }
+        }
+      ],
+      "tools": [
+        {
+          "callId": "call_3vl6ROMh58RmNg1X6YGWN8LT",
+          "name": "fieldproof_snapshot",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "9a87c6ee483c775a49a94502680717009bd235d0fcf8f79be074b8a0759593c8",
+          "at": "2026-11-11T04:19:21.444Z"
+        },
+        {
+          "callId": "call_hptiB6ZqhRNqbjqBoq4Ii75i",
+          "name": "fieldproof_evidence",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "c1d77ba56467820d11081f6163d42cf1e15e7b9eeec4087460b44a5282d3cf96",
+          "at": "2026-11-11T04:19:24.167Z"
+        },
+        {
+          "callId": "call_vyUMvdvPPEogqMT3E0yq2gqI",
+          "name": "fieldproof_exceptions",
+          "transport": "native_server_tool",
+          "status": "succeeded",
+          "inputHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "outputHash": "801e641dadbd18fcda536bde0a7e1275fcf7bab1e97ee19a867feabdd4b1a106",
+          "at": "2026-11-11T04:19:26.301Z"
+        },
+        {
+          "callId": "call_HrlYbp7K9nyLsLLkHBRgVcyb",
+          "name": "complete_task",
+          "transport": "native_client_observation",
+          "status": "succeeded",
+          "inputHash": "7b07c7f0d584bdc70a2118abbed2fc078aa2cd96b5b163508b9f468397971b77",
+          "outputHash": "3a6723d25a94eb38a6e470e77d01e357e564c4c9258e4bca20a361a49827a240",
+          "at": "2026-11-11T04:20:41.814Z"
+        }
+      ]
+    }
+  ],
+  "savedReports": [
+    {
+      "role": "organizer",
+      "revision": 17,
+      "historyHash": "88b6831cf2eebab2bd5703241fd31f6a592db03cf5929cbe0fcc821c02935461",
+      "updatedAt": "2026-11-11T04:18:14.777Z",
+      "undo": 8,
+      "redo": 0,
+      "widgets": [
+        {
+          "id": "blueprint",
+          "type": "fieldproof-blueprint",
+          "title": null,
+          "position": {
+            "xTrack": 10,
+            "yTrack": 0,
+            "xSpan": 14,
+            "ySpan": 25
+          }
+        },
+        {
+          "id": "rings",
+          "type": "fieldproof-rings",
+          "title": null,
+          "position": {
+            "xTrack": 0,
+            "yTrack": 0,
+            "xSpan": 10,
+            "ySpan": 25
+          }
+        },
+        {
+          "id": "matrix",
+          "type": "fieldproof-matrix",
+          "title": null,
+          "position": {
+            "xTrack": 0,
+            "yTrack": 25,
+            "xSpan": 14,
+            "ySpan": 23
+          }
+        },
+        {
+          "id": "evidence",
+          "type": "fieldproof-evidence",
+          "title": "Evidence for our next review",
+          "position": {
+            "xTrack": 14,
+            "yTrack": 25,
+            "xSpan": 10,
+            "ySpan": 23
+          }
+        },
+        {
+          "id": "allocation",
+          "type": "fieldproof-allocation",
+          "title": null,
+          "position": {
+            "xTrack": 0,
+            "yTrack": 48,
+            "xSpan": 14,
+            "ySpan": 22
+          }
+        },
+        {
+          "id": "exceptions",
+          "type": "fieldproof-exceptions",
+          "title": null,
+          "position": {
+            "xTrack": 14,
+            "yTrack": 48,
+            "xSpan": 10,
+            "ySpan": 22
+          }
+        }
+      ]
+    }
+  ],
+  "remainingGates": [
+    "Targeted roles/mobile/focus/reduced-motion checks passed. Actual cross-tab role revocation, full keyboard/screen-reader navigation and200%browser zoom remain broader qualification work; scope invalidation also has deterministic server/transaction tests.",
+    "Official Toolkit GET contract tests use intercepted installed transport. Actual owned PayPal reads remain unqualified for Fieldproof Studio; QA disables providers.",
+    "Pinned Toolkit dependency graph has 12 npm advisories: 11 high and 1 moderate. The closed /openai two-read adapter does not make the audit clean; dependency hardening and requalification remain required.",
+    "No Studio deployment or source-database restart occurred. Original final 3500 obligation remains untouched; no native decline, recovery invoice payment, payout or physical acceptance is claimed.",
+    "The full product still requires reviewed geometry/photo/safety, funding and actual repayments/refunds, donor choices, public redacted Proof Pages/QR/revocation and A4/Letter Board Pack, organization/match/templates/Spanish, evaluations/research/rehearsals/release."
+  ]
+}

@@ -2,6 +2,7 @@ import { PostgresDatabase, SqlPaymentStore, type SqlConnection, type SqlDatabase
 import { DomainError } from "../domain/money";
 import { paymentOperationCodec } from "./private-values";
 import { RUNTIME_CONTROL_SCHEMA } from "./runtime-control";
+import { STUDIO_SCHEMA } from "./studio-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -44,10 +45,10 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 9;
+const CURRENT_SCHEMA_VERSION = 10;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
-  const existing = await tx.query<{ app: string | null; operations: string | null; attempts: string | null; locks: string | null; events: string | null; deliveries: string | null; identity: string | null }>(
-    "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity");
+  const existing = await tx.query<Record<string, string | null>>(
+    "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
   if (!existing.rows[0] || Object.values(existing.rows[0]).some(value => value === null)) return false;
   const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
@@ -410,6 +411,7 @@ CREATE TABLE IF NOT EXISTS fp_transfer_webhook_archive (
   source_key_hash text NOT NULL, source_body_hash text NOT NULL, encrypted_data text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(bundle_id,source_table,source_key_hash)
 );
+${STUDIO_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -420,4 +422,5 @@ INSERT INTO fp_schema_versions(version) VALUES(6) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(7) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(8) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(9) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(10) ON CONFLICT DO NOTHING;
 `;

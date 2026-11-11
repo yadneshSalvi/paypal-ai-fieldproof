@@ -6,7 +6,15 @@ import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
 
-const COOKIE = "fieldproof_session";
+export function sessionCookieName(): string {
+  if (process.env.NODE_ENV === "production" || process.env.FIELDPROOF_STUDIO_QA !== "true") return "fieldproof_session";
+  const url = new URL(process.env.DATABASE_URL ?? "postgresql://invalid/invalid");
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !/^\/fp_studio_qa_[a-z0-9_]+$/.test(url.pathname))
+    throw new DomainError("QA_STORAGE_ISOLATION", "The isolated Studio review requires its own local database.", 503);
+  // Browser cookies are shared across localhost ports. Keep the original source cookie
+  // intact while this explicitly isolated review process uses port 4202.
+  return "fieldproof_studio_qa_session";
+}
 export interface Session {
   id: string; tenantId: string; projectId: string; actorId: string;
   role: WorkspaceRole; expiresAt: string; mode: "sample" | "live_sandbox";
@@ -19,11 +27,11 @@ export async function sessionForToken(token: string): Promise<Session | null> {
   return row ? {id:row.id,tenantId:row.tenant_id,projectId:row.project_id,actorId:row.actor_id,role:row.role,expiresAt:row.expires_at.toISOString(),mode:row.mode} : null;
 }
 export async function getSession(): Promise<Session | null> {
-  const token = (await cookies()).get(COOKIE)?.value;
+  const token = (await cookies()).get(sessionCookieName())?.value;
   return token ? sessionForToken(token) : null;
 }
 export async function writeSessionCookie(token: string, expiresAt: string): Promise<void> {
-  (await cookies()).set(COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)) });
+  (await cookies()).set(sessionCookieName(), token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)) });
 }
 export async function requireSession(roles?: WorkspaceRole[]): Promise<Session> {
   const session = await getSession();
@@ -45,12 +53,14 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'donor',$6)", [id,tokenHash(token),tenantId,projectId,actorId,expiresAt]);
     await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,$4::jsonb)", [tenantId,projectId,actorId,JSON.stringify(["donor","volunteer","organizer","auditor"])]);
   });
-  (await cookies()).set(COOKIE,token,{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV === "production",path:"/",maxAge:12*60*60});
+  (await cookies()).set(sessionCookieName(),token,{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV === "production",path:"/",maxAge:12*60*60});
   return {id,tenantId,projectId,actorId,role:"donor",expiresAt,mode};
 }
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   const allowed=["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  // The isolated Studio review process never runs on the retired source writer's port.
+  if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
   const host=request.headers.get("host");
   if (!origin || !allowed.includes(origin) || new URL(origin).host !== host) throw new DomainError("ORIGIN_DENIED", "Refresh this page before trying again.", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);

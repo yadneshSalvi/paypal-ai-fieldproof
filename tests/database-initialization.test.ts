@@ -34,7 +34,7 @@ describe("bounded cold database initialization", () => {
       assert.equal((await target.query("SELECT to_regclass('fp_schema_versions')::text AS present")).rows[0].present, null);
     } finally { release(); await holder; }
     await initializeDatabaseAt(target);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 9);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 10);
     assert.ok((await target.query("SELECT to_regclass('paycore_provider_identity')::text AS present")).rows[0].present);
   });
 
