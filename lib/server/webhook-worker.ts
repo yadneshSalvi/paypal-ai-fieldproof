@@ -6,6 +6,7 @@ import { ingestOwnedOrderRead, paypalProvider } from "./payments";
 import { webhookInboxScope } from "./webhooks";
 import { observeOwnedInvoice, type RecoveryDependencies } from "./recovery-invoices";
 import { observeOwnedRefund, type RefundDependencies } from "./refunds";
+import { observeOwnedPayout, type PayoutDependencies } from "./payouts";
 
 type Job={inbox_id:string;event_id:string;event_type:string;resource_id:string;attempts:number;lease_id:string};
 const supported=new Set(["CHECKOUT.ORDER.APPROVED","CHECKOUT.ORDER.COMPLETED","PAYMENT.CAPTURE.COMPLETED","PAYMENT.CAPTURE.PENDING","PAYMENT.CAPTURE.DENIED","PAYMENT.CAPTURE.DECLINED"]);
@@ -62,11 +63,16 @@ async function finishJob(job:Job,status:"processed"|"retry"|"review",code:string
   });
 }
 
-async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline:number,domain:{recovery?:RecoveryDependencies;refunds?:RefundDependencies}={}) {
+async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline:number,domain:{recovery?:RecoveryDependencies;refunds?:RefundDependencies;payouts?:PayoutDependencies}={}) {
   if(!validId(job.resource_id)) {await finishJob(job,"review","INVALID_RESOURCE_ID");return "review" as const;}
   if(job.event_type.startsWith("INVOICING.INVOICE.")) {
     const owner=await observeOwnedInvoice(job.resource_id,domain.recovery);
     await finishJob(job,"processed","CURRENT_OWNED_INVOICE_APPLIED",{observedAt:new Date().toISOString(),invoiceIdHash:sha256(job.resource_id),financialWrites:0},owner);
+    return "processed" as const;
+  }
+  if(job.event_type.startsWith("PAYMENT.PAYOUTS-ITEM.") || job.event_type.startsWith("PAYMENT.PAYOUTSBATCH.")) {
+    const owner=await observeOwnedPayout(job.resource_id,job.event_type.startsWith("PAYMENT.PAYOUTS-ITEM.")?"item":"batch",domain.payouts);
+    await finishJob(job,"processed","CURRENT_OWNED_PAYOUT_ITEM_APPLIED",{observedAt:new Date().toISOString(),resourceIdHash:sha256(job.resource_id),financialWrites:0},owner);
     return "processed" as const;
   }
   if(["PAYMENT.CAPTURE.REFUNDED","PAYMENT.REFUND.PENDING","PAYMENT.REFUND.FAILED"].includes(job.event_type)) {
@@ -107,7 +113,7 @@ async function processJob(job:Job,provider:Pick<ProviderAdapter,"read">,deadline
 }
 
 /** Bounded scheduler batch; every provider call is a read. */
-export async function processVerifiedWebhooks(options:{limit?:number;provider?:Pick<ProviderAdapter,"read">;budgetMs?:number;recovery?:RecoveryDependencies;refunds?:RefundDependencies}={}) {
+export async function processVerifiedWebhooks(options:{limit?:number;provider?:Pick<ProviderAdapter,"read">;budgetMs?:number;recovery?:RecoveryDependencies;refunds?:RefundDependencies;payouts?:PayoutDependencies}={}) {
   const limit=Math.max(1,Math.min(options.limit??3,20)),budget=Math.max(1000,Math.min(options.budgetMs??40000,45000));
   await enqueueVerifiedWebhooks();const deadline=Date.now()+budget,provider=options.provider??paypalProvider();
   const summary={processed:0,retry:0,review:0};

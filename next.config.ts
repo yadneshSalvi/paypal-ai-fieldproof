@@ -4,7 +4,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   logging: { incomingRequests: { ignore: [/\/api\/auth\//, /\/sandbox/] }, browserToTerminal: false, serverFunctions: false },
-  serverExternalPackages: ["@fracture/paypal-core", "paypal", "pg"],
+  serverExternalPackages: ["@fracture/paypal-core", "paypal", "pg", "pdfjs-dist", "@napi-rs/canvas", "sharp"],
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },

@@ -1,0 +1,190 @@
+{
+  "observedAt": "2026-11-11T00:07:12.999Z",
+  "source": "actual_provider_calls",
+  "documentProvenance": "fictional_sample_document",
+  "physicalPurchaseClaimed": false,
+  "humanReviewClaimed": false,
+  "repaymentClaimed": false,
+  "privateStorage": {
+    "provider": "vercel_blob",
+    "access": "private",
+    "normalizedRaster": true,
+    "documentHash": "3d37bbb67685adfee15788cc43c660445c32dc666bceacafafcb47f2b8b938d0",
+    "documentIdHash": "d5d6f457fc3162767a774a7989ae1dbd0b07e804b18db872f56305622c3e0ae9",
+    "pageCount": 1
+  },
+  "runs": [
+    {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "promptVersion": "receipt-review-v2",
+      "runIdHash": "96d6df5fe72a9dc500df7a7e199770e453403e2148195858f28175092cf09926",
+      "status": "succeeded",
+      "code": null,
+      "sourceInputHash": "275d7eb3db1154dccb6582f9d587545a9e16f55abd29c3d1a488f7ec08213783",
+      "outputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d",
+      "completedAt": "2026-11-11T00:06:31.227Z",
+      "stats": {
+        "durationMs": 19582,
+        "inputTokens": 1720,
+        "outputTokens": 1405
+      },
+      "observations": {
+        "lineCount": 7,
+        "currency": "USD",
+        "totalMinor": 8640,
+        "lineAmountsMinor": [
+          1800,
+          1250,
+          1600,
+          900,
+          1200,
+          1050,
+          840
+        ],
+        "uncertainLineIndices": [
+          6,
+          7
+        ],
+        "suggestedPackages": [
+          "electronics",
+          "electronics",
+          "electronics",
+          "electronics",
+          "safety",
+          null,
+          null
+        ],
+        "validation": {
+          "codes": [],
+          "lineTotalMinor": 8640,
+          "totalDifferenceMinor": 0,
+          "uncertainLineCount": 2,
+          "payable": false
+        }
+      }
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "receipt-review-v2",
+      "runIdHash": "aaa80bc788b5ff2754315bd6d665628af2c18e2101d0fcbab4d882e0d3809a4d",
+      "status": "succeeded",
+      "code": null,
+      "sourceInputHash": "275d7eb3db1154dccb6582f9d587545a9e16f55abd29c3d1a488f7ec08213783",
+      "outputHash": "cc0050ccda5e207790ca13bed48c0dde7ad80f86032b962b635c8d2e072b9dc5",
+      "completedAt": "2026-11-11T00:07:12.994Z",
+      "stats": {
+        "durationMs": 61354,
+        "inputTokens": 3971,
+        "outputTokens": 4310
+      },
+      "observations": {
+        "lineCount": 7,
+        "currency": "USD",
+        "totalMinor": 8640,
+        "lineAmountsMinor": [
+          1800,
+          1250,
+          1600,
+          900,
+          1200,
+          1050,
+          840
+        ],
+        "uncertainLineIndices": [
+          6,
+          7
+        ],
+        "suggestedPackages": [
+          "electronics",
+          "electronics",
+          "electronics",
+          "electronics",
+          "safety",
+          null,
+          null
+        ],
+        "validation": {
+          "codes": [],
+          "lineTotalMinor": 8640,
+          "totalDifferenceMinor": 0,
+          "uncertainLineCount": 2,
+          "payable": false
+        }
+      }
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "promptVersion": "receipt-review-v1",
+      "runIdHash": "14c1491988818d9f908621e7d2a3412cab7e71b0d9589386f924497b2896ced6",
+      "status": "failed",
+      "code": "GEMINI_HTTP_400",
+      "sourceInputHash": "275d7eb3db1154dccb6582f9d587545a9e16f55abd29c3d1a488f7ec08213783",
+      "outputHash": null,
+      "completedAt": "2026-11-10T23:58:13.595Z",
+      "stats": {
+        "durationMs": 2478,
+        "inputTokens": null,
+        "outputTokens": null
+      },
+      "observations": null
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "receipt-review-v1",
+      "runIdHash": "7d42e745c830df96b858fc6d7031e0bb97fe5317f49e62cba3bbcf21ea3c1660",
+      "status": "succeeded",
+      "code": null,
+      "sourceInputHash": "275d7eb3db1154dccb6582f9d587545a9e16f55abd29c3d1a488f7ec08213783",
+      "outputHash": "b27b83d58074d3ba076cf1b0dcc8dc5b353ca2ef52697a94c3aa16db499634f5",
+      "completedAt": "2026-11-10T23:57:13.426Z",
+      "stats": {
+        "durationMs": 69291,
+        "inputTokens": 3828,
+        "outputTokens": 4346
+      },
+      "observations": {
+        "lineCount": 7,
+        "currency": "USD",
+        "totalMinor": 8640,
+        "lineAmountsMinor": [
+          1800,
+          1250,
+          1600,
+          900,
+          1200,
+          1050,
+          840
+        ],
+        "uncertainLineIndices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "suggestedPackages": [
+          "electronics",
+          "electronics",
+          "electronics",
+          "electronics",
+          "safety",
+          null,
+          null
+        ],
+        "validation": {
+          "codes": [],
+          "lineTotalMinor": 8640,
+          "totalDifferenceMinor": 0,
+          "uncertainLineCount": 7,
+          "payable": false
+        }
+      }
+    }
+  ]
+}

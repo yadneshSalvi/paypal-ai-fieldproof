@@ -1,0 +1,39 @@
+{
+  "observedAt": "2026-11-11T00:52:34.248Z",
+  "source": "actual_source_records_in_isolated_local_schema",
+  "sourceSnapshotHash": "af753e7ab7b59fac7a9c78a567445f98e9beddd5bbf29785915ca0f3efe3f5ad",
+  "schemaVersions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "importedRows": 273,
+  "readableOriginalEncryptedOperations": 9,
+  "collection": {
+    "rounds": 1,
+    "targetMinor": 96000,
+    "canonicalCreditedMinor": 92600,
+    "conditionalCreditedMinor": 92500,
+    "separateTestCreditedMinor": 100,
+    "untouchedItems": 1,
+    "deadlines": [
+      "2026-11-12T23:21:52.633+00:00"
+    ]
+  },
+  "claim": {
+    "version": 3,
+    "approvedMinor": 7800,
+    "heldMinor": 840,
+    "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d"
+  },
+  "sourceUnchanged": true,
+  "hostedImportPerformed": false,
+  "financialProviderCalls": 0,
+  "handoffQualifiedInBrowser": false,
+  "temporarySchemaRemoved": true
+}

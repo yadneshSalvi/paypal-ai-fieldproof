@@ -13,6 +13,7 @@ import { refreshRoundFunding } from "./collection-projection";
 import { readPaymentCommand } from "./stored-commands";
 import { paymentOperationCodec } from "./private-values";
 import { authorizeRefund } from "./refund-policy";
+import { guardedProviderTransport } from "./maintenance";
 
 export const CHECKOUT_TEST_MINOR = 100;
 const GLOBAL_TEST_CEILING_MINOR = 5000;
@@ -29,7 +30,24 @@ export function providerConfiguration() {
   return {environment:"sandbox" as const,baseUrl:process.env.PAYPAL_API_BASE_URL ?? "https://api-m.sandbox.paypal.com",clientId,clientSecret,isolatedProject:"fieldproof"};
 }
 const runtime = globalThis as typeof globalThis & {fieldproofProvider?:SandboxPayPalProvider};
-export function paypalProvider(): SandboxPayPalProvider { return runtime.fieldproofProvider ??= new SandboxPayPalProvider(providerConfiguration()); }
+export function paypalProvider(): SandboxPayPalProvider { return runtime.fieldproofProvider ??= new SandboxPayPalProvider(providerConfiguration(), guardedProviderTransport()); }
+export async function reconcilePaymentCommands(limit = 20) {
+  const commands = await query<{ tenant_id: string; project_id: string; operation_id: string }>("SELECT tenant_id,project_id,operation_id FROM fp_payment_commands ORDER BY reconciled_at NULLS FIRST,created_at,operation_id LIMIT $1", [Math.max(1, Math.min(20, limit))]);
+  let observed = 0, unavailable = 0;
+  for (const command of commands) {
+    const scope = { tenantId: command.tenant_id, projectId: command.project_id };
+    let code: string | null = null;
+    try {
+      if (await paymentStore().get(scope, command.operation_id)) {
+        const operation = await paymentCore().recoverOperation(scope, command.operation_id);
+        await ingestPaymentOperation(operation);
+        observed++;
+      } else code = "OPERATION_NOT_STORED";
+    } catch { code = "OPERATION_RECONCILIATION_UNAVAILABLE"; unavailable++; }
+    await query("UPDATE fp_payment_commands SET reconciled_at=now(),reconciliation_code=$2 WHERE operation_id=$1", [command.operation_id, code]);
+  }
+  return { checked: commands.length, observed, unavailable };
+}
 function deny(command:PaymentCommand, reason:string):AuthorizationDecision {
   return {allowed:false,reason,resourceIds:[],currency:"USD",maximumMinor:0,approvalId:command.approval.id,approvalVersion:command.approval.version,approvalDigest:command.approval.digest};
 }
@@ -188,9 +206,10 @@ export async function captureCheckout(session:Session,intentId:string,orderId:st
   return paymentView(operation);
 }
 export async function ownedPayment(session:Session,operationId:string,reconcile=false){
-  const [owner]=await query<{command:PaymentCommand}>("SELECT command FROM fp_payment_commands WHERE operation_id=$1 AND tenant_id=$2 AND session_id=$3",[operationId,session.tenantId,session.id]);
+  const [owner]=await query<{operation_id:string}>("SELECT operation_id FROM fp_payment_commands WHERE operation_id=$1 AND tenant_id=$2 AND project_id=$3 AND session_id=$4",[operationId,session.tenantId,session.projectId,session.id]);
   if(!owner) throw new DomainError("PAYMENT_NOT_FOUND","That payment does not belong to this workspace.",404);
-  const operation=reconcile?await paymentCore().reconcile(owner.command.scope,operationId):await paymentStore().get(owner.command.scope,operationId);
+  const scope={tenantId:session.tenantId,projectId:session.projectId};
+  const operation=reconcile?await paymentCore().reconcile(scope,operationId):await paymentStore().get(scope,operationId);
   if(!operation) throw new DomainError("PAYMENT_NOT_FOUND","The payment has not been dispatched.",404);
   if(reconcile) await ingestPaymentOperation(operation);
   return paymentView(operation);

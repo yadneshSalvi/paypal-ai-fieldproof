@@ -28,6 +28,14 @@
     {
       "path": "/api/cron/refunds",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/evidence",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/payouts",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

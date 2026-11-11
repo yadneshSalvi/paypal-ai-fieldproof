@@ -1,0 +1,208 @@
+{
+  "observedAt": "2026-11-10T23:30:37.197Z",
+  "provenance": "live_sandbox",
+  "roundIdHash": "69a42901bc320bd938a91caa3e28f19f25b8b8b65e18f0c0b4a6064142a7879e",
+  "state": "collecting",
+  "startedAt": "2026-11-10T23:21:52.633Z",
+  "recoveryEndsAt": "2026-11-12T23:21:52.633Z",
+  "clockValid": true,
+  "policyValid": true,
+  "dispatchMode": "review_each",
+  "participantAccounts": 1,
+  "independentlyRecruitedDonors": 0,
+  "slots": [
+    {
+      "slot_index": 0,
+      "state": "collected",
+      "amount_minor": 20000
+    },
+    {
+      "slot_index": 1,
+      "state": "collected",
+      "amount_minor": 20000
+    },
+    {
+      "slot_index": 2,
+      "state": "collected",
+      "amount_minor": 17500
+    },
+    {
+      "slot_index": 3,
+      "state": "collected",
+      "amount_minor": 15000
+    },
+    {
+      "slot_index": 4,
+      "state": "collected",
+      "amount_minor": 10000
+    },
+    {
+      "slot_index": 5,
+      "state": "collected",
+      "amount_minor": 5000
+    },
+    {
+      "slot_index": 6,
+      "state": "collected",
+      "amount_minor": 5000
+    },
+    {
+      "slot_index": 7,
+      "state": "waiting",
+      "amount_minor": 3500
+    }
+  ],
+  "confirmedReceipts": 7,
+  "confirmedAmountMinor": 92500,
+  "receipts": [
+    {
+      "receiptIdHash": "fe848c9e4f7866500bd02863c86423cfed35ad4204a298fb0f36cae6ad6a0ce5",
+      "obligationIdHash": "be0d95b950af55a890bfffb51e7fa2c41f3b71906fb8a45c9399ff1e5dd88326",
+      "orderIdHash": "842ace370d0eb262f193c208b524b6d747e138b03c40ac48cfda81e75913316a",
+      "captureIdHash": "0b6959f4df147bfdd2a283a9d39243d2923b1bd84faa655166ec9dd24cb6e8ed",
+      "amountMinor": 20000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "b7fb0b31a64dc2d0c9be5c03e372ca94ceefab158b53b3504a6fbc6e30e93501",
+      "captureBodyHash": "de566e051be50ed647be3e4d727c0369f169c09fa569512868c3bdd5593687bd",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "1594e46e6de44d55c3a1071ff155ac952d39ab4809be5d8ff4af761f82ed658b",
+      "obligationIdHash": "2290299c0db886e847958d0f76b1d18201138108b3d7b764b1ae8c611c2ed8cc",
+      "orderIdHash": "c57bac691c8a44a23d1cecf6639b645db66b3b8ef51f447381db0f56202dcf1b",
+      "captureIdHash": "46a8df470d6fe84c880fe58cf24381a8ccd7da4fb15d076975b506d1ab963951",
+      "amountMinor": 20000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "05fe951e116e0bb93a437b64e0440f346158963158307ef829e6b97d6d8a6387",
+      "captureBodyHash": "0452a92e7fc623fb02dcefabd197264733f1c10c4720801bfe8b463e4373ad42",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "d968a6b4adcdd7bd7b6bcc1519b8024ccf94850134b3a803e7cdaf14f53a71b0",
+      "obligationIdHash": "41b3776aaa23159e78c6c7f14d4a1c16b8c011dcaf6e8fd0600dc71f67a709b6",
+      "orderIdHash": "22651ba511c9a087ff0115d7fec9fe71b54d1fc5c30a259c3ac5bdbb7f0359ee",
+      "captureIdHash": "989d955e2135e9e6902780c960b47c452887b8576c35dd61b53762ff09eb5449",
+      "amountMinor": 17500,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "b843d15922b53560e82b33f3ca59cbf7eb0a0d6596e8b84ce900448ba28574ac",
+      "captureBodyHash": "14641909e28cf6dec6fb4aaddce4287098fc8950becb84fa22ab05c50337f0a3",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "4ec2e7b4b4ac32d5eec4880cadd1a13a3d86ec8b5420477433651c2e44fe20e4",
+      "obligationIdHash": "c1ad1b0ce22a48f9ac9cb4a8a008b6837adba362ccb3ab387011faa2fb1a273c",
+      "orderIdHash": "525fb184f03ddcb94c153d9a11f27f439d5252caf434470f1d784d51ee733844",
+      "captureIdHash": "427b72ad7e4e16ddef058f18d0c996586af0915cf3073ca2558897a827c10a7b",
+      "amountMinor": 15000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "41899a7b391be7d6b9f396000ae39077d1ce59429edd96d37c6768a5616c8963",
+      "captureBodyHash": "fb56069b7fb3595c089888ec20baa10641e5f7c017a57fffd555a7078ed77196",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "f455a6cd82b8e93a7591f50d33b34ed5f058cfde58ccd0d9744602f15fed8e92",
+      "obligationIdHash": "ca316ff3575972f5f65268f0ed30acdaa7e8aba2dfc5533da7d1b6a2a38fe42a",
+      "orderIdHash": "05a075555cd940e100d7467773eb085016718d2ae4c77e8e7679387702445b38",
+      "captureIdHash": "822483111ab2e54700100ebe4c8568c73ec6f901b893a61e432522571c5fb96c",
+      "amountMinor": 10000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "4199ccad6c2e62842fa8d713716ed2176fc6608c9170546a692ed9296f86913c",
+      "captureBodyHash": "41a4f02dbdebf57b7a9b8c9d70b7356a902d72784e76542c88099b382059007d",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "73b442c049cba120287d9f2608cf16a6fd8e55c40e9ae16f03a500a9cd97b412",
+      "obligationIdHash": "48a9cdb367bb54ab37a7784d904248cdfd0e53ca5474047edb54509f969225e8",
+      "orderIdHash": "2cc0beb7c0f0e6deb638cbab7fd3a9d2f28aa31939af5b32d36e9c73f89eed43",
+      "captureIdHash": "7bb8e73ef211e74981c9ce6694a20e2596c8f2be626b29d20373cf4db5606fab",
+      "amountMinor": 5000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "af4c0ee893ab6508377dfe9a003e86344ba3535f332155cc4fa5794a49326da9",
+      "captureBodyHash": "d0bc495dd1aa4afe67351d88ed8fbb0627040aae74e07c41545f28c4694deaa5",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    },
+    {
+      "receiptIdHash": "2ce63e3351d427fe625b87fb303b76ee772ffa91330c2b32060d21f0ce3bf248",
+      "obligationIdHash": "e9fdc76627da51c6c9f22734a0200cc9028bdd2bc847bffa5bc1f815b51f2795",
+      "orderIdHash": "7cffc844c49ee49bbca1f6321743748c2ad73802af4260f7691d48228577c5c9",
+      "captureIdHash": "b595aa253330f2d254069589be1e64718ae6536c34a7e263378118a244224c77",
+      "amountMinor": 5000,
+      "currency": "USD",
+      "orderStatus": "COMPLETED",
+      "captureStatus": "COMPLETED",
+      "orderBodyHash": "6e805947306e4470d6eb14b2dbfec13b032fe7252521543a0f73bfdea7bd1933",
+      "captureBodyHash": "74f145c9ab10baffbb4930bacf71b7412f66b1c7df8ad1cffd80e6e2cdd07df0",
+      "checks": {
+        "originalOrder": true,
+        "ownedPurchaseUnit": true,
+        "exactCapture": true,
+        "exactAmount": true,
+        "originalConsent": true,
+        "immutableOperation": true
+      }
+    }
+  ],
+  "separateCheckout": {
+    "receipts": 1,
+    "amount_minor": 100
+  },
+  "limitations": [
+    "No physical work or expenses were verified by this collection.",
+    "This controlled qualification uses one participant account with separately approved slots.",
+    "Only the receipts listed here were independently read at this cutoff."
+  ]
+}

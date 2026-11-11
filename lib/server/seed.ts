@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import { HERO_OBLIGATION_AMOUNTS, type EvidenceItem, type PackageView, type SettlementReceipt } from "../contracts";
 import { database, initializeDatabase, query } from "./db";
+import { runtimeControl } from "./runtime-control";
+import { DomainError } from "../domain/money";
 
 export const PUBLIC_PROJECT = "project_public_sample";
 export const PUBLIC_TENANT = "tenant_public_sample";
@@ -78,6 +80,7 @@ export async function ensurePublicProject(): Promise<void> {
   await database().transaction(async tx => {
     await tx.query("SELECT pg_advisory_xact_lock(410202612)");
     if ((await query("SELECT id FROM fp_projects WHERE id=$1",[PUBLIC_PROJECT],tx)).length) return;
+    if ((await runtimeControl(tx)).held) throw new DomainError("WORKSPACE_MAINTENANCE", "This preview is temporarily read-only. Existing private workspaces remain available.", 503);
     await createProject(tx,PUBLIC_TENANT,PUBLIC_PROJECT,"eastside-makerspace","sample");
   });
 }

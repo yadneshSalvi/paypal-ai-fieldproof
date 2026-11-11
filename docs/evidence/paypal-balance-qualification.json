@@ -1,0 +1,22 @@
+{
+  "observations": [
+    {
+      "observedAt": "2026-11-11T00:29:44.672Z",
+      "source": "actual_provider_read",
+      "sdk": "paypal@2.29.0",
+      "endpoint": "GET /v1/reporting/balances",
+      "outcome": "observed",
+      "code": null,
+      "asOfTime": "2026-11-10T22:29:59.000Z",
+      "lastRefreshTime": "2026-11-10T22:29:59.000Z",
+      "bodyHash": "48e55d7193a40e22e44d9200178f10f59cb14dfd8658a3c432a5c1721e833b10",
+      "usableForDispatch": true,
+      "policy": {
+        "fetchMaxAgeSeconds": 60,
+        "providerMaxAgeHours": 3
+      },
+      "financialWrites": 0,
+      "instantaneousBalanceClaimed": false
+    }
+  ]
+}

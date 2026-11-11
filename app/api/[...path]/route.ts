@@ -1,13 +1,15 @@
+import { guardedApi } from "@/lib/server/maintenance";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { PaymentError } from "@fracture/paypal-core";
 import { z, ZodError } from "zod";
 import { assertSameOrigin, getSession, requireSession, setRole, startSession } from "@/lib/server/auth";
 import { projectSnapshot, addSamplePledge, advanceTour } from "@/lib/server/repository";
-import { applicationOrigin, captureCheckout, checkCheckoutIntent, createCheckout, ingestPaymentOperation, ownedPayment, paymentCore, paymentStore } from "@/lib/server/payments";
-import { completeIdentity, identityStart, recipientView } from "@/lib/server/identity";
+import { applicationOrigin, captureCheckout, checkCheckoutIntent, createCheckout, ownedPayment, reconcilePaymentCommands } from "@/lib/server/payments";
+import { completeIdentity, identityConnectionCapability, identityStart, recipientView } from "@/lib/server/identity";
 import { DomainError } from "@/lib/domain/money";
 import { database, initializeDatabase, query } from "@/lib/server/db";
+import { runtimeControl } from "@/lib/server/runtime-control";
 import { beginWalletApproval, commitmentOverview, commitmentView, completeWalletApproval, createCommitment, withdrawCommitment } from "@/lib/server/commitments";
 import { advanceCollection, collectionReview, collectionView, freezeCollection, runCollectionJobs } from "@/lib/server/collections";
 import { cancelRecoveryInvoice, checkRecoveryInvoice, createRecoveryInvoice, recoveryInvoiceViews, reconcileRecoveryInvoices, shareRecoveryInvoice } from "@/lib/server/recovery-invoices";
@@ -33,13 +35,13 @@ async function input(request:Request){
   if(text.length>20000) throw new DomainError("INPUT_TOO_LARGE","This request is too large.",413);
   return JSON.parse(text||"{}");
 }
-export async function GET(request:Request,context:Context){
+async function GETImplementation(request:Request,context:Context){
   const path=(await context.params).path.join("/");
   try{
     if(path==="snapshot") return json(await projectSnapshot(await getSession()));
-    if(path==="health") {await initializeDatabase();await query("SELECT 1");return json({status:"ok",storage:"postgresql",project:"fieldproof",environment:"sandbox"});}
+    if(path==="health") {await initializeDatabase();await query("SELECT 1");return json({status:"ok",storage:"postgresql",project:"fieldproof",environment:"sandbox",execution:await runtimeControl(database())});}
     if(path==="paypal/config") {await requireSession(["donor"]);return json({clientId:process.env.PAYPAL_CLIENT_ID??null,currency:"USD",environment:"sandbox"});}
-    if(path==="recipient") return json({recipient:await recipientView(await requireSession())});
+    if(path==="recipient") return json({recipient:await recipientView(await requireSession()),connection:identityConnectionCapability()});
     if(path==="commitments") return json(await commitmentOverview(await requireSession()));
     if(path==="collection") {
       const session=await requireSession(),review=await collectionReview(session);
@@ -72,20 +74,12 @@ export async function GET(request:Request,context:Context){
       const supplied=request.headers.get("authorization")??"",expected=`Bearer ${process.env.CRON_SECRET??""}`;
       if(!process.env.CRON_SECRET || supplied.length!==expected.length || !timingSafeEqual(Buffer.from(supplied),Buffer.from(expected))) throw new DomainError("FORBIDDEN","Scheduler authorization is required.",403);
       await initializeDatabase();
-      const scopes=await query<{tenant_id:string;project_id:string}>("SELECT DISTINCT tenant_id,project_id FROM fp_payment_commands WHERE created_at>now()-interval '7 days' LIMIT 20");
-      let observed=0;
-      for(const scope of scopes){
-        const ownedScope={tenantId:scope.tenant_id,projectId:scope.project_id};
-        await paymentCore().recover(ownedScope);
-        // Reapply persisted completed receipts too: the request may have died between provider persistence and domain projection.
-        for(const operation of await paymentStore().list(ownedScope)){await ingestPaymentOperation(operation);observed++;}
-      }
-      return json({scopes:scopes.length,observed});
+      return json(await reconcilePaymentCommands());
     }
     throw new DomainError("NOT_FOUND","This endpoint does not exist.",404);
   }catch(error){return failure(error);}
 }
-export async function POST(request:Request,context:Context){
+async function POSTImplementation(request:Request,context:Context){
   try{
     assertSameOrigin(request);
     const path=(await context.params).path.join("/"),body=await input(request);
@@ -167,3 +161,7 @@ export async function POST(request:Request,context:Context){
     throw new DomainError("NOT_FOUND","This endpoint does not exist.",404);
   }catch(error){return failure(error);}
 }
+
+export const GET = (...args: Parameters<typeof GETImplementation>) => guardedApi(args[0], () => GETImplementation(...args));
+
+export const POST = (...args: Parameters<typeof POSTImplementation>) => guardedApi(args[0], () => POSTImplementation(...args));

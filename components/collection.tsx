@@ -358,15 +358,16 @@ export function ConditionalCollection({
                 <Clock3 size={27} strokeWidth={1.4} />
                 <p className="eyebrow">ONE FIXED COLLECTION WINDOW</p>
                 <h2>
-                  {!round
-                    ? "48 hours.<br />One shared promise."
+                  {(!round
+                    ? ["48 hours.", "One shared promise."]
                     : round.state === "funded"
-                      ? "The full target<br />is collected."
+                      ? ["The full target", "is collected."]
                       : round.state === "cancelled"
-                        ? "Returned.<br />Reconciled. Closed."
+                        ? ["Returned.", "Reconciled. Closed."]
                         : round.state === "compensating"
-                          ? "Collection stopped.<br />Refunds in progress."
-                          : "The clock<br />belongs to this round."}
+                          ? ["Collection stopped.", "Refunds in progress."]
+                          : ["The clock", "belongs to this round."]
+                  ).map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
                 </h2>
                 {round ? (
                   <dl>

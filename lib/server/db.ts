@@ -1,5 +1,6 @@
 import { PostgresDatabase, SqlPaymentStore, type SqlConnection } from "@fracture/paypal-core";
 import { paymentOperationCodec } from "./private-values";
+import { RUNTIME_CONTROL_SCHEMA } from "./runtime-control";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -14,17 +15,19 @@ export async function query<T>(sql: string, values: unknown[] = [], connection: 
   return (await connection.query(sql, values)).rows as T[];
 }
 export async function initializeDatabase(): Promise<void> {
-  if (!state.fieldproofReady) state.fieldproofReady = (async () => {
-    await database().transaction(async tx => {
+  if (!state.fieldproofReady) state.fieldproofReady = initializeDatabaseAt(database()).catch(error => { state.fieldproofReady = undefined; throw error; });
+  return state.fieldproofReady;
+}
+export async function initializeDatabaseAt(target: PostgresDatabase): Promise<void> {
+    await target.transaction(async tx => {
       await tx.query("SELECT pg_advisory_xact_lock(410202611)");
       await tx.query(schema);
     });
-    await new SqlPaymentStore(database(),{operationDocumentCodec:paymentOperationCodec}).initialize();
-  })().catch(error => { state.fieldproofReady = undefined; throw error; });
-  return state.fieldproofReady;
+    await new SqlPaymentStore(target,{operationDocumentCodec:paymentOperationCodec}).initialize();
 }
 
 const schema = `
+${RUNTIME_CONTROL_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_request_buckets (
   bucket_key text PRIMARY KEY, request_count integer NOT NULL CHECK(request_count>0),
   created_at timestamptz NOT NULL DEFAULT now()
@@ -133,6 +136,9 @@ CREATE TABLE IF NOT EXISTS fp_identity_states (
   state_hash text PRIMARY KEY, session_id text NOT NULL REFERENCES fp_sessions(id),
   expires_at timestamptz NOT NULL, consumed_at timestamptz
 );
+ALTER TABLE fp_identity_states ADD COLUMN IF NOT EXISTS origin text;
+ALTER TABLE fp_payment_commands ADD COLUMN IF NOT EXISTS reconciled_at timestamptz;
+ALTER TABLE fp_payment_commands ADD COLUMN IF NOT EXISTS reconciliation_code text;
 CREATE TABLE IF NOT EXISTS fp_recipient_accounts (
   id text PRIMARY KEY, tenant_id text NOT NULL, actor_id text NOT NULL,
   encrypted_destination text NOT NULL, masked_label text NOT NULL, verification_method text NOT NULL,
@@ -224,9 +230,167 @@ CREATE TABLE IF NOT EXISTS fp_refunds (
   CHECK(amount_minor=attributed_minor+excess_minor)
 );
 ALTER TABLE fp_refunds ADD COLUMN IF NOT EXISTS checked_at timestamptz;
+CREATE TABLE IF NOT EXISTS fp_documents (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  actor_id text NOT NULL, intent_id text NOT NULL, purpose text NOT NULL CHECK(purpose IN ('receipt','photo','signoff','quote','sketch')),
+  provenance text NOT NULL CHECK(provenance IN ('user_upload','sample_document')),
+  content_type text NOT NULL, declared_bytes integer NOT NULL CHECK(declared_bytes>0 AND declared_bytes<=8388608), expected_sha256 text NOT NULL,
+  pathname text NOT NULL UNIQUE, encrypted_data text NOT NULL, state text NOT NULL DEFAULT 'awaiting_upload',
+  version integer NOT NULL DEFAULT 1, sha256 text, perceptual_hash text, page_count integer,
+  validation_code text, lease_id text, lease_until timestamptz,
+  upload_expires_at timestamptz NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(tenant_id,actor_id,intent_id)
+);
+CREATE INDEX IF NOT EXISTS fp_documents_hash ON fp_documents(project_id,sha256) WHERE sha256 IS NOT NULL;
+ALTER TABLE fp_documents ADD COLUMN IF NOT EXISTS expected_sha256 text;
+UPDATE fp_documents SET expected_sha256=sha256 WHERE expected_sha256 IS NULL AND sha256 IS NOT NULL;
+CREATE TABLE IF NOT EXISTS fp_ai_runs (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  actor_id text NOT NULL, document_id text NOT NULL REFERENCES fp_documents(id), kind text NOT NULL,
+  input_hash text NOT NULL, encrypted_input text NOT NULL, provider text NOT NULL, model text NOT NULL, prompt_version text NOT NULL,
+  status text NOT NULL DEFAULT 'queued', encrypted_output text, diagnostic_code text, stats jsonb,
+  lease_id text, lease_until timestamptz, attempt integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(), started_at timestamptz, completed_at timestamptz,
+  UNIQUE(document_id,kind,input_hash,provider,model,prompt_version)
+);
+ALTER TABLE fp_ai_runs ADD COLUMN IF NOT EXISTS encrypted_input text;
+CREATE TABLE IF NOT EXISTS fp_ai_attempts (
+  run_id text NOT NULL REFERENCES fp_ai_runs(id), attempt integer NOT NULL, lease_id text NOT NULL,
+  status text NOT NULL, diagnostic_code text, encrypted_result text, stats jsonb,
+  started_at timestamptz NOT NULL DEFAULT now(), completed_at timestamptz,
+  PRIMARY KEY(run_id,attempt)
+);
+CREATE TABLE IF NOT EXISTS fp_receipt_groups (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  reviewed_total_minor bigint CHECK(reviewed_total_minor>=0), currency text CHECK(currency='USD'),
+  version integer NOT NULL DEFAULT 1, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_receipt_group_documents (
+  document_id text PRIMARY KEY REFERENCES fp_documents(id), group_id text NOT NULL REFERENCES fp_receipt_groups(id),
+  association_reason text NOT NULL, linked_by text NOT NULL, linked_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_receipt_group_lines (
+  group_id text NOT NULL REFERENCES fp_receipt_groups(id), line_key text NOT NULL,
+  source_minor bigint NOT NULL CHECK(source_minor>=0), PRIMARY KEY(group_id,line_key)
+);
+CREATE TABLE IF NOT EXISTS fp_claims (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  actor_id text NOT NULL, document_id text NOT NULL REFERENCES fp_documents(id), group_id text NOT NULL REFERENCES fp_receipt_groups(id),
+  intent_id text NOT NULL, state text NOT NULL DEFAULT 'draft', version integer NOT NULL DEFAULT 1,
+  source_run_id text REFERENCES fp_ai_runs(id), currency text, requested_minor bigint NOT NULL DEFAULT 0,
+  approved_minor bigint NOT NULL DEFAULT 0 CHECK(approved_minor>=0), encrypted_data text NOT NULL,
+  reviewed_by text, reviewed_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(tenant_id,actor_id,intent_id)
+);
+CREATE TABLE IF NOT EXISTS fp_claim_revisions (
+  claim_id text NOT NULL REFERENCES fp_claims(id), version integer NOT NULL, actor_id text NOT NULL,
+  role text NOT NULL, state text NOT NULL, encrypted_data text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(claim_id,version)
+);
+CREATE TABLE IF NOT EXISTS fp_claim_line_reviews (
+  claim_id text NOT NULL REFERENCES fp_claims(id), claim_line_id text NOT NULL, group_id text NOT NULL REFERENCES fp_receipt_groups(id),
+  receipt_line_key text NOT NULL, package_id text, package_version integer, source_minor bigint NOT NULL CHECK(source_minor>=0),
+  approved_minor bigint NOT NULL CHECK(approved_minor>=0), decision text NOT NULL, review_version integer NOT NULL,
+  PRIMARY KEY(claim_id,claim_line_id), CHECK(approved_minor<=source_minor)
+);
+CREATE TABLE IF NOT EXISTS fp_receipt_comparison_decisions (
+  id text PRIMARY KEY, tenant_id text NOT NULL, project_id text NOT NULL,
+  document_a text NOT NULL REFERENCES fp_documents(id), document_b text NOT NULL REFERENCES fp_documents(id),
+  decision text NOT NULL, encrypted_data text NOT NULL, reviewed_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK(document_a<document_b)
+);
+CREATE TABLE IF NOT EXISTS fp_balance_observations (
+  id text PRIMARY KEY, merchant_scope text NOT NULL, account_hash text,
+  as_of_time timestamptz, last_refresh_time timestamptz, observed_at timestamptz NOT NULL,
+  available_minor bigint, body_hash text, code text, encrypted_data text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS fp_balance_scope_time ON fp_balance_observations(merchant_scope,observed_at DESC);
+CREATE TABLE IF NOT EXISTS fp_payable_reviews (
+  id text PRIMARY KEY, tenant_id text NOT NULL, project_id text NOT NULL, actor_id text NOT NULL,
+  claim_id text NOT NULL REFERENCES fp_claims(id), claim_version integer NOT NULL,
+  digest text NOT NULL, encrypted_data text NOT NULL, expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_payables (
+  id text PRIMARY KEY, tenant_id text NOT NULL, project_id text NOT NULL, merchant_scope text NOT NULL,
+  claim_id text NOT NULL REFERENCES fp_claims(id), claim_version integer NOT NULL, actor_id text NOT NULL,
+  session_id text NOT NULL REFERENCES fp_sessions(id), membership_version integer NOT NULL, intent_id text NOT NULL,
+  recipient_id text NOT NULL REFERENCES fp_recipient_accounts(id), recipient_version integer NOT NULL, recipient_label text NOT NULL,
+  amount_minor bigint NOT NULL CHECK(amount_minor>0), fee_allowance_minor bigint NOT NULL CHECK(fee_allowance_minor>=0),
+  actual_fee_minor bigint CHECK(actual_fee_minor>=0), fee_state text NOT NULL DEFAULT 'reserved',
+  approval_id text NOT NULL REFERENCES fp_approval_records(id), request_hash text NOT NULL,
+  encrypted_data text NOT NULL, state text NOT NULL DEFAULT 'reserved', provider_status text,
+  batch_hash text UNIQUE, item_hash text UNIQUE, uncertain_create boolean NOT NULL DEFAULT false,
+  balance_observation_id text REFERENCES fp_balance_observations(id), last_code text,
+  lease_id text, lease_until timestamptz, attempt integer NOT NULL DEFAULT 0,
+  first_dispatched_at timestamptz, observed_at timestamptz, completed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(tenant_id,actor_id,intent_id)
+);
+CREATE TABLE IF NOT EXISTS fp_payable_lines (
+  payable_id text NOT NULL REFERENCES fp_payables(id), claim_id text NOT NULL REFERENCES fp_claims(id),
+  claim_line_id text NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>0), package_id text NOT NULL,
+  PRIMARY KEY(payable_id,claim_line_id)
+);
+ALTER TABLE fp_payables ADD COLUMN IF NOT EXISTS principal_paid_at timestamptz;
+ALTER TABLE fp_payables ADD COLUMN IF NOT EXISTS principal_returned_at timestamptz;
+ALTER TABLE fp_payables ADD COLUMN IF NOT EXISTS checked_at timestamptz;
+CREATE TABLE IF NOT EXISTS fp_payable_approval_intents (
+  tenant_id text NOT NULL, project_id text NOT NULL, actor_id text NOT NULL, intent_id text NOT NULL,
+  payable_id text NOT NULL REFERENCES fp_payables(id), review_id text NOT NULL REFERENCES fp_payable_reviews(id),
+  input_hash text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(tenant_id,actor_id,intent_id)
+);
+CREATE TABLE IF NOT EXISTS fp_merchant_journal (
+  id text PRIMARY KEY, merchant_scope text NOT NULL, payable_id text NOT NULL REFERENCES fp_payables(id),
+  account text NOT NULL, side text NOT NULL CHECK(side IN ('debit','credit')),
+  amount_minor bigint NOT NULL CHECK(amount_minor>=0), currency text NOT NULL CHECK(currency='USD'),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_payout_observations (
+  id text PRIMARY KEY, payable_id text NOT NULL REFERENCES fp_payables(id), kind text NOT NULL,
+  attempt integer, lease_id text, outcome text NOT NULL, code text, body_hash text NOT NULL,
+  encrypted_data text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS fp_payout_observation_history ON fp_payout_observations(payable_id,created_at);
+ALTER TABLE fp_receipt_allocations ADD COLUMN IF NOT EXISTS payable_id text REFERENCES fp_payables(id);
+ALTER TABLE fp_receipt_allocations ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'claim';
+ALTER TABLE fp_receipt_allocations ADD COLUMN IF NOT EXISTS initial_amount_minor bigint;
+UPDATE fp_receipt_allocations SET initial_amount_minor=amount_minor WHERE initial_amount_minor IS NULL;
+CREATE TABLE IF NOT EXISTS fp_allocation_revisions (
+  id text PRIMARY KEY, allocation_id text NOT NULL REFERENCES fp_receipt_allocations(id), revision integer NOT NULL,
+  receipt_id text NOT NULL REFERENCES fp_settlement_receipts(id), payable_id text NOT NULL REFERENCES fp_payables(id),
+  package_id text NOT NULL, purpose text NOT NULL, amount_minor bigint NOT NULL CHECK(amount_minor>=0),
+  state text NOT NULL, reason text NOT NULL, reversal_of text REFERENCES fp_allocation_revisions(id),
+  created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(allocation_id,revision)
+);
+CREATE TABLE IF NOT EXISTS fp_workspace_handoffs (
+  id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES fp_tenants(id), project_id text NOT NULL REFERENCES fp_projects(id),
+  session_id text NOT NULL REFERENCES fp_sessions(id), actor_id text NOT NULL, role text NOT NULL,
+  membership_version integer NOT NULL, token_hash text NOT NULL UNIQUE,
+  source_origin text NOT NULL, target_origin text NOT NULL,
+  expires_at timestamptz NOT NULL, consumed_at timestamptz, revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_workspace_imports (
+  id text PRIMARY KEY, bundle_hash text NOT NULL, tenant_id text NOT NULL, project_id text NOT NULL,
+  source_cutoff timestamptz NOT NULL, handoff_ids jsonb NOT NULL, manifest jsonb NOT NULL,
+  imported_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS fp_transfer_webhook_archive (
+  id text PRIMARY KEY, bundle_id text NOT NULL REFERENCES fp_workspace_imports(id),
+  tenant_id text NOT NULL, project_id text NOT NULL, source_table text NOT NULL,
+  source_key_hash text NOT NULL, source_body_hash text NOT NULL, encrypted_data text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(bundle_id,source_table,source_key_hash)
+);
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(3) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(4) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(5) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(6) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(7) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(8) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(9) ON CONFLICT DO NOTHING;
 `;

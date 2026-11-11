@@ -1,0 +1,255 @@
+{
+  "observedAt": "2026-11-11T00:37:18.811Z",
+  "source": "actual_browser_actions_and_durable_database",
+  "reviewMethod": "automated_controlled_sample_qualification",
+  "independentHumanReviewClaimed": false,
+  "physicalPurchaseClaimed": false,
+  "providerRepaymentClaimed": false,
+  "documentIdHash": "d5d6f457fc3162767a774a7989ae1dbd0b07e804b18db872f56305622c3e0ae9",
+  "claimIdHash": "7dad0294d2ad7b851b1b76f7e4d925a83c86531dbe0f55e43fec5c5fe691d93d",
+  "sourceRunIdHash": "96d6df5fe72a9dc500df7a7e199770e453403e2148195858f28175092cf09926",
+  "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d",
+  "claimVersion": 3,
+  "claimState": "reviewed",
+  "sourceTotalMinor": 8640,
+  "approvedMinor": 7800,
+  "currency": "USD",
+  "history": [
+    {
+      "version": 1,
+      "state": "draft",
+      "encryptedSnapshotHash": "56e43a88833c9a021f851ee55bd9520a4ce3f853781ded0e473ff837f56ac574",
+      "extractedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "requestedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "approvedMinor": 0,
+      "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d"
+    },
+    {
+      "version": 2,
+      "state": "submitted",
+      "encryptedSnapshotHash": "ac415046815185409234a0d6b9b618a4184378ed12079560310db3e214d8aa8c",
+      "extractedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "requestedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "approvedMinor": 0,
+      "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d"
+    },
+    {
+      "version": 3,
+      "state": "reviewed",
+      "encryptedSnapshotHash": "25e946f2ff4a8e95e4023ebbcfbb3b97f2af33e8c98cfce307c8300d30570790",
+      "extractedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "requestedMinor": [
+        1800,
+        1250,
+        1600,
+        900,
+        1200,
+        1050,
+        840
+      ],
+      "approvedMinor": 7800,
+      "sourceOutputHash": "160dee9de6eecf9a389aba3fe9e22b6e8ea66a119e6d06ffcff4df848ed2ae3d"
+    }
+  ],
+  "lines": [
+    {
+      "index": 1,
+      "sourceIndex": 0,
+      "extractedMinor": 1800,
+      "requestedMinor": 1800,
+      "approvedMinor": 1800,
+      "decision": "approved",
+      "packageId": "electronics",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 2,
+      "sourceIndex": 1,
+      "extractedMinor": 1250,
+      "requestedMinor": 1250,
+      "approvedMinor": 1250,
+      "decision": "approved",
+      "packageId": "electronics",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 3,
+      "sourceIndex": 2,
+      "extractedMinor": 1600,
+      "requestedMinor": 1600,
+      "approvedMinor": 1600,
+      "decision": "approved",
+      "packageId": "electronics",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 4,
+      "sourceIndex": 3,
+      "extractedMinor": 900,
+      "requestedMinor": 900,
+      "approvedMinor": 900,
+      "decision": "approved",
+      "packageId": "electronics",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 5,
+      "sourceIndex": 4,
+      "extractedMinor": 1200,
+      "requestedMinor": 1200,
+      "approvedMinor": 1200,
+      "decision": "approved",
+      "packageId": "safety",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 6,
+      "sourceIndex": 5,
+      "extractedMinor": 1050,
+      "requestedMinor": 1050,
+      "approvedMinor": 1050,
+      "decision": "approved",
+      "packageId": "electronics",
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    },
+    {
+      "index": 7,
+      "sourceIndex": 6,
+      "extractedMinor": 840,
+      "requestedMinor": 840,
+      "approvedMinor": 0,
+      "decision": "hold",
+      "packageId": null,
+      "sourceRegionPreserved": true,
+      "reviewNotePresent": true
+    }
+  ],
+  "preservedReviewAcknowledgements": {
+    "sample": true,
+    "controlledQualificationDisclosed": true,
+    "noPhysicalPurchaseDisclosed": true
+  },
+  "repayment": {
+    "payableCount": 0,
+    "confirmedMinor": 0,
+    "reservedMinor": 0,
+    "eligibleLines": [
+      {
+        "id": "line-1",
+        "approvedMinor": 1800,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 1800,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-2",
+        "approvedMinor": 1250,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 1250,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-3",
+        "approvedMinor": 1600,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 1600,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-4",
+        "approvedMinor": 900,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 900,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-5",
+        "approvedMinor": 1200,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 1200,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-6",
+        "approvedMinor": 1050,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 1050,
+        "fundingReady": false,
+        "code": "PACKAGE_NOT_FUNDED"
+      },
+      {
+        "id": "line-7",
+        "approvedMinor": 0,
+        "paidMinor": 0,
+        "reservedMinor": 0,
+        "availableMinor": 0,
+        "fundingReady": false,
+        "code": "LINE_NOT_APPROVED"
+      }
+    ]
+  },
+  "collection": {
+    "confirmedMinor": 92500,
+    "untouchedFinalMinor": 3500,
+    "finalOperationAbsent": true,
+    "deadline": "2026-11-12T23:21:52.633Z"
+  },
+  "provenanceDisplayRepair": "Null model review reasons are no longer substituted with a manual-entry label. Existing encrypted review revisions are retained unchanged."
+}

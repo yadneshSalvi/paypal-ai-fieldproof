@@ -22,6 +22,9 @@ export async function getSession(): Promise<Session | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   return token ? sessionForToken(token) : null;
 }
+export async function writeSessionCookie(token: string, expiresAt: string): Promise<void> {
+  (await cookies()).set(COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)) });
+}
 export async function requireSession(roles?: WorkspaceRole[]): Promise<Session> {
   const session = await getSession();
   if (!session) throw new DomainError("SESSION_REQUIRED", "Start your own workspace to continue.", 401);

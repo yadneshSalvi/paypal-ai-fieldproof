@@ -3,16 +3,20 @@
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fontsource/space-grotesk": "5.3.0",
-    "@fracture/paypal-core": "file:vendor/fracture-paypal-core-0.2.6.tgz",
+    "@fracture/paypal-core": "file:vendor/fracture-paypal-core-0.2.7.tgz",
+    "@napi-rs/canvas": "1.1.0",
+    "@vercel/blob": "2.9.0",
     "ag-studio": "3.1.0",
     "ag-studio-react": "3.1.0",
     "lucide-react": "0.577.0",
     "next": "16.4.6",
     "openai": "7.55.0",
     "paypal": "github:context-plugins/paypal-typescript-sdk#5d0df8a8817e5fdf2e2cd48e68f790ea4730aab2",
+    "pdfjs-dist": "6.5.438",
     "qrcode": "1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "sharp": "0.35.5",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -27,6 +31,9 @@
   "name": "fieldproof",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "@vercel/cli-config": "0.3.8"
+  },
   "type": "module",
   "engines": {
     "node": "22.x"

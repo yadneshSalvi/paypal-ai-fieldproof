@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-11-11T00:52:06.018Z",
+  "source": "read_only_existing_hosted_database_and_current_environment_metadata",
+  "schemaVersions": [
+    1
+  ],
+  "historicalIdentityRecordsAuthenticated": 1,
+  "historicalIdentityMatchesControlledLocalBuyer": true,
+  "hostedLiveSandboxReceiptCount": 1,
+  "hostedLiveSandboxCreditedMinor": 100,
+  "authSecretLineageProvenByAuthenticatedDecryption": true,
+  "isolatedMerchantMatches": true,
+  "privateBlobConfigurationMatches": true,
+  "historicalIdentityOnly": true,
+  "originalLocalClaimantStillRequiresFreshHostedLogin": true,
+  "identityBindingOrMigrationPerformed": false,
+  "cloudDatabaseWrites": 0,
+  "providerCalls": 0,
+  "hostedOrigin": "https://paypal-ai-fieldproof.vercel.app",
+  "originConfiguration": "APP_URL is absent; the application's validated VERCEL fallback selects the stable hosted origin."
+}

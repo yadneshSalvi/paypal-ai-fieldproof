@@ -1,10 +1,11 @@
 import { SandboxCommerceRestGateway, canonicalJson, fromProviderMoney, sha256, type MinorMoney } from "@fracture/paypal-core";
 import { PaypalError } from "paypal";
 import { paypalProvider, providerConfiguration } from "./payments";
+import { guardedProviderTransport } from "./maintenance";
 
 export type CommerceGateway = Pick<SandboxCommerceRestGateway, "createInvoice" | "getInvoice" | "findInvoices" | "sendInvoice" | "cancelInvoice" | "createPayout" | "getPayoutBatch" | "getPayoutItem" | "cancelUnclaimedPayout">;
 const runtime = globalThis as typeof globalThis & { fieldproofCommerce?: CommerceGateway };
-export function commerceGateway(): CommerceGateway { return runtime.fieldproofCommerce ??= new SandboxCommerceRestGateway(providerConfiguration()); }
+export function commerceGateway(): CommerceGateway { return runtime.fieldproofCommerce ??= new SandboxCommerceRestGateway(providerConfiguration(), guardedProviderTransport()); }
 
 export interface InvoiceCaptureEvidence {
   id: string; status: string; money: MinorMoney; invoiceId: string | null; orderId: string | null;
