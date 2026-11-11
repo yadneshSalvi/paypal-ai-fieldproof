@@ -1,0 +1,13 @@
+# Restricted funding lifecycle
+
+The new cancellation and allocation domain is implemented as a pure accounting foundation. It is **not yet connected to a donor-choice UI, database journal, transfer executor or hosted release**. The existing hosted cancellation review remains read-only. Nothing in these functions authorizes a payment, transfer or change of purpose.
+
+`planProRataCancellation` freezes the current receipt versions and allocates the uncommitted balance by retained contributions after completed returns. BigInt products and deterministic largest-remainder allocation conserve every cent. A share exceeding its own original payment's return capacity is an explicit reconciliation conflict. Paid expenses and fees are never silently redistributed between donors.
+
+`projectFundingPositions` preserves each original `SettlementReceipt`, economic alias and donor obligation. A paired assignment records the source purpose and destination purpose in one journal entry. Its destination is an allocation of the same receipt, not another settlement credit. The complete source journal must be contiguous, unique, scoped and balanced. Reversals retain their original entry and cannot exceed it. Recorded consent is checked against its original commit time; passage of time does not erase valid history.
+
+Both Orders and invoice receipts share the same projection. Existing refunds, pending returns and spending exclusions remain distinct. After any assignment, a receipt with deductions requires explicit complete attribution matching the current receipt version and every aggregate counter. A provider refund discovered later cannot silently become extra destination funding. Expense reservations and paid amounts remain attached to their actual package and are subtracted only from its available balance. Negative positions fail closed for reconciliation. Excess liabilities remain at the original purpose and cannot be transferred as support.
+
+The next integration must persist the complete journal and deduction versions transactionally, authenticate exact donor consent and current memberships, lock source and destination policy versions, and update every funding consumer together. Payout selection, collections, public proof, Studio, community updates and planning must agree before transfer execution is enabled. Existing expense allocation history must not be rewritten to make a proposed refund possible.
+
+Focused validation covers 30 domain checks, including both rails, unsafe-number bounds, deterministic cent conservation, duplicate economic identities, journal gaps, partial reversal limits, stale refund attribution, committed spending and unchanged original receipts. Strict type checking passed. Provider calls: zero.
