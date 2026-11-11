@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-11-11T09:31:50.241Z",
+  "sourceCommit": "dc51f46",
+  "passed": true,
+  "scope": "Authorized local database-administrator recovery of the original expired sandbox demonstration session; no public recovery endpoint",
+  "backupVerifiedReadable": true,
+  "isolatedDatabaseTests": 6,
+  "typecheckPassed": true,
+  "newSessionCount": 1,
+  "newAuditEventCount": 1,
+  "projectProjectionAdvance": 1,
+  "unchangedOtherTables": 76,
+  "originalSessionUnchanged": true,
+  "sameParticipantProjectAndRole": true,
+  "currentMembershipChecked": true,
+  "normalTwelveHourLifetime": true,
+  "nativeHostedWorkspaceRestored": true,
+  "retainedReceiptAndReviewHistoryVisible": true,
+  "providerCalls": 0,
+  "financialAuthorityRenewed": false,
+  "limitations": [
+    "This is privileged operator recovery for the demonstration, not public account authentication.",
+    "The original approval remains expired. New financial actions still require current domain authority and fresh provider evidence.",
+    "The separate read-only PayPal balance observation at 09:35:51Z still returned provider clocks of 03:29:59Z; no payout was dispatched."
+  ]
+}
