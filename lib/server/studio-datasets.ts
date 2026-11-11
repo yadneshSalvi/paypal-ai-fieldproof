@@ -3,6 +3,7 @@ import { canonicalJson, sha256, type SqlConnection, type SqlDatabase } from "@fr
 import type { EvidenceItem, PackageView, SettlementReceipt, WorkspaceRole } from "../contracts";
 import { assertMinor, DomainError } from "../domain/money";
 import { packagePositionTotals } from "../domain/funding-positions";
+import { assessPackageFunding } from "../domain/package-funding";
 import { STUDIO_FIELDS, STUDIO_SEMANTIC_VERSION, STUDIO_TABLES, type AllocationRow, type EvidenceRow, type ExceptionRow, type PackageRow, type SettlementRow, type StudioData, type StudioSnapshot } from "../studio/contracts";
 import type { Session } from "./auth";
 import { claimPrivate, type ClaimRow } from "./claims";
@@ -125,12 +126,13 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       const positions=funding.positions.filter(row=>row.packageId===pkg.id);
       const total = packagePositionTotals(positions,pkg.id,amount(pkg.budget_minor));
       const allocated = positions.reduce((sum,row)=>sum+row.reservedMinor+row.paidMinor,0);
-      const round = rounds.find(row => row.package_id === pkg.id && row.package_version === pkg.version);
+      const round = rounds.find(row => row.package_id === pkg.id && row.package_version === pkg.version) ?? rounds.find(row => row.package_id === pkg.id);
       const currentReviews = reviews.filter(row => row.package_id === pkg.id && row.decision === "approved");
       const physicallyAccepted = work.filter(row => row.data.state === "accepted" && row.data.packageIds.includes(pkg.id) && ["photo", "signoff"].includes(row.data.kind)).length;
       const reviewedWork = readiness.find(item => item.packageId === pkg.id);
       // A complete collection does not imply a funded round or permission to spend.
-      const allocatable = pkg.data.fundingState!=="cancelled" && !["compensating","cancelled"].includes(round?.state??"") && total.shortfallMinor === 0 && (project.mode === "sample" || round?.state === "funded");
+      const fundingPolicy=assessPackageFunding({state:pkg.data.fundingState,version:pkg.version,budgetMinor:amount(pkg.budget_minor),eligibleMinor:total.fundingEligibleMinor,provenance:project.mode,round:round?{packageVersion:round.package_version,state:round.state}:undefined});
+      const allocatable = fundingPolicy.complete;
       return { id: pkg.id, packageId: pkg.id, title: pkg.data.title, shortTitle: pkg.data.shortTitle,
         budgetMinor: amount(pkg.budget_minor), pledgedMinor: obligations.filter(row => row.package_id === pkg.id && eligibleCommitment(row, pkg, project.mode, cutoff)).reduce((sum, row) => sum + amount(row.amount_minor), 0),
         ...total, completedRefundMinor: positions.reduce((sum, row) => sum + row.refundedMinor, 0),
@@ -138,7 +140,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
         approvedExpenseMinor: currentReviews.reduce((sum, row) => sum + amount(row.approved_minor), 0),
         paidExpenseMinor: amount(delivered.find(row => row.package_id === pkg.id)?.paid ?? 0),
         reviewedItemCount: reviewedWork?.acceptedCount ?? physicallyAccepted, requiredItemCount: reviewedWork?.requiredCount ?? pkg.data.evidenceRequired, reviewedExpenseLineCount: currentReviews.length,
-        fundingState: pkg.data.fundingState==="cancelled" ? "cancelled" : round?.state ?? (total.shortfallMinor === 0 ? "collected" : pkg.data.fundingState),
+        fundingState: fundingPolicy.state,
         workState: reviewedWork ? plan?.view.state !== "current" ? "plan_review_required" : !reviewedWork.prerequisitesMet ? "prerequisites_needed" : reviewedWork.accepted ? reviewedWork.provenance === "sample" ? "sample_review_complete" : "accepted_within_scope" : "evidence_needed" : pkg.data.workState,
         geometryRef: plan ? `${pkg.id}:${plan.view.contentHash}:${plan.view.state}` : pkg.id, provenance: project.mode };
     });

@@ -78,4 +78,27 @@ describe("restricted funding across application read models",()=>{
     assert.equal(result.planning.complete,false);assert.equal(result.planning.eligibleMinor,0);
     assert.equal(result.proof.payload.funding.collectedMinor,121000);
   });
+  it("keeps a package returning contributions unavailable despite a positive historical balance",async()=>{
+    const f=await fixture();
+    await query("UPDATE fp_packages SET data=jsonb_set(data,'{fundingState}','\"compensating\"'::jsonb) WHERE project_id=$1 AND id='printing'",[f.session.projectId]);
+    const result=await views(f);
+    assert.equal(result.project.fundingState,"compensating");assert.equal(result.project.collectedMinor,121000);
+    assert.equal(result.studio.fundingState,"compensating");assert.equal(result.studio.availableAllocationMinor,0);
+    assert.equal(result.planning.complete,false);assert.equal(result.planning.eligibleMinor,0);
+  });
+  it("does not retain a collected badge after assigned credit leaves the original package below target",async()=>{
+    const f=await fixture();
+    // The tour fixture retains its original recovery label. This case starts
+    // from a previously completed collection, whose stored label is funded.
+    await query("UPDATE fp_packages SET data=jsonb_set(data,'{fundingState}','\"funded\"'::jsonb) WHERE project_id=$1 AND id='electronics'",[f.session.projectId]);
+    const snapshot=await projectSnapshot(f.session),studio=await readStudioSnapshot(f.session);
+    const planning=await database().transaction(tx=>planningFunding(f.session,tx));
+    const source=snapshot.packages.find(p=>p.id==="electronics")!;
+    assert.equal(source.fundingEligibleMinor,95000);assert.equal(source.fundingState,"funding_review");
+    assert.equal(studio.data.packages.find(p=>p.id==="electronics")!.fundingState,"funding_review");
+    assert.equal(studio.data.packages.find(p=>p.id==="electronics")!.availableAllocationMinor,0);
+    assert.equal(planning.find(p=>p.packageId==="electronics")!.complete,false);
+    assert.equal(planning.find(p=>p.packageId==="electronics")!.eligibleMinor,0);
+    assert.deepEqual(await query("SELECT id,version,data FROM fp_settlement_receipts WHERE project_id=$1 ORDER BY id",[f.session.projectId]),f.receipts);
+  });
 });

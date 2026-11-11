@@ -1,0 +1,127 @@
+{
+  "version": "package-funding-policy-qualification.v1",
+  "observedAt": "2026-11-11T16:26:21.771646+00:00",
+  "scope": "Current package policy read models and package navigation; isolated synthetic PostgreSQL fixtures only",
+  "passed": true,
+  "behavior": [
+    "Current eligible credit and matching current-version funded round are both required for Live sandbox readiness",
+    "Cancelled and compensating purposes stay closed despite historical credit",
+    "A previously funded package below its current target needs funding review",
+    "Replay and modelled records do not qualify payment funding",
+    "Closed package actions lead to progress; package selection uses the clicked card"
+  ],
+  "validation": {
+    "focusedDomainAndPostgres": 10,
+    "fullRegression": {
+      "passed": 386,
+      "failed": 0,
+      "log": ".local/package-funding-full-regression-v2.log",
+      "scopeNote": "Final domain/read-model source; subsequent CTA-only change verified by strict TypeScript, production build and native browser"
+    },
+    "typecheck": true,
+    "independentProductionBuild": true,
+    "httpChecks": [
+      {
+        "fixture": "funded",
+        "repeat": 0,
+        "status": 200,
+        "state": "funded",
+        "collectedMinor": 96000
+      },
+      {
+        "fixture": "funded",
+        "repeat": 1,
+        "status": 200,
+        "state": "funded",
+        "collectedMinor": 96000
+      },
+      {
+        "fixture": "review",
+        "repeat": 0,
+        "status": 200,
+        "state": "funding_review",
+        "collectedMinor": 95900
+      },
+      {
+        "fixture": "review",
+        "repeat": 1,
+        "status": 200,
+        "state": "funding_review",
+        "collectedMinor": 95900
+      },
+      {
+        "fixture": "compensating",
+        "repeat": 0,
+        "status": 200,
+        "state": "compensating",
+        "collectedMinor": 96000
+      },
+      {
+        "fixture": "compensating",
+        "repeat": 1,
+        "status": 200,
+        "state": "compensating",
+        "collectedMinor": 96000
+      },
+      {
+        "fixture": "cancelled",
+        "repeat": 0,
+        "status": 200,
+        "state": "cancelled",
+        "collectedMinor": 96000
+      },
+      {
+        "fixture": "cancelled",
+        "repeat": 1,
+        "status": 200,
+        "state": "cancelled",
+        "collectedMinor": 96000
+      }
+    ],
+    "native": {
+      "widths": [
+        1280,
+        390,
+        360
+      ],
+      "documentOverflow": false,
+      "states": [
+        "funded",
+        "funding_review",
+        "compensating",
+        "cancelled"
+      ],
+      "closedPledgeActionsRemoved": true,
+      "keyboardProgressNavigation": true,
+      "reloadRestores": true
+    }
+  },
+  "ledger": {
+    "syntheticReviewReceipts": 32,
+    "publicSampleReceipts": 8,
+    "all40ReceiptsUnchanged": true,
+    "sha256": "dc960184146e17b59acb499e9052683eb60b6c08b225504c448a234478e2beac"
+  },
+  "financialRows": {
+    "fp_provider_operations": 0,
+    "fp_payment_commands": 0,
+    "fp_refunds": 0,
+    "fp_payables": 0,
+    "fp_approval_records": 0
+  },
+  "actualProviderCalls": 0,
+  "originalDatabaseWrites": 0,
+  "hostedMigration": false,
+  "transferExecutionEnabled": false,
+  "sourceHashes": {
+    "components/fieldproof-app.tsx": "419b3b8d1cff1c36c6bdac0252513b3b28ac52004fa62ea0e266f60b36ef657e",
+    "lib/contracts.ts": "d41ba564ab1b1651685274ca3827a1371df969c9bbbcef5fe798ebd646616441",
+    "lib/domain/package-funding.ts": "3a53bd259d3e5dd9b4d3de4a647d021882d6841016142ca974c5db93a1f6066d",
+    "lib/server/repository.ts": "2957f53176dea42d19bc25d87dbe19deed2833e7e33e1c82face056a069596d9",
+    "lib/server/planning.ts": "4830282cbb58fe66059792795aa34ae9ac7eb7a23e63de133bf5d31715d01cdc",
+    "lib/server/studio-datasets.ts": "035ee0ecd34480cb6a21d27c3685b3b5f589c5a2fbd44a00289d73cb4840c2a5",
+    "tests/package-funding.test.ts": "b1c6bd40d9a78148ebf5e3eff7fd81a03c8f2b6977332ee823e7b6e2f348cfc6",
+    "tests/funding-consumers.test.ts": "b312027cd68184024897d856d86e19056d4776b0c61e71c253a32cc7494c8029"
+  },
+  "remaining": "Canonical payout selection, refund/deduction writes, collection and cancellation consumers, new Studio position dataset, durable donor choices, reallocation, rollover, matching/grants and complete generalized package collection journeys remain separate full-plan work."
+}

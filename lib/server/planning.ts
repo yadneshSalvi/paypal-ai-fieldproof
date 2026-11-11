@@ -3,6 +3,8 @@ import type { SqlConnection } from "@fracture/paypal-core";
 import { z } from "zod";
 import { DomainError } from "../domain/money";
 import { packagePositionTotals } from "../domain/funding-positions";
+import { assessPackageFunding } from "../domain/package-funding";
+import type { FundingState } from "../contracts";
 import { publishPlanSchema, reviewPlanSchema, savePlanSchema, type PlanningWorkspace, type ProposedPlan } from "../planning/contracts";
 import { validatePlan } from "../planning/geometry";
 import { solveScenario, type FundingPool } from "../planning/solver";
@@ -22,12 +24,12 @@ import { currentSourceCheck, expectedHead, insertPlan, lockPlanningAuthority, pa
 export async function planningFunding(session: Pick<Session, "tenantId" | "projectId" | "mode">, tx: SqlConnection) {
   const packages = await packageBindings(session.projectId, tx);
   const funding = await readFundingProjection({tenantId:session.tenantId,projectId:session.projectId,provenance:session.mode},tx);
-  const closedPackages=new Set((await query<{id:string}>("SELECT id FROM fp_packages WHERE project_id=$1 AND data->>'fundingState'='cancelled'",[session.projectId],tx)).map(p=>p.id));
+  const states=await query<{id:string;state:FundingState}>("SELECT id,data->>'fundingState' AS state FROM fp_packages WHERE project_id=$1",[session.projectId],tx);
   const rounds = await query<{ package_id: string; package_version: number; state: string }>("SELECT package_id,package_version,state FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 ORDER BY collection_started_at DESC", [session.tenantId, session.projectId], tx);
   return packages.map(pkg => {
     const totals = packagePositionTotals(funding.positions,pkg.packageId,pkg.budgetMinor);
-    const round = rounds.find(r => r.package_id === pkg.packageId && r.package_version === pkg.version);
-    const complete = !closedPackages.has(pkg.packageId) && !["compensating","cancelled"].includes(round?.state??"") && totals.shortfallMinor === 0 && (session.mode === "sample" || round?.state === "funded");
+    const round = rounds.find(r => r.package_id === pkg.packageId && r.package_version === pkg.version) ?? rounds.find(r => r.package_id === pkg.packageId);
+    const { complete } = assessPackageFunding({state:states.find(p=>p.id===pkg.packageId)!.state,version:pkg.version,budgetMinor:pkg.budgetMinor,eligibleMinor:totals.fundingEligibleMinor,provenance:session.mode,round:round?{packageVersion:round.package_version,state:round.state}:undefined});
     return { packageId: pkg.packageId, collectedMinor: totals.collectedMinor, eligibleMinor: complete ? funding.positions.filter(p=>p.packageId===pkg.packageId).reduce((sum,p)=>sum+p.availableMinor,0) : 0, complete };
   });
 }
