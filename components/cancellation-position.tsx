@@ -4,6 +4,7 @@ import { RefreshCw, ShieldCheck } from "lucide-react";
 import type { CancellationReview } from "@/lib/server/cancellation-review";
 import { workspaceFetch } from "@/lib/community/workspace-fetch";
 import { formatMoney } from "@/lib/domain/money";
+import Link from "next/link";
 
 export function CancellationPosition({ roundId, projectId, onReviewed }: {
   roundId: string; projectId: string; onReviewed: (review: CancellationReview | null) => void;
@@ -29,7 +30,8 @@ export function CancellationPosition({ roundId, projectId, onReviewed }: {
         <div><span>Reserved for expenses</span><strong>{formatMoney(review.reservedMinor)}</strong></div>
         <div><span>Not yet committed</span><strong>{formatMoney(review.uncommittedMinor)}</strong></div>
       </div>
-      {review.hasCommittedUses ? <p className="cancellation-position-notice" role="status">This package has committed money. The full-return option is unavailable. A separate plan for the remaining funds and each donor’s choices is still required; no expense allocation or original payment will be rewritten here.</p> : <p>These saved receipts have no committed expense uses. Cancellation still checks the current records, closes unpaid recovery paths and confirms each original-route refund with PayPal.</p>}
+      {review.hasCommittedUses ? <p className="cancellation-position-notice" role="status">This package has committed money. Review the remaining funds and each donor’s share in the funding desk. Paid expenses, reserved amounts and original payments stay in their recorded history.</p> : <p>These saved receipts have no committed expense uses. Cancellation still checks the current records, closes unpaid recovery paths and confirms each original-route refund with PayPal.</p>}
+      {(review.hasCommittedUses||review.limitation==="donor_choices_required")&&<Link className="button secondary" href="/funding?view=decisions">Review donor choices ↗</Link>}
       {review.limitation === "package_changed" && <p role="status">The package changed after this round. Review the original consent and current package before any cancellation.</p>}
       {review.unqualifiedRouteCount > 0 && <p role="status">{review.unqualifiedRouteCount} payment {review.unqualifiedRouteCount === 1 ? "route still needs" : "routes still need"} a proven refund mechanism. Cancellation cannot be described as complete while a return remains unresolved.</p>}
       <details><summary>{review.sources.length} original payment records</summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Cancellation source amounts"><table><thead><tr><th>Payment source</th><th>Credited</th><th>Returned</th><th>Return pending</th><th>Committed</th><th>Uncommitted</th></tr></thead><tbody>{review.sources.map((source, index) => <tr key={source.receiptId}><th>{source.sourceKind === "orders_capture" ? "Orders payment" : "Invoice payment"} {index + 1}<small>Saved version {source.receiptVersion}</small></th><td>{formatMoney(source.creditedMinor)}</td><td>{formatMoney(source.refundedMinor)}</td><td>{formatMoney(source.pendingRefundMinor)}</td><td>{formatMoney(source.paidMinor + source.reservedMinor)}</td><td>{formatMoney(source.uncommittedMinor)}</td></tr>)}</tbody></table></div></details>

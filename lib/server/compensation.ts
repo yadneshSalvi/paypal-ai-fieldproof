@@ -26,6 +26,9 @@ import {
 import { compensateReceipt, type RefundDependencies } from "./refunds";
 import { appendEvent } from "./repository";
 import { readPaymentCommand } from "./stored-commands";
+import { projectClaimLock } from "./claims";
+import { lockFundingScope } from "./funding-positions";
+import { persistFundingReceipt } from "./funding-writes";
 
 type Scope = Pick<Session, "tenantId" | "projectId">;
 export interface CompensationDependencies {
@@ -48,6 +51,8 @@ export async function cancelUnspentCollection(
       "Review the complete unspent round and approve its original-route refunds.",
     );
   await database().transaction(async (tx) => {
+    await projectClaimLock(tx, session.projectId);
+    await lockFundingScope(session, tx);
     await requireCurrentRole(session, "organizer", tx);
     const [round] = await query<{
       id: string;
@@ -71,6 +76,9 @@ export async function cancelUnspentCollection(
         "Review the current original round before cancelling.",
       );
     if (["compensating", "cancelled"].includes(round.state)) return;
+    const controlled = await query(`SELECT id FROM fp_funding_cases WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 AND state<>'superseded'
+      UNION ALL SELECT id FROM fp_funding_assignments WHERE tenant_id=$1 AND project_id=$2 AND (debit_package_id=$3 OR credit_package_id=$3)`, [session.tenantId, session.projectId, round.package_id], tx);
+    if (controlled.length) throw new DomainError("CANCELLATION_CHOICE_REQUIRED", "This purpose has a recorded donor decision or assigned support. Continue its funding case so each current-purpose share keeps its original payment trail.");
     const [uses] = await query<{ count: string }>(
       "SELECT count(*) count FROM fp_receipt_allocations a JOIN fp_collection_items i ON i.obligation_id=(SELECT obligation_id FROM fp_settlement_receipts WHERE id=a.receipt_id) WHERE i.round_id=$1 AND a.state IN ('reserved','paid')",
       [round.id],
@@ -81,22 +89,20 @@ export async function cancelUnspentCollection(
         "PACKAGE_HAS_COMMITTED_USES",
         "This package has reviewed or paid expenses. Reverse eligible commitments and review a remaining-funds plan first.",
       );
-    const rows = await query<{ data: SettlementReceipt }>(
-      "SELECT r.data FROM fp_settlement_receipts r JOIN fp_collection_items i ON i.obligation_id=r.obligation_id WHERE i.round_id=$1 FOR UPDATE OF r",
+    const rows = await query<{ version: number; data: SettlementReceipt }>(
+      "SELECT r.version,r.data FROM fp_settlement_receipts r JOIN fp_collection_items i ON i.obligation_id=r.obligation_id WHERE i.round_id=$1 FOR UPDATE OF r",
       [round.id],
       tx,
     );
     for (const row of rows) {
-      const receipt = row.data;
+      const receipt = structuredClone(row.data);
       receipt.excludedMinor =
         receipt.creditedMinor -
         receipt.completedAttributedRefundMinor -
         receipt.pendingAttributedRefundReserveMinor;
       validateReceipt(receipt);
-      await tx.query(
-        "UPDATE fp_settlement_receipts SET data=$2::jsonb WHERE id=$1",
-        [receipt.id, JSON.stringify(receipt)],
-      );
+      await persistFundingReceipt(tx, { ...session, provenance: session.mode }, row, receipt,
+        [{ packageId: round.package_id, excludedMinor: receipt.excludedMinor - row.data.excludedMinor }]);
     }
     await tx.query(
       "UPDATE fp_collection_rounds SET state='compensating',cancellation_reason='package_cancelled',cancelled_by=$2,cancellation_requested_at=now() WHERE id=$1",

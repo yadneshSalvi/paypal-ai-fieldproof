@@ -13,7 +13,8 @@ import { database, query } from "./db";
 import { requireDocument } from "./documents";
 import { openDestination } from "./identity";
 import { requireCurrentRole, requireMembership } from "./membership";
-import { planPayoutFunding, type PlannedAllocation, type PayoutFunding } from "./payout-funding";
+import { canonicalExpenseReadiness, planPayoutFunding, type PlannedAllocation, type PayoutFunding } from "./payout-funding";
+import { lockFundingScope } from "./funding-positions";
 import { openPrivate, sealPrivate } from "./private-values";
 import { appendEvent } from "./repository";
 
@@ -205,21 +206,18 @@ export async function claimPaymentView(session: Session, claimId: string): Promi
   const payables = await Promise.all(rows.map(row => payableView(session, row.id)));
   const recipient = await recipientRow(database(), session.tenantId, claim.actor_id);
   let recipientUsable = false; try { assertRecipient(recipient); recipientUsable = true; } catch { /* The projection states what still needs verification. */ }
+  const readiness=await database().transaction(async tx=>{
+    await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+    return canonicalExpenseReadiness(tx,session);
+  });
   const lines: ClaimPaymentView["lines"] = [];
   for (const line of data.lines) {
     const relevant = rows.filter(row => privatePayable(row).snapshot.funding.lines.some(item => item.id === line.id));
     const paidMinor = relevant.filter(row => row.principal_paid_at && !row.principal_returned_at).reduce((sum, row) => sum + privatePayable(row).snapshot.funding.lines.find(item => item.id === line.id)!.amountMinor, 0);
     const reservedMinor = relevant.filter(row => !row.principal_paid_at && !["returned", "failed", "cancelled"].includes(row.state)).reduce((sum, row) => sum + privatePayable(row).snapshot.funding.lines.find(item => item.id === line.id)!.amountMinor, 0);
-    const rounds = line.packageId ? await query<{ id: string; target_minor: string; package_version: number; current_version: number }>(`SELECT r.id,r.target_minor,r.package_version,p.version AS current_version FROM fp_collection_rounds r
-      JOIN fp_packages p ON p.project_id=r.project_id AND p.id=r.package_id WHERE r.tenant_id=$1 AND r.project_id=$2 AND r.package_id=$3 AND r.state='funded'`, [session.tenantId, session.projectId, line.packageId]) : [];
-    let fundingReady = false;
-    for (const round of rounds.filter(round => round.package_version === round.current_version)) {
-      const receipts = await query<{ data: import("../contracts").SettlementReceipt }>("SELECT sr.data FROM fp_settlement_receipts sr JOIN fp_collection_items i ON i.obligation_id=sr.obligation_id WHERE i.round_id=$1 AND sr.provenance='live_sandbox'", [round.id]);
-      const eligible = receipts.reduce((sum, row) => sum + row.data.creditedMinor - row.data.completedAttributedRefundMinor - row.data.pendingAttributedRefundReserveMinor - row.data.excludedMinor, 0);
-      if (eligible >= Number(round.target_minor)) fundingReady = true;
-    }
+    const fundingReady=readiness.get(line.packageId??"")?.ready??false;
     lines.push({ id: line.id, approvedMinor: line.approvedMinor, paidMinor, reservedMinor, availableMinor: Math.max(0, line.approvedMinor - paidMinor - reservedMinor), fundingReady,
-      code: line.decision !== "approved" ? "LINE_NOT_APPROVED" : paidMinor > 0 ? "LINE_REPAID" : reservedMinor > 0 ? "LINE_ALREADY_PAYABLE" : !fundingReady ? "PACKAGE_NOT_FUNDED" : null });
+      code: line.decision !== "approved" ? "LINE_NOT_APPROVED" : paidMinor > 0 ? "LINE_REPAID" : reservedMinor > 0 ? "LINE_ALREADY_PAYABLE" : !fundingReady ? readiness.get(line.packageId??"")?.code??"PACKAGE_NOT_FUNDED" : null });
   }
   return { payables, lines, recipient: recipient ? { label: recipient.masked_label, verifiedAt: recipient.verified_at.toISOString(), version: recipient.version, usable: recipientUsable } : null };
 }
@@ -322,9 +320,7 @@ async function applySuccessfulFee(tx: SqlConnection, row: PayableRow, allocation
   await tx.query("UPDATE fp_payables SET actual_fee_minor=$2,fee_state=$3,last_code=$4 WHERE id=$1", [row.id, fee, uncovered ? "review_required" : "confirmed", uncovered ? "PAYOUT_FEE_EXCEEDS_ALLOWANCE" : null]);
 }
 async function lockPayableSources(tx: SqlConnection, row: PayableRow): Promise<AllocationRow[]> {
-  await tx.query(`SELECT r.id FROM fp_collection_rounds r WHERE r.id IN (SELECT i.round_id FROM fp_receipt_allocations a JOIN fp_settlement_receipts sr ON sr.id=a.receipt_id
-    JOIN fp_collection_items i ON i.obligation_id=sr.obligation_id WHERE a.payable_id=$1) ORDER BY r.id FOR UPDATE`, [row.id]);
-  await tx.query("SELECT sr.id FROM fp_settlement_receipts sr WHERE sr.id IN (SELECT receipt_id FROM fp_receipt_allocations WHERE payable_id=$1) ORDER BY sr.id FOR UPDATE", [row.id]);
+  await lockFundingScope({tenantId:row.tenant_id,projectId:row.project_id},tx);
   return query<AllocationRow>("SELECT * FROM fp_receipt_allocations WHERE payable_id=$1 ORDER BY receipt_id,claim_line_id FOR UPDATE", [row.id], tx);
 }
 async function persistObservation(tx: SqlConnection, row: PayableRow, kind: string, result: unknown, outcome: string, code: string | null, leaseId: string | null = null): Promise<void> {

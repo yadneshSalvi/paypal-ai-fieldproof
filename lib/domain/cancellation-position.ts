@@ -1,5 +1,7 @@
 import type { Provenance, SettlementReceipt } from "../contracts";
 import { assertMinor, DomainError, validateReceipt } from "./money";
+import { projectFundingPositions, type FundingScope } from "./funding-positions";
+import type { FundingJournal } from "./funding-lots";
 
 export interface CancellationSource {
   receipt: SettlementReceipt;
@@ -72,6 +74,31 @@ export function cancellationPosition(sources: CancellationSource[], scope: {
     }
     if (!row.refundRouteQualified && uncommittedMinor > 0) result.unqualifiedRouteCount++;
     result.hasCommittedUses ||= reservedMinor > 0 || paidMinor > 0;
+  }
+  return result;
+}
+
+/** Current-purpose view over complete economic lineage. Assigned credit is a
+ * position, not a relabelled payment. Excluded value remains disclosed as part
+ * of the uncommitted return position, never available for new expenses. */
+export function currentCancellationPosition(journal: FundingJournal, scope: FundingScope, packageId: string): CancellationPosition {
+  const projection = projectFundingPositions(journal, scope);
+  const result: CancellationPosition = { sources: [], creditedMinor: 0, refundedMinor: 0, pendingRefundMinor: 0,
+    reservedMinor: 0, paidMinor: 0, excludedMinor: 0, uncommittedMinor: 0, unqualifiedRouteCount: 0, hasCommittedUses: false };
+  for (const position of projection.positions.filter(position => position.packageId === packageId)) {
+    const receipt = journal.sources.find(source => source.receipt.id === position.receiptId)!.receipt;
+    const row = { receiptId: position.receiptId, receiptVersion: position.receiptVersion, sourceKind: position.sourceKind,
+      creditedMinor: position.assignedMinor, refundedMinor: position.refundedMinor, pendingRefundMinor: position.pendingRefundMinor,
+      reservedMinor: position.reservedMinor, paidMinor: position.paidMinor, excludedMinor: position.excludedMinor,
+      uncommittedMinor: position.availableMinor + position.excludedMinor,
+      refundRouteQualified: receipt.refundAdapter === "capture_refund" && !!receipt.provenRefundableRef };
+    if (!row.creditedMinor && !row.refundedMinor && !row.pendingRefundMinor && !row.reservedMinor && !row.paidMinor) continue;
+    result.sources.push(row);
+    for (const key of ["creditedMinor", "refundedMinor", "pendingRefundMinor", "reservedMinor", "paidMinor", "excludedMinor", "uncommittedMinor"] as const) {
+      result[key] += row[key]; assertMinor(result[key]);
+    }
+    if (!row.refundRouteQualified && row.uncommittedMinor > 0) result.unqualifiedRouteCount++;
+    result.hasCommittedUses ||= row.reservedMinor > 0 || row.paidMinor > 0;
   }
   return result;
 }

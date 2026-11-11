@@ -1,7 +1,7 @@
 import { canonicalJson, sha256, type ProviderResource } from "@fracture/paypal-core";
 import type { SettlementReceipt } from "../contracts";
 
-export type RefundReason = "requested" | "incomplete_round" | "package_cancelled" | "excess_return";
+export type RefundReason = "requested" | "incomplete_round" | "package_cancelled" | "excess_return" | "case_return";
 export const REFUND_POLICY = sha256("Fieldproof:original-rail-refund:v1:exact-receipt:unallocated-funds:separate-excess:durable-reservation");
 export function refundReceiptDigest(receipt: SettlementReceipt): string {
   return sha256(canonicalJson({ id: receipt.id, tenantId: receipt.tenantId, projectId: receipt.projectId,

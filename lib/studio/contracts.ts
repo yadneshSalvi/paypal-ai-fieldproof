@@ -1,7 +1,8 @@
 import type { BlueprintZone, Provenance, WorkspaceRole } from "../contracts";
 
 export const STUDIO_SEMANTIC_VERSION = "fieldproof-report-v1" as const;
-export const STUDIO_TABLES = ["packages", "settlements", "allocations", "evidence", "exceptions"] as const;
+export const STUDIO_POSITION_VERSION = "fieldproof-funding-positions-v1" as const;
+export const STUDIO_TABLES = ["packages", "settlements", "allocations", "funding_positions", "evidence", "exceptions"] as const;
 export type StudioTable = typeof STUDIO_TABLES[number];
 export type StudioPrimitive = string | number | boolean | null;
 export interface StudioRow { id: string; packageId: string; [field: string]: StudioPrimitive; }
@@ -27,6 +28,12 @@ export interface AllocationRow extends StudioRow {
   revision: number; state: string; purpose: string; expenseLabel: string; reversalOf: string | null;
   claimId: string | null; evidenceId: string | null; provenance: Provenance;
 }
+export interface FundingPositionRow extends StudioRow {
+  semanticVersion: typeof STUDIO_POSITION_VERSION; settlementReceiptId: string; receiptVersion: number;
+  originalPackageId: string; sourceKind: string; assignedMinor: number; collectedMinor: number;
+  fundingEligibleMinor: number; refundedMinor: number; pendingRefundMinor: number; excludedMinor: number;
+  reservedMinor: number; paidMinor: number; availableMinor: number; assignmentCount: number; provenance: Provenance;
+}
 export interface EvidenceRow extends StudioRow {
   evidenceId: string; title: string; sourceClass: string; reviewState: string;
   itemCount: number; reviewedAt: string | null; sourceAvailable: boolean;
@@ -40,10 +47,13 @@ export interface ExceptionRow extends StudioRow {
 }
 export interface StudioData {
   packages: PackageRow[]; settlements: SettlementRow[]; allocations: AllocationRow[];
+  /** Absent on immutable report cutoffs saved before the position dataset. */
+  funding_positions?: FundingPositionRow[];
   evidence: EvidenceRow[]; exceptions: ExceptionRow[];
 }
 export interface StudioSnapshot {
   semanticVersion: typeof STUDIO_SEMANTIC_VERSION;
+  datasetVersions?: { funding_positions: typeof STUDIO_POSITION_VERSION };
   /** Scope identity only; never an authorization capability. */
   scope: string;
   datasetHandle: string;
@@ -103,6 +113,18 @@ export const STUDIO_FIELDS: Record<StudioTable, StudioField[]> = {
     money("activeAllocationMinor", "Active allocation · USD", "Only the latest reserved or paid revision has value. Historical/reversed revisions contribute zero to current totals."),
     { id: "isCurrent", name: "Current revision", kind: "boolean", description: "Whether this is the allocation's current revision." },
     count("revision", "Revision", "Immutable allocation revision number; not a quantity to sum."), text("state", "Allocation state"), text("purpose", "Allocation purpose"), text("expenseLabel", "Expense line"), text("reversalOf", "Reverses revision"), text("claimId", "Expense review"), text("evidenceId", "Evidence"), text("provenance", "Provenance")],
+  funding_positions: [...common, text("semanticVersion", "Position contract"), text("settlementReceiptId", "Original settlement receipt"),
+    count("receiptVersion", "Receipt version", "Exact current economic receipt version; not a quantity to sum."), text("originalPackageId", "Original payment purpose"), text("sourceKind", "Original payment rail"),
+    money("assignedMinor", "Assigned credit · USD", "One current restricted-purpose position per original receipt and package. Paired transfers conserve this amount across purposes."),
+    money("collectedMinor", "Net assigned · USD", "Assigned credit less completed returns attributed to this purpose."),
+    money("fundingEligibleMinor", "Eligible assigned · USD", "Net assigned less pending returns and exclusions. Current package and donor authority still govern spending."),
+    money("refundedMinor", "Returns completed · USD", "Returns attributed to this purpose on the exact current receipt version."),
+    money("pendingRefundMinor", "Returns pending · USD", "Pending original-route returns attributed to this purpose."),
+    money("excludedMinor", "Excluded · USD", "Restricted credit held outside available funding."),
+    money("reservedMinor", "Expenses reserved · USD", "Active expense and fee reservations for this exact receipt and purpose."),
+    money("paidMinor", "Expenses paid · USD", "Actual paid uses retained under the purpose that incurred them."),
+    money("availableMinor", "Uncommitted credit · USD", "Eligible assigned credit less active reserved and paid uses. This dataset never authorizes spending."),
+    count("assignmentCount", "Recorded purpose changes", "Paired assignment entries affecting this position. A transfer is not another payment."), text("provenance", "Provenance")],
   evidence: [...common, text("evidenceId", "Evidence"), text("title", "Source title"), text("sourceClass", "Source class"), text("reviewState", "Review state"),
     count("itemCount", "Items", "One item per evidence/package relationship. Use distinct evidenceId for a project-wide source count."),
     { id: "reviewedAt", name: "Reviewed at", kind: "datetime", description: "Recorded review time, if a review exists." },

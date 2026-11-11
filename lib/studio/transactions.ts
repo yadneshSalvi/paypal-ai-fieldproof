@@ -18,9 +18,10 @@ function keyed(rows: StudioRow[]) {
 /** A role/scope change requires disposal of the old engine, never an in-place privacy filter. */
 export function studioTransactions(before: StudioSnapshot, after: StudioSnapshot): { status: "ready" | "stale" | "scope_changed"; transactions: StudioTransaction[] } {
   if (before.scope !== after.scope || before.role !== after.role || before.semanticVersion !== after.semanticVersion) return { status: "scope_changed", transactions: [] };
+  if (before.datasetVersions?.funding_positions !== after.datasetVersions?.funding_positions) return { status: "scope_changed", transactions: [] };
   if (after.projectionVersion < before.projectionVersion || Date.parse(after.asOf) < Date.parse(before.asOf)) return { status: "stale", transactions: [] };
   const transactions = STUDIO_TABLES.map(tableId => {
-    const prior = keyed(before.data[tableId]), next = keyed(after.data[tableId]);
+    const prior = keyed(before.data[tableId] ?? []), next = keyed(after.data[tableId] ?? []);
     return {
       tableId,
       add: [...next].filter(([id]) => !prior.has(id)).map(([, row]) => row),

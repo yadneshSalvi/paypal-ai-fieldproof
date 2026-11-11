@@ -4,7 +4,7 @@ import type { EvidenceItem, PackageView, SettlementReceipt, WorkspaceRole } from
 import { assertMinor, DomainError } from "../domain/money";
 import { packagePositionTotals } from "../domain/funding-positions";
 import { assessPackageFunding } from "../domain/package-funding";
-import { STUDIO_FIELDS, STUDIO_SEMANTIC_VERSION, STUDIO_TABLES, type AllocationRow, type EvidenceRow, type ExceptionRow, type PackageRow, type SettlementRow, type StudioData, type StudioSnapshot } from "../studio/contracts";
+import { STUDIO_FIELDS, STUDIO_POSITION_VERSION, STUDIO_SEMANTIC_VERSION, STUDIO_TABLES, type FundingPositionRow, type AllocationRow, type EvidenceRow, type ExceptionRow, type PackageRow, type SettlementRow, type StudioData, type StudioSnapshot } from "../studio/contracts";
 import type { Session } from "./auth";
 import { claimPrivate, type ClaimRow } from "./claims";
 import { database, query } from "./db";
@@ -14,6 +14,7 @@ import { openPrivate, sealPrivate } from "./private-values";
 import { publishedPlan } from "./planning-store";
 import { alignmentViews, packageReadiness, signoffViews } from "./planning-evidence";
 import { polygonLabel } from "../planning/geometry";
+import { readFundingPromises } from "./funding-promises";
 
 const SOURCE_NOTICE = "The plan is an illustrative sample. Expense review does not certify installed work or safety.";
 const FUNDING_NOTICE = "Collection includes conditional Orders and invoice receipts. Separate checkout tests and duplicate excess cannot fund a package.";
@@ -28,11 +29,6 @@ const studioContentHash = (snapshot: Pick<StudioSnapshot, "scope" | "asOf" | "da
 export const studioScope = (session: Session, membershipVersion: number) => sha256(canonicalJson({ tenant: session.tenantId, project: session.projectId, actor: session.actorId, role: session.role, membershipVersion, semanticVersion: STUDIO_SEMANTIC_VERSION }));
 
 interface PackageSource { id: string; version: number; budget_minor: string; data: PackageView; }
-interface ObligationSource {
-  id: string; actor_id: string; package_id: string; amount_minor: string; purpose: string; channel: string;
-  eligible: boolean; consent_id: string | null; consent_status: string | null; expires_at: Date | null;
-  withdrawn_at: Date | null; round_id: string | null; package_version: number | null;
-}
 interface ReceiptSource { id: string; actor_id: string; purpose: string; data: SettlementReceipt; }
 interface ReviewSource {
   claim_id: string; claim_line_id: string; package_id: string | null; source_minor: string; approved_minor: string;
@@ -53,7 +49,7 @@ export function assertStudioProjection(data: StudioData): void {
   for (const table of STUDIO_TABLES) {
     const allowed = new Set(STUDIO_FIELDS[table].map(field => field.id));
     const ids = new Set<string>();
-    for (const row of data[table]) {
+    for (const row of data[table] ?? []) {
       if (!row.id || ids.has(row.id)) throw new DomainError("STUDIO_IDENTITY_INVALID", "The report contains a repeated record identity.", 409);
       ids.add(row.id);
       if (Object.keys(row).some(key => !allowed.has(key))) throw new DomainError("STUDIO_FIELD_DENIED", "A report field is outside the permitted semantic model.", 403);
@@ -66,13 +62,6 @@ export function assertStudioProjection(data: StudioData): void {
   }
 }
 
-function eligibleCommitment(row: ObligationSource, pkg: PackageSource, mode: Session["mode"], cutoff: number): boolean {
-  if (row.purpose !== "conditional_pledge") return false;
-  if (mode === "sample") return true;
-  return row.eligible && !!row.consent_id && !row.withdrawn_at && row.package_version === pkg.version
-    && ["ready", "collecting", "collected"].includes(row.consent_status ?? "")
-    && (!!row.round_id || (row.expires_at !== null && row.expires_at.getTime() > cutoff));
-}
 function safeZone(pkg: PackageSource): PackageView["zone"] {
   const source = pkg.data.zone;
   if (!source || source.packageId !== pkg.id || !Array.isArray(source.points) || source.points.length < 3 || source.points.length > 64)
@@ -101,10 +90,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
     const params = [session.tenantId, session.projectId];
     // Queries share this transaction/connection; the PostgreSQL driver serializes them.
     const packages = await query<PackageSource>("SELECT id,version,budget_minor,data FROM fp_packages WHERE project_id=$1 ORDER BY id", [session.projectId], tx);
-    const obligations = await query<ObligationSource>(`SELECT o.id,o.actor_id,o.package_id,o.amount_minor,o.purpose,o.channel,
-      COALESCE((o.data->>'eligible')::boolean,false) AS eligible,c.id AS consent_id,c.status AS consent_status,
-      c.expires_at,c.withdrawn_at,c.round_id,c.package_version FROM fp_obligations o LEFT JOIN fp_conditional_consents c ON c.obligation_id=o.id
-      WHERE o.tenant_id=$1 AND o.project_id=$2 ORDER BY o.id`, params, tx);
+    const promises=await readFundingPromises(session,tx,cutoff);
     const receipts = await query<ReceiptSource>(`SELECT r.id,o.actor_id,o.purpose,r.data FROM fp_settlement_receipts r
       JOIN fp_obligations o ON o.id=r.obligation_id AND o.tenant_id=r.tenant_id AND o.project_id=r.project_id
       WHERE r.tenant_id=$1 AND r.project_id=$2 ORDER BY r.id`, params, tx);
@@ -134,7 +120,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       const fundingPolicy=assessPackageFunding({state:pkg.data.fundingState,version:pkg.version,budgetMinor:amount(pkg.budget_minor),eligibleMinor:total.fundingEligibleMinor,provenance:project.mode,round:round?{packageVersion:round.package_version,state:round.state}:undefined});
       const allocatable = fundingPolicy.complete;
       return { id: pkg.id, packageId: pkg.id, title: pkg.data.title, shortTitle: pkg.data.shortTitle,
-        budgetMinor: amount(pkg.budget_minor), pledgedMinor: obligations.filter(row => row.package_id === pkg.id && eligibleCommitment(row, pkg, project.mode, cutoff)).reduce((sum, row) => sum + amount(row.amount_minor), 0),
+        budgetMinor: amount(pkg.budget_minor), pledgedMinor: promises.get(pkg.id)??0,
         ...total, completedRefundMinor: positions.reduce((sum, row) => sum + row.refundedMinor, 0),
         allocationReservedMinor: allocated, availableAllocationMinor: allocatable ? Math.max(0, total.fundingEligibleMinor - allocated) : 0,
         approvedExpenseMinor: currentReviews.reduce((sum, row) => sum + amount(row.approved_minor), 0),
@@ -151,6 +137,15 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       completedRefundMinor: r.completedAttributedRefundMinor, pendingRefundMinor: r.pendingAttributedRefundReserveMinor,
       fundingEligibleMinor: purpose === "conditional_pledge" && r.provenance === project.mode ? r.creditedMinor - r.completedAttributedRefundMinor - r.pendingAttributedRefundReserveMinor - r.excludedMinor : 0,
       excludedMinor: r.excludedMinor, excessLiabilityMinor: r.excessLiabilityMinor, currency: r.currency, observedAt: r.observedAt, provenance: r.provenance,
+    }));
+    const visibleReceiptIds = new Set(visibleReceipts.map(row => row.id));
+    const positionRows: FundingPositionRow[] = funding.positions.filter(row => visibleReceiptIds.has(row.receiptId)).map(row => ({
+      id: `position:${row.receiptId}:${row.packageId}`, packageId: row.packageId, semanticVersion: STUDIO_POSITION_VERSION,
+      settlementReceiptId: row.receiptId, receiptVersion: row.receiptVersion, originalPackageId: row.originalPackageId, sourceKind: row.sourceKind,
+      assignedMinor: row.assignedMinor, collectedMinor: row.collectedMinor, fundingEligibleMinor: row.fundingEligibleMinor,
+      refundedMinor: row.refundedMinor, pendingRefundMinor: row.pendingRefundMinor, excludedMinor: row.excludedMinor,
+      reservedMinor: row.reservedMinor, paidMinor: row.paidMinor, availableMinor: row.availableMinor,
+      assignmentCount: row.assignmentIds.length, provenance: project.mode,
     }));
     const visibleClaims = privateClaims ? await query<ClaimRow>(`SELECT * FROM fp_claims WHERE tenant_id=$1 AND project_id=$2 AND ($3::boolean OR actor_id=$4)`, [...params, session.role === "organizer", session.actorId], tx) : [];
     const claimData = new Map(visibleClaims.map(row => [row.id, claimPrivate(row)]));
@@ -227,7 +222,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       FROM fp_collection_items i JOIN fp_obligations o ON o.id=i.obligation_id
       LEFT JOIN fp_provider_operations op ON op.id=i.operation_id
       WHERE o.tenant_id=$1 AND o.project_id=$2 AND i.state<>'collected' AND ($3::boolean OR ($4='donor' AND o.actor_id=$5))
-      UNION ALL SELECT f.id,r.package_id,f.state,f.amount_minor,f.observed_at,f.operation_id,'refund' FROM fp_refunds f
+      UNION ALL SELECT f.id,COALESCE(f.funding_package_id,r.package_id),f.state,f.amount_minor,f.observed_at,f.operation_id,'refund' FROM fp_refunds f
       JOIN fp_settlement_receipts r ON r.id=f.receipt_id JOIN fp_obligations o ON o.id=r.obligation_id
       WHERE f.tenant_id=$1 AND f.project_id=$2 AND f.state<>'completed' AND ($3::boolean OR ($4='donor' AND o.actor_id=$5))`, [...params, broad, session.role, session.actorId], tx);
     for (const row of pending) {
@@ -246,14 +241,14 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
         affectedMinor: amount(line.source_minor), observedAt: iso(line.reviewed_at), ageMinutes: line.reviewed_at ? Math.max(0, Math.floor((cutoff - line.reviewed_at.getTime()) / 60000)) : null,
         provenance: line.provenance });
     }
-    const data: StudioData = { packages: packageRows, settlements: settlementRows, allocations: allocationRows, evidence: evidenceRows, exceptions: exceptionRows };
+    const data: StudioData = { packages: packageRows, settlements: settlementRows, allocations: allocationRows, funding_positions: positionRows, evidence: evidenceRows, exceptions: exceptionRows };
     assertStudioProjection(data);
     const geometry = plan ? plan.view.state === "current" ? Object.fromEntries(plan.view.zones.map(zone => [`${zone.packageId}:${plan.view.contentHash}:${plan.view.state}`, { packageId: zone.packageId, points: zone.polygon, label: polygonLabel(zone.polygon) }])) : {} : Object.fromEntries(packages.map(pkg => [pkg.id, safeZone(pkg)]));
     const geometrySource: StudioSnapshot["geometrySource"] = plan ? { revision: plan.view.revision, planHash: plan.view.contentHash, geometryHash: plan.view.geometryHash,
       state: plan.view.state, provenance: plan.view.provenance, pageAspectRatio: plan.view.pageAspectRatio, outline: plan.view.state === "current" ? plan.view.outline : [], scaleLabel: plan.view.scaleLabel } : undefined;
     const asOf = project.as_of.toISOString();
     const contentHash = studioContentHash({ scope, asOf, data, geometry, geometrySource });
-    return { semanticVersion: STUDIO_SEMANTIC_VERSION, scope, datasetHandle: "", role: session.role, mode: project.mode, projectTitle: project.title,
+    return { semanticVersion: STUDIO_SEMANTIC_VERSION, datasetVersions: { funding_positions: STUDIO_POSITION_VERSION }, scope, datasetHandle: "", role: session.role, mode: project.mode, projectTitle: project.title,
       projectionVersion: project.projection_version, eventCursor: Number(project.cursor), asOf, contentHash, data, geometry, ...(geometrySource ? { geometrySource } : {}),
       notices: [plan ? `Plan revision ${plan.view.revision} · ${plan.view.state} · ${plan.view.provenance === "sample" ? "fictional sample" : "reviewed source geometry"}. Physical acceptance counts only current required reviews; provider availability and expense approval remain separate.` : SOURCE_NOTICE, FUNDING_NOTICE, session.role === "donor" ? "Payment and allocation details include only your contributions." : session.role === "volunteer" ? "Original expense sources include only your claims." : session.role === "auditor" ? "The Auditor receives redacted financial facts. Private originals and payment destinations are excluded." : "Private source links recheck your current role when opened."] };
   });

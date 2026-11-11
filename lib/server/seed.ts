@@ -4,6 +4,7 @@ import { HERO_OBLIGATION_AMOUNTS, type EvidenceItem, type PackageView, type Sett
 import { database, initializeDatabase, query } from "./db";
 import { runtimeControl } from "./runtime-control";
 import { DomainError } from "../domain/money";
+import { recordSampleOrigin } from "./sample-funding-origins";
 
 export const PUBLIC_PROJECT = "project_public_sample";
 export const PUBLIC_TENANT = "tenant_public_sample";
@@ -56,6 +57,8 @@ export async function createProject(tx: SqlConnection, tenantId: string, project
     const channel = item.collected ? "collected" : item.key === "hero-8" ? "definitively_declined" : "uncollected";
     const data = {donorLabel:item.label,provenance:"sample",consentPolicy:"Sample only — not an actual PayPal agreement."};
     await tx.query("INSERT INTO fp_obligations(id,tenant_id,project_id,package_id,actor_id,amount_minor,channel,purpose,data) VALUES($1,$2,$3,$4,$5,$6,$7,'conditional_pledge',$8::jsonb)", [id,tenantId,projectId,item.packageId,`sample-person-${index}`,item.amount,channel,JSON.stringify(data)]);
+    const originalPackage=packageSeeds.find(pkg=>pkg.id===item.packageId)!;
+    await recordSampleOrigin(tx,{tenantId,projectId,obligationId:id,packageId:item.packageId,packageVersion:1,donorActorId:`sample-person-${index}`,amountMinor:item.amount,title:originalPackage.title,purpose:originalPackage.description});
     if (item.collected) {
       const receipt = sampleReceipt(tenantId,projectId,id,item.packageId,item.amount,item.key);
       await tx.query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,$5,$6,'sample',$7::jsonb)",[receipt.id,tenantId,projectId,id,item.packageId,receipt.actualProviderPaymentRef,JSON.stringify(receipt)]);

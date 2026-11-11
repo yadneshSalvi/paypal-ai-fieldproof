@@ -16,6 +16,9 @@ import { readPaymentCommand } from "./stored-commands";
 import { paymentOperationCodec } from "./private-values";
 import { authorizeRefund } from "./refund-policy";
 import { guardedProviderTransport } from "./maintenance";
+import { projectClaimLock } from "./claims";
+import { lockFundingScope } from "./funding-positions";
+import { refreshPurposePledge } from "./purpose-pledges";
 
 export const CHECKOUT_TEST_MINOR = 100;
 const GLOBAL_TEST_CEILING_MINOR = 5000;
@@ -55,6 +58,7 @@ function deny(command:PaymentCommand, reason:string):AuthorizationDecision {
   return {allowed:false,reason,resourceIds:[],currency:"USD",maximumMinor:0,approvalId:command.approval.id,approvalVersion:command.approval.version,approvalDigest:command.approval.digest};
 }
 export async function authorizePayment(command: PaymentCommand): Promise<AuthorizationDecision> {
+  if(command.businessKey.startsWith("purpose:"))return (await import("./purpose-checkout")).authorizePurposePayment(command);
   if(command.businessKey.startsWith("refund:")) return authorizeRefund(command);
   if(command.businessKey.startsWith("conditional:"))return authorizeConditionalPayment(command);
   const [row] = await query<{
@@ -142,6 +146,8 @@ async function ingestOwnedResources(command:PaymentCommand,resources:ProviderRes
     WHERE c.operation_id=$1 AND c.tenant_id=$2 AND c.project_id=$3`,[command.operationId,command.scope.tenantId,command.scope.projectId]);
   if(!owner||canonicalJson(readPaymentCommand(owner.command))!==canonicalJson(command))throw new DomainError("COMMAND_NOT_FOUND","The payment has no exact domain owner.");
   await database().transaction(async tx=>{
+    await projectClaimLock(tx,command.scope.projectId);
+    await lockFundingScope(command.scope,tx);
     const [collection]=await query<{round_id:string}>("SELECT round_id FROM fp_collection_items WHERE obligation_id=$1",[owner.obligation_id],tx);
     const [round] = collection ? await query<{state:string;recovery_ends_at:Date}>("SELECT state,recovery_ends_at FROM fp_collection_rounds WHERE id=$1 FOR UPDATE",[collection.round_id],tx) : [];
     const compensate = !!round && (["compensating","cancelled"].includes(round.state) || ["collecting","recovering"].includes(round.state) && round.recovery_ends_at.getTime()<=Date.now());
@@ -169,6 +175,7 @@ async function ingestOwnedResources(command:PaymentCommand,resources:ProviderRes
       assertBalanced(entries);
       await tx.query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,$5,$6,'live_sandbox',$7::jsonb)",[receipt.id,receipt.tenantId,receipt.projectId,receipt.donorObligationId,receipt.packageId,receipt.actualProviderPaymentRef,JSON.stringify(receipt)]);
       await tx.query("INSERT INTO fp_economic_aliases(merchant_scope,alias,receipt_id) VALUES($1,$2,$3)",[merchantScope,alias,receipt.id]);
+      const {markCasesForLateReceipt}=await import("./funding-lifecycle");await markCasesForLateReceipt(tx,command.scope,receipt.packageId,receipt.id);
       for(const entry of entries) if(entry.amountMinor) await tx.query("INSERT INTO fp_journal(id,tenant_id,project_id,receipt_id,account,side,amount_minor,currency) VALUES($1,$2,$3,$4,$5,$6,$7,'USD')",[randomUUID(),receipt.tenantId,receipt.projectId,receipt.id,entry.account,entry.side,entry.amountMinor]);
       const creditedTotal=prior.reduce((sum,r)=>sum+r.data.creditedMinor-r.data.completedAttributedRefundMinor,0)+receipt.creditedMinor;
       const nextChannel=compensate?"compensating":receipt.excessLiabilityMinor?"excess_reconciliation":creditedTotal>=Number(owner.amount_minor)?"collected":"unknown_reconciling";
@@ -186,6 +193,12 @@ async function ingestOwnedResources(command:PaymentCommand,resources:ProviderRes
     if(pending){
       await tx.query("UPDATE fp_obligations SET channel='unknown_reconciling' WHERE id=$1 AND channel NOT IN ('collected','excess_reconciliation','compensating','refunded','cancelled')",[owner.obligation_id]);
       await tx.query("INSERT INTO fp_outbox(id,tenant_id,project_id,kind,data) VALUES($1,$2,$3,'payment.reconcile',$4::jsonb) ON CONFLICT(id) DO NOTHING",[`reconcile:${command.operationId}`,command.scope.tenantId,command.scope.projectId,JSON.stringify({operationId:command.operationId})]);
+    }
+    await refreshPurposePledge(tx,{...command.scope,provenance:"live_sandbox"},owner.obligation_id);
+    if(command.businessKey.startsWith("purpose:")){
+      const {refreshSponsorsForScope}=await import("./sponsors");
+      const [actor]=await query<{actor_id:string;role:Session["role"];expires_at:Date}>("SELECT actor_id,role,expires_at FROM fp_sessions WHERE id=$1",[owner.session_id],tx);
+      if(actor)await refreshSponsorsForScope(tx,{...command.scope,id:owner.session_id,actorId:actor.actor_id,role:actor.role,mode:"live_sandbox",expiresAt:actor.expires_at.toISOString()});
     }
   });
 }

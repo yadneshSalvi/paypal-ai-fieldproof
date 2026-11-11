@@ -14,6 +14,9 @@ import { ingestOwnedOrderRead, ingestPaymentOperation, paymentCore, paymentStore
 import { appendEvent } from "./repository";
 import { readPaymentCommand, storePaymentCommand } from "./stored-commands";
 import { vaultGateway, type VaultGateway } from "./vault";
+import { projectClaimLock } from "./claims";
+import { lockFundingScope, readFundingProjection } from "./funding-positions";
+import { packagePositionTotals } from "../domain/funding-positions";
 
 interface RoundRow {
   id: string; tenant_id: string; project_id: string; package_id: string; package_version: number; target_minor: string;
@@ -26,7 +29,7 @@ interface CollectionItemRow extends ConsentRow {
 export interface CollectionView {
   id: string; packageId: string; packageVersion: number; state: string; startedAt: string; recoveryEndsAt: string;
   dispatchMode: "review_each" | "automatic";
-  targetMinor: number; collectedMinor: number; eligibleMinor: number; shortfallMinor: number; excessLiabilityMinor: number;
+  targetMinor: number; originalCollectedMinor: number; collectedMinor: number; eligibleMinor: number; shortfallMinor: number; excessLiabilityMinor: number;
   items: { consentId: string; obligationId: string; slotIndex: number; amountMinor: number; collectedMinor: number; state: string; channel: string; lastCode: string | null; own: boolean; approvalUrl: string | null }[];
 }
 export interface CollectionDependencies { vault: VaultGateway; provider: ProviderAdapter; core: PaymentCore }
@@ -45,14 +48,18 @@ async function roundItems(round: RoundRow, tx: SqlConnection = database(), lock 
 }
 export async function collectionView(session: Session, id?: string): Promise<CollectionView | null> {
   await initializeDatabase();
-  await requireMembership(session.tenantId, session.projectId, session.actorId, session.role);
-  const round = id ? await ownedRound(session, id) : (await query<RoundRow>("SELECT * FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 ORDER BY collection_started_at DESC LIMIT 1", [session.tenantId, session.projectId, CONDITIONAL_PACKAGE]))[0];
+  const view = await database().transaction(async tx => {
+  await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+  await requireCurrentRole(session, session.role, tx);
+  const round = id ? await ownedRound(session, id, tx) : (await query<RoundRow>("SELECT * FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 ORDER BY collection_started_at DESC LIMIT 1", [session.tenantId, session.projectId, CONDITIONAL_PACKAGE], tx))[0];
   if (!round) return null;
   const [items, rows] = await Promise.all([
-    roundItems(round), query<{ data: SettlementReceipt }>("SELECT r.data FROM fp_settlement_receipts r JOIN fp_collection_items i ON i.obligation_id=r.obligation_id WHERE i.round_id=$1", [round.id]),
+    roundItems(round, tx), query<{ data: SettlementReceipt }> ("SELECT r.data FROM fp_settlement_receipts r JOIN fp_collection_items i ON i.obligation_id=r.obligation_id WHERE i.round_id=$1", [round.id], tx),
   ]);
-  const receipts = rows.map(row => row.data), totals = fundingTotals(receipts, Number(round.target_minor), "live_sandbox");
-  return { id: round.id, packageId: round.package_id, packageVersion: round.package_version, state: round.state, dispatchMode: round.data.dispatchMode ?? "review_each", startedAt: round.collection_started_at.toISOString(), recoveryEndsAt: round.recovery_ends_at.toISOString(), targetMinor: Number(round.target_minor), collectedMinor: totals.collectedMinor, eligibleMinor: totals.fundingEligibleMinor, shortfallMinor: totals.shortfallMinor, excessLiabilityMinor: totals.excessLiabilityMinor,
+  const receipts = rows.map(row => row.data), original = fundingTotals(receipts, Number(round.target_minor), "live_sandbox");
+  const projection = await readFundingProjection({ tenantId: session.tenantId, projectId: session.projectId, provenance: session.mode }, tx);
+  const totals = packagePositionTotals(projection.positions, round.package_id, Number(round.target_minor));
+  return { id: round.id, packageId: round.package_id, packageVersion: round.package_version, state: round.state, dispatchMode: round.data.dispatchMode ?? "review_each", startedAt: round.collection_started_at.toISOString(), recoveryEndsAt: round.recovery_ends_at.toISOString(), targetMinor: Number(round.target_minor), originalCollectedMinor: original.collectedMinor, collectedMinor: totals.collectedMinor, eligibleMinor: totals.fundingEligibleMinor, shortfallMinor: totals.shortfallMinor, excessLiabilityMinor: totals.excessLiabilityMinor,
     items: await Promise.all(items.map(async item => {
       let approvalUrl: string | null = null;
       const own = item.actor_id === session.actorId;
@@ -62,6 +69,9 @@ export async function collectionView(session: Session, id?: string): Promise<Col
       }
       return { consentId: item.id, obligationId: item.obligation_id, slotIndex: item.slot_index, amountMinor: Number(item.amount_minor), collectedMinor: receipts.filter(receipt => receipt.donorObligationId === item.obligation_id).reduce((sum, receipt) => sum + receipt.creditedMinor - receipt.completedAttributedRefundMinor, 0), state: item.item_state, channel: item.channel ?? "uncollected", lastCode: item.last_code, own, approvalUrl };
     })) };
+  });
+  await requireCurrentRole(session, session.role);
+  return view;
 }
 
 
@@ -70,6 +80,8 @@ export async function freezeCollection(session: Session, input: { expectedVersio
   if (session.mode !== "live_sandbox") throw new DomainError("LIVE_COLLECTION_REQUIRED", "Real collection uses a live sandbox project with actual supporter approvals.");
   await initializeDatabase();
   const id = await database().transaction(async tx => {
+    await projectClaimLock(tx, session.projectId);
+    await lockFundingScope(session, tx);
     const organizer = await requireCurrentRole(session, "organizer", tx);
     const [packageRow] = await query<{ version: number; budget_minor: string }>("SELECT version,budget_minor FROM fp_packages WHERE project_id=$1 AND id=$2 FOR UPDATE", [session.projectId, CONDITIONAL_PACKAGE], tx);
     if (!packageRow || packageRow.version !== input.expectedVersion || Number(packageRow.budget_minor) !== CONDITIONAL_TARGET_MINOR) throw new DomainError("VERSION_CHANGED", "Review the current exact package budget before collection.");

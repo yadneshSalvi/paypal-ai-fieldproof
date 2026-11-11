@@ -1,5 +1,47 @@
 # Fieldproof PayPal implementation contract
 
+## Purpose funding extension · isolated implementation
+
+General package pledges, grants and earned matching pledges use the installed
+`@fracture/paypal-core` 0.2.7 buyer-present Orders boundary. No new SDK operation,
+client, host, recipient override, Vault charge or SDK error translation is added.
+`paypal` resolves to the pinned 2.29.0 package above; its SDK map and Orders
+create/capture/get operation contracts were reread. The existing adapter remains
+the only owner of the generated `OrderRequest` and `OrderCaptureRequest` bodies,
+`Prefer: return=representation`, stable `PayPal-Request-Id`, supported empty capture
+JSON, explicit sandbox base URL, disabled SDK logging and normalized errors.
+
+| Domain operation | Exact installed core contract | Authority and durable result |
+| --- | --- | --- |
+| Create buyer-present order | `PaymentAction` `{kind:'create_order',money:{currency:'USD',minor},intent:'CAPTURE',customId,experience:{returnUrl,cancelUrl,userAction:'PAY_NOW',shippingPreference:'NO_SHIPPING',brandName}}`; `PaymentCore.execute(command)` | Current donor session and membership; immutable own pledge, exact current package/policy version, fixed acceptance expiry; stored domain command and approval before core claim. One `purpose:<pledge>:create` business identity. |
+| Capture approved original order | `PaymentAction` `{kind:'capture_order',money:{currency:'USD',minor},orderId}`; `PaymentCore.execute(command)` | Same immutable pledge and exact owned `fp_provider_orders` identity, independently read approved order and current policy; one `purpose:<pledge>:capture` command. Expired approvals are never silently renewed. |
+| Check uncertain original | `PaymentCore.reconcile(scope,operationId)` and `ProviderAdapter.read('order',ownedOrderId,signal)`; `ingestOwnedOrderRead` | Read-only provider observation; no replacement request ID, fresh channel or new charge. Unknown creation without a returned ID stays unresolved. |
+
+Commands use the installed `PaymentCommand` scope, operationId, businessKey,
+intentId, providerRequestId, payloadHash, action and approval shape. Approval
+expiry is bounded by the pledge and destination window. Pledge creation is not a
+financial approval and never counts as settlement. Matching uses canonical
+non-sponsor donor settlement identity once per agreement with total and package
+caps; a grant has its own accepted agreement. Their checkout is still explicit
+buyer-present approval. Neither inferred donor silence nor a sponsor offer
+creates a financial command.
+
+Only authoritative captured resources enter the existing canonical settlement
+reducer. A separately owned purpose-pledge origin links the original receipt to
+its exact policy, donor and version; transferred funding retains that origin.
+Callback repetition and webhook reordering must produce one economic receipt.
+Late or partial collection is held under the current policy for an explicit
+cancellation case, never treated as a funded destination. Original eight-slot
+collection and checkout-test ceilings, approvals and deadlines remain unchanged.
+
+Provider execution of the new purpose checkout additionally requires the
+explicit server qualification flag `FIELDPROOF_PURPOSE_CHECKOUT_ENABLED=true`.
+It remains off for implementation and frozen QA. Tests inject a core/provider
+using a separate local PostgreSQL database and synthetic credentials; network
+access is denied. Root separately owns actual qualification. All generated SDK
+facts and core wrapper signatures for this extension are resolved; no SDK
+installation, shared-core modification or real-credential smoke is authorized.
+
 Contract version 1 · 11 November 2026 · sandbox only.
 
 This document records the implementation boundary, not a claim that transactions occurred. The full product includes conditional commitments, payer-present collection, saved-wallet collection when qualified, recovery invoices, reviewed reimbursement, refunds, verified events and scoped reporting. The first executable slice is a payer-present Orders contribution with a durable all-rail receipt. Subsequent capabilities retain explicit proof gates below.

@@ -34,7 +34,7 @@ describe("bounded cold database initialization", () => {
       assert.equal((await target.query("SELECT to_regclass('fp_schema_versions')::text AS present")).rows[0].present, null);
     } finally { release(); await holder; }
     await initializeDatabaseAt(target);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 14);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 18);
     for (const table of ["fp_proof_heads", "fp_proof_derivatives", "fp_proof_snapshots"]) assert.ok((await target.query("SELECT to_regclass($1)::text AS present", [table])).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('paycore_provider_identity')::text AS present")).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('fp_plan_provider_observations')::text AS present")).rows[0].present);
@@ -70,7 +70,7 @@ describe("bounded cold database initialization", () => {
     await target.query("DROP INDEX fp_community_due_runs");
     await initializeDatabaseAt(target);
     assert.ok((await target.query("SELECT to_regclass('fp_community_due_runs')::text AS present")).rows[0].present);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 14);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 18);
   });
 
   it("repairs disabled funding-history and receipt-version guards", async () => {
@@ -80,4 +80,13 @@ describe("bounded cold database initialization", () => {
     const result=await target.query("SELECT count(*)::int AS count FROM pg_trigger WHERE tgrelid=ANY(ARRAY[to_regclass('fp_settlement_receipts'),to_regclass('fp_funding_assignments')]) AND tgname IN ('fp_receipt_version_on_change','fp_funding_assignment_immutable') AND tgenabled='O'");
     assert.equal(result.rows[0].count,2);
   });
+  it("repairs the complete immutable donor, pledge and sponsor contract guards",async()=>{
+    const guards=[['fp_funding_cases','fp_funding_case_contract'],['fp_funding_choices','fp_funding_choice_contract'],['fp_funding_policies','fp_funding_policy_contract'],['fp_funding_case_events','fp_funding_case_event_immutable'],['fp_sample_funding_origins','fp_sample_funding_origin_immutable'],['fp_sponsor_offers','fp_sponsor_offer_contract'],['fp_sponsor_acceptances','fp_sponsor_acceptance_contract'],['fp_purpose_pledges','fp_purpose_pledge_contract'],['fp_sponsor_events','fp_sponsor_event_immutable'],['fp_funding_reconciliations','fp_funding_reconciliation_contract'],['fp_funding_reconciliation_consents','fp_funding_reconciliation_consent_contract'],['fp_funding_return_observations','fp_funding_return_observation_immutable'],['fp_funding_return_holds','fp_funding_return_hold_contract'],['fp_funding_external_returns','fp_funding_external_return_immutable'],['fp_sample_funding_use_evidence','fp_sample_funding_use_immutable']];
+    for(const [table,guard] of guards)await target.query(`ALTER TABLE ${table} DISABLE TRIGGER ${guard}`);
+    await initializeDatabaseAt(target);
+    const result=await target.query("SELECT count(*)::int count FROM pg_trigger WHERE tgname=ANY($1::text[]) AND tgenabled='O' AND tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace=current_schema()::regnamespace)",[guards.map(([,guard])=>guard)]);
+    assert.equal(result.rows[0].count,guards.length);
+    const columns=await target.query("SELECT count(*)::int count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fp_refunds' AND column_name IN ('funding_package_id','funding_choice_id','funding_source_digest')");assert.equal(columns.rows[0].count,3);
+  });
+
 });

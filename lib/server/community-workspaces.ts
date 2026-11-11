@@ -6,7 +6,7 @@ import { createWorkspaceSchema, type WorkspaceEntry, type WorkspaceLibrary } fro
 import { communityTemplate, type TemplateId } from "../community/templates";
 import { DomainError } from "../domain/money";
 import type { PackageView, WorkspaceRole } from "../contracts";
-import { type Session, sessionCookieName, tokenHash } from "./auth";
+import { type Session, sessionCookieName, sessionCookieSecure, tokenHash } from "./auth";
 import { database, initializeDatabase, query } from "./db";
 import { openPrivate, sealPrivate } from "./private-values";
 import { requireCurrentRole } from "./membership";
@@ -68,7 +68,7 @@ export async function rememberWorkspace(libraryToken: string | null, activeToken
 export async function rememberWorkspaceCookie(activeToken?: string): Promise<void> {
   const jar = await cookies();
   const result = await rememberWorkspace(jar.get(workspaceLibraryCookieName())?.value ?? null, activeToken ?? jar.get(sessionCookieName())?.value ?? null);
-  jar.set(workspaceLibraryCookieName(), result.token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", expires: new Date(result.expiresAt) });
+  jar.set(workspaceLibraryCookieName(), result.token, { httpOnly: true, secure: sessionCookieSecure(), sameSite: "lax", path: "/", expires: new Date(result.expiresAt) });
 }
 export async function readWorkspaceLibrary(libraryToken: string | null, activeToken: string | null, cleanup = true): Promise<WorkspaceLibrary> {
   await initializeDatabase();

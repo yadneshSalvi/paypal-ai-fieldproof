@@ -8,6 +8,9 @@ import { commerceGateway, invoicePaymentReader, type CommerceGateway, type Invoi
 import { ownedWallet, type ConsentRow } from "./commitments";
 import { definitiveCollectionDecline } from "./collections";
 import { refreshRoundFunding } from "./collection-projection";
+import { persistFundingReceipt } from "./funding-writes";
+import { projectClaimLock } from "./claims";
+import { lockFundingScope } from "./funding-positions";
 import { database, initializeDatabase, query } from "./db";
 import { requireCurrentRole, requireMembership } from "./membership";
 import { ingestOwnedOrderRead, paymentStore, paypalProvider, providerConfiguration } from "./payments";
@@ -185,19 +188,21 @@ async function recordPaymentObservation(row: InvoiceRow, paymentId: string, stat
 
 async function creditInvoicePayment(row: InvoiceRow, invoice: InvoiceObservation, capture: InvoiceCaptureEvidence): Promise<void> {
   await database().transaction(async tx => {
+    await projectClaimLock(tx,row.project_id);
+    await lockFundingScope({tenantId:row.tenant_id,projectId:row.project_id},tx);
     const origin = await source({ tenantId: row.tenant_id, projectId: row.project_id }, row.consent_id, tx, true);
     const current = await invoiceRow({ tenantId: row.tenant_id, projectId: row.project_id }, row.id, tx, true);
     if (!matches(current, invoice)) throw new DomainError("INVOICE_IDENTITY_UNPROVEN", "The invoice payment no longer matches its exact recovery record.");
     const merchantScope = sha256(providerConfiguration().clientId), aliases = [`paypal:capture:${capture.id}`, `paypal:invoice_payment:${invoice.id}:${capture.id}`];
-    const existing = await query<{ id: string; obligation_id: string; data: SettlementReceipt }>(`SELECT DISTINCT r.id,r.obligation_id,r.data FROM fp_economic_aliases a JOIN fp_settlement_receipts r ON r.id=a.receipt_id WHERE a.merchant_scope=$1 AND a.alias=ANY($2::text[])`, [merchantScope, aliases], tx);
+    const existing = await query<{ id: string; version: number; obligation_id: string; data: SettlementReceipt }>(`SELECT DISTINCT r.id,r.version,r.obligation_id,r.data FROM fp_economic_aliases a JOIN fp_settlement_receipts r ON r.id=a.receipt_id WHERE a.merchant_scope=$1 AND a.alias=ANY($2::text[])`, [merchantScope, aliases], tx);
     if (existing.length) {
       if (existing.length !== 1 || existing[0].obligation_id !== row.obligation_id) throw new DomainError("PAYMENT_OWNER_CONFLICT", "This economic payment is already assigned to a different obligation.");
-      const receipt = existing[0].data;
+      const receipt = structuredClone(existing[0].data);
       if (receipt.grossSettledMinor !== capture.money.minor || receipt.currency !== capture.money.currency) throw new DomainError("PAYMENT_AMOUNT_CONFLICT", "The already recorded payment has contradictory amount evidence.");
       for (const alias of aliases) await tx.query("INSERT INTO fp_economic_aliases(merchant_scope,alias,receipt_id) VALUES($1,$2,$3) ON CONFLICT(merchant_scope,alias) DO NOTHING", [merchantScope, alias, receipt.id]);
       receipt.economicAliases = [...new Set([...receipt.economicAliases, ...aliases])];
       receipt.sourceInvoiceId = invoice.id;
-      await tx.query("UPDATE fp_settlement_receipts SET data=$2::jsonb WHERE id=$1", [receipt.id, JSON.stringify(receipt)]);
+      await persistFundingReceipt(tx, { tenantId: row.tenant_id, projectId: row.project_id, provenance: "live_sandbox" }, existing[0], receipt, []);
     } else {
       const prior = (await query<{ data: SettlementReceipt }>("SELECT data FROM fp_settlement_receipts WHERE obligation_id=$1", [row.obligation_id], tx)).map(item => item.data);
       const split = splitSettlement(capture.money.minor, Number(row.amount_minor), prior.reduce((sum, receipt) => sum + receipt.creditedMinor, 0));
@@ -210,6 +215,8 @@ async function creditInvoicePayment(row: InvoiceRow, invoice: InvoiceObservation
       const entries = [{ account: "paypal_clearing", side: "debit" as const, amountMinor: receipt.grossSettledMinor }, { account: "package_funds", side: "credit" as const, amountMinor: receipt.creditedMinor }, { account: "excess_refund_liability", side: "credit" as const, amountMinor: receipt.excessLiabilityMinor }];
       assertBalanced(entries);
       await tx.query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,$5,$6,'live_sandbox',$7::jsonb)", [receipt.id, row.tenant_id, row.project_id, row.obligation_id, origin.package_id, capture.id, JSON.stringify(receipt)]);
+      const {markCasesForLateReceipt}=await import("./funding-lifecycle");
+      await markCasesForLateReceipt(tx,{tenantId:row.tenant_id,projectId:row.project_id},origin.package_id,receipt.id);
       for (const alias of aliases) await tx.query("INSERT INTO fp_economic_aliases(merchant_scope,alias,receipt_id) VALUES($1,$2,$3)", [merchantScope, alias, receipt.id]);
       for (const entry of entries) if (entry.amountMinor) await tx.query("INSERT INTO fp_journal(id,tenant_id,project_id,receipt_id,account,side,amount_minor,currency) VALUES($1,$2,$3,$4,$5,$6,$7,'USD')", [randomUUID(), row.tenant_id, row.project_id, receipt.id, entry.account, entry.side, entry.amountMinor]);
       await appendEvent(tx, { tenantId: row.tenant_id, projectId: row.project_id, mode: "live_sandbox" }, "recovery.payment_confirmed", "PayPal confirmed the recovery payment", "The invoice transaction and its independently read payment resource share one canonical receipt and one balanced journal.");

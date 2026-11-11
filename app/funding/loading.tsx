@@ -1,0 +1,2 @@
+import "./funding.css";
+export default function Loading(){return <main className="fd-loading" aria-busy="true" aria-label="Loading your funding desk"><span className="wordmark">fieldproof<span className="brand-dot">.</span></span><p className="eyebrow">A CLEAR PURPOSE, EVERY STEP</p><h1>Opening your saved support…</h1><div/><p>Reading current purposes, contributions and donor decisions.</p></main>;}

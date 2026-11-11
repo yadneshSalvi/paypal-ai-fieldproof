@@ -1,0 +1,245 @@
+{
+  "schemaVersion": "fieldproof-funding-lifecycle-local-qualification-v1",
+  "recordedAt": "2026-11-11T20:29:25.567Z",
+  "status": "source_build_and_http_passed_native_pending",
+  "implementation": {
+    "unit": "Versioned purpose funding, donor decisions, sponsor agreements and evidence-backed recovery",
+    "baseCommit": "ec304bfb1b3cf92c461a8f20adc4af4d3a940b73",
+    "branch": "codex/fieldproof-native-studio-stage3",
+    "schemaVersion": 18,
+    "implementationFiles": 310,
+    "implementationSha256": "94225eae3c8d26fb1360bba14bd081ba248aec6ddbe6c4553df49eac7a8e638f",
+    "sourceManifestSha256": "01737a808fc26cb4608457341a1f4f582d44163a443a134fe29f831ea9dd72e0"
+  },
+  "regression": {
+    "tests": 432,
+    "suites": 64,
+    "passed": 432,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 127657.243125,
+    "logSha256": "9975fdda9e4cc34add2c8b5197c9ffd38e32347cfa6de5568f1ad3933896965a",
+    "isolatedPostgreSql": true,
+    "actualNetworkDenied": true,
+    "providerTransports": "injected fixtures only",
+    "focusedRecovery": {
+      "passed": 28,
+      "failed": 0
+    },
+    "integratedRecovery": {
+      "passed": 69,
+      "failed": 0
+    },
+    "strictNonincrementalTypeScript": "passed"
+  },
+  "build": {
+    "status": "passed",
+    "nextVersion": "16.4.6",
+    "mode": "production",
+    "compiler": "Turbopack",
+    "nodeVersion": "v22.22.3",
+    "buildId": "Ov3j-F9WOwf7x5eGdf_eg",
+    "buildSha256": "021fb634ce04db1e15fb2ef13ae357dc1ca3e89d7e6e1b7855a19f77499a59e0",
+    "logSha256": "780bbcd551591be624dc530f8805d96dae57c11842120193f939536265440686",
+    "dependencyEntries": 44174,
+    "dependencySha256": "75a04a8218e4652e1a31fb66518e5f356bfe85bc5a5e98e4142d9223571163fe",
+    "sharedRegularFileInodes": 0,
+    "externalDependencyLinks": 0,
+    "traceManifests": 36,
+    "allTracedFilesConfined": true,
+    "localConfigOverlay": "Only the independent review copy pins its build/tracing root. Main next.config.ts is byte-identical to the starting checkpoint.",
+    "generatedFiles": [
+      "next-env.d.ts"
+    ]
+  },
+  "http": {
+    "status": "passed",
+    "checks": [
+      {
+        "name": "Immutable fixture baselines and disabled checkout",
+        "durationMs": 419
+      },
+      {
+        "name": "All participant pages, review chooser and compiled assets load",
+        "durationMs": 236
+      },
+      {
+        "name": "Session, origin, stale workspace, strict body and role boundaries",
+        "durationMs": 84
+      },
+      {
+        "name": "Donor source privacy and read-only observer views",
+        "durationMs": 39
+      },
+      {
+        "name": "General pledge creation, replay, changed-intent rejection and withdrawal",
+        "durationMs": 51
+      },
+      {
+        "name": "Sponsor acceptance records separate grant and capped match promises",
+        "durationMs": 48
+      },
+      {
+        "name": "Uncommitted donor choice can be revoked without moving support",
+        "durationMs": 49
+      },
+      {
+        "name": "Explicit reallocation follows the original source into an unfunded target",
+        "durationMs": 63
+      },
+      {
+        "name": "Sample invoice contribution returns through its original-source decision",
+        "durationMs": 41
+      },
+      {
+        "name": "Separate grant payment completes exact current-purpose funding",
+        "durationMs": 19
+      },
+      {
+        "name": "Outside-return evidence can be freshly inspected without another return",
+        "durationMs": 58
+      },
+      {
+        "name": "Exact outside-return attribution releases only its hold and preserves deadline",
+        "durationMs": 58
+      },
+      {
+        "name": "Residual original return and explicit next-cycle rollover conserve their sources",
+        "durationMs": 99
+      },
+      {
+        "name": "New donor settlement earns exactly one bounded matching pledge",
+        "durationMs": 51
+      },
+      {
+        "name": "Matching payment is separate and never recursively earns another match",
+        "durationMs": 42
+      },
+      {
+        "name": "Paid-source evidence supports an exact adjustment proposal",
+        "durationMs": 24
+      },
+      {
+        "name": "A donor decline blocks application and preserves private source details",
+        "durationMs": 55
+      },
+      {
+        "name": "Withdrawal and renewed acceptance retain both donor response versions",
+        "durationMs": 39
+      },
+      {
+        "name": "Unanimous adjustment creates a new case without rewriting paid history or deadline",
+        "durationMs": 26
+      },
+      {
+        "name": "Adjusted original-route returns use only their agreed source capacities",
+        "durationMs": 64
+      },
+      {
+        "name": "Final funding, source identity, case deadlines and balanced journals conserve every cent",
+        "durationMs": 29
+      },
+      {
+        "name": "Studio exposes current funding positions while retaining original settlements",
+        "durationMs": 159
+      },
+      {
+        "name": "Native fixture and fixed actor expiries remain byte-identical",
+        "durationMs": 33
+      },
+      {
+        "name": "Actual provider command, approval, attempt and order tables remain empty",
+        "durationMs": 20
+      },
+      {
+        "name": "Chooser sets only the separate fixed-expiry review cookie",
+        "durationMs": 63
+      }
+    ],
+    "checkCount": 25,
+    "compiledAssets": 13,
+    "finalSampleMoney": {
+      "grossMinor": 59000,
+      "returnedMinor": 24000,
+      "paidMinor": 2000,
+      "availableMinor": 33000,
+      "pendingMinor": 0,
+      "excludedMinor": 0,
+      "currency": "USD"
+    },
+    "providerTableCounts": {
+      "paycore_operations": 0,
+      "paycore_attempts": 0,
+      "fp_payment_commands": 0,
+      "fp_approval_records": 0,
+      "fp_payable_approval_intents": 0,
+      "fp_provider_orders": 0
+    },
+    "originalReceiptIdentitiesPreserved": true,
+    "paidAllocationsPreserved": true,
+    "originalCaseDeadlinesPreserved": true,
+    "journalBalanceMinor": 0,
+    "separateNativeFixtureUnchanged": true,
+    "nativeBaselineSha256": "c812d60ca9d658903280b4811ea16079cc06760087645eb286062af04fdb31fd",
+    "probeAttemptsRetained": true,
+    "probeCorrections": [
+      "PostgreSQL information-schema identifier arrays explicitly parsed as text arrays.",
+      "Expected available hold release is $45 after the $5 proven outside return, while the original hold was $50.",
+      "Compiled runtime symlinks are inventoried and proven to resolve only to copied local dependencies."
+    ]
+  },
+  "native": {
+    "status": "pending_root_browser_review",
+    "entryUrl": "http://localhost:4535/funding-qa",
+    "workspaceUrl": "http://localhost:4535/funding",
+    "provenance": "fictional Sample records",
+    "cookie": "fieldproof_funding_lifecycle_qa_session",
+    "cookieContract": "HttpOnly, SameSite=Lax; insecure transport only under strict local-production QA isolation.",
+    "fixedSessionExpiryPreserved": true,
+    "fixedDecisionDeadlinesPreserved": true,
+    "privateTokensInRenderedHtml": 0
+  },
+  "boundaries": {
+    "actualProviderCalls": 0,
+    "generalProviderCheckoutEnabled": false,
+    "hostedDatabaseAccess": false,
+    "originalDatabaseAccess": false,
+    "hostedDeployment": false,
+    "publicPublication": false,
+    "sourcePrivateValueScan": {
+      "files": 1412,
+      "privateValues": 26,
+      "matches": 0
+    },
+    "preExistingNextEnvRestored": true,
+    "preExistingTsconfigPreserved": true,
+    "mainNextConfigUnchanged": true,
+    "protectedPlanningCommunity": {
+      "ports": [
+        4502,
+        4512
+      ],
+      "processesManuallyRestarted": false,
+      "rebuiltOrInstalled": false,
+      "mainSourceEditsMayHaveBeenObserved": true,
+      "runtimeSourceImmutable": false,
+      "dataContinuityMeasuredByThisUnit": false
+    }
+  },
+  "remaining": {
+    "unitQualification": [
+      "Root native desktop/mobile/keyboard/zoom/reduced-motion/stale-tab matrix",
+      "Actual generalized checkout and sponsor payment qualification",
+      "Supported original invoice/capture financial-return evidence and controlled partial-spend return/transfer",
+      "Migration/no-mutation proof, held deployment and hosted qualification"
+    ],
+    "specificEvidenceLimit": "An outside refund after a purpose transfer remains held when original-operation purpose/version or timing cannot be proven. The inspector preserves evidence and explains the missing attribution; typed amounts cannot release it.",
+    "laterFullPlan": [
+      "Fuller personalized share-of-package/evidence/reviewer/date presentation",
+      "Organization membership and portfolio; cutoff reconciliation, Transaction Search and organizational A4/Letter Board Packs",
+      "Remaining real Studio provider/dependency and community native/model/hosted qualification",
+      "Held-out model, translation and geometry evaluations; authorized physical evidence and independent safety review",
+      "Real-user research or a truthful absence report; measured accessibility/performance; rehearsals, recordings, film/gallery and controlled release"
+    ]
+  }
+}

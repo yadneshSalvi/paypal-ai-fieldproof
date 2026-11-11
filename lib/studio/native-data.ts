@@ -6,12 +6,14 @@ export const studioMoney = (minor: number) => usd.format(minor / 100);
 export const TABLE_LABELS: Record<StudioTable, string> = {
   packages: "Packages · one row per budget", settlements: "Settlement receipts · both payment rails",
   allocations: "Allocation revisions · real lineage", evidence: "Evidence · scoped source associations",
+  funding_positions: "Current purposes · conserved receipt credit",
   exceptions: "Reconciliation · attention needed",
 };
 const descriptions: Record<StudioTable, string> = {
   packages: "One row per package. Sum budgetMinor only at this grain. All money fields are integer USD cents. Net collected and funding eligible include conditional Orders captures and invoice payments; exclude sandbox_test. Approved expenses are receipt review, not paid expenses or accepted physical work. No spending is available until a funded round is complete.",
   settlements: "One row per role-visible settlement receipt. Donors see their own receipts. Provider gross includes possible excess liability. fundingEligibleMinor excludes sandbox_test. Never infer a provider balance from stored observations.",
   allocations: "One row per actual immutable allocation revision. activeAllocationMinor is nonzero only for the latest reserved or paid revision; use it for totals. allocationMinor is historical and must never be summed across revisions. Empty means no allocation exists; never draw invented donor-to-expense lineage.",
+  funding_positions: "Separately versioned current-purpose positions. One row per original receipt and current package; paired donor choices move credit without duplicating payment. Original settlement rows retain economic lineage. Donors see only their own contributions. A historical report without this dataset remains unchanged; empty historical positions must not be reconstructed from today's ledger.",
   evidence: "One row per visible evidence/package association. A receipt may have separate reviewed amounts in two packages. amountMinor is the amount for this association, never a repeated receipt total. Accepted work evidence, expense review, and principal payment establish different facts. Private originals exist only for permitted roles.",
   exceptions: "One row per current unresolved reconciliation or review issue. Affected amounts can overlap and must not be added into a ledger balance. Stored observation timestamps are explicit; a missing operation has no provider outcome.",
 };
@@ -22,7 +24,7 @@ export function studioDataDefinition(snapshot: StudioSnapshot): AgDataSourcesDef
     description: `Fieldproof private report. Role: ${snapshot.role}. Provenance: ${snapshot.mode}. Cutoff: ${snapshot.asOf}. ${snapshot.notices.join(" ")} Amounts are integer cents, formatted as USD only at display time. The data is descriptive; it cannot authorize a charge, refund, payout, publication, or physical signoff.`,
     sources: STUDIO_TABLES.map(table => ({
       id: table, name: TABLE_LABELS[table], description: descriptions[table], primaryKeyField: "id", transactions: "all",
-      data: snapshot.data[table].map(row => ({ ...row })),
+      data: (snapshot.data[table] ?? []).map(row => ({ ...row })),
       fields: STUDIO_FIELDS[table].map((field): AgFieldDefinition => ({
         id: field.id, name: field.name, description: field.description,
         format: ({ text: "textFormat", number: "integerFormat", boolean: "booleanFormat", datetime: "dateTimeFormat" } as const)[field.kind], editable: false,
@@ -32,7 +34,7 @@ export function studioDataDefinition(snapshot: StudioSnapshot): AgDataSourcesDef
         ...(field.unit === "usd_minor" ? { createValueFormatter: () => value => value == null ? "—" : studioMoney(Number(value)) } : {}),
       })),
     })),
-    relationships: (["settlements", "allocations", "evidence", "exceptions"] as const).map(table => ({
+    relationships: (["settlements", "allocations", "funding_positions", "evidence", "exceptions"] as const).map(table => ({
       id: `package-${table}`, type: "one-to-many", source: "packages.packageId", target: `${table}.packageId`,
     })),
     // The common package dimension connects the facts. A receipt-to-allocation link in addition

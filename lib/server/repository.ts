@@ -9,7 +9,9 @@ import { ensurePublicProject, PUBLIC_PROJECT, sampleReceipt } from "./seed";
 import type { Session } from "./auth";
 import { requireMakerspaceScenario } from "./community-workspaces";
 import { requireCurrentRole } from "./membership";
-import { readFundingProjection } from "./funding-positions";
+import { lockFundingScope, readFundingProjection } from "./funding-positions";
+import { projectClaimLock } from "./claims";
+import { readFundingPromises } from "./funding-promises";
 
 export async function appendEvent(tx: SqlConnection, session: Pick<Session,"tenantId"|"projectId"|"mode">, type: string, title: string, detail: string): Promise<void> {
   const id = randomUUID();
@@ -35,11 +37,12 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
     query<{package_id:string;package_version:number;state:string}>("SELECT package_id,package_version,state FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 ORDER BY collection_started_at DESC,id DESC",[project.tenant_id,projectId],tx),
   ]);
   const funding=await readFundingProjection({tenantId:project.tenant_id,projectId,provenance:project.mode},tx);
+  const promises=await readFundingPromises({tenantId:project.tenant_id,projectId,mode:project.mode},tx);
   const receipts = receiptRows.map(row => row.data);
   const obligations: DonorObligation[] = obligationRows.map(row=>({id:row.id,packageId:row.package_id,amountMinor:Number(row.amount_minor),channel:row.channel,consentVersion:row.consent_version,donorLabel:row.data.donorLabel,provenance:row.data.provenance,createdAt:row.created_at.toISOString(),purpose:row.purpose}));
   const packages: PackageView[] = packageRows.map(row=>{
     const totals = packagePositionTotals(funding.positions,row.id,Number(row.budget_minor));
-    const pledgedMinor = obligationRows.filter(o=>o.package_id===row.id && o.purpose==="conditional_pledge" && (project.mode==="sample" || o.data.eligible===true)).reduce((sum,o)=>sum+Number(o.amount_minor),0);
+    const pledgedMinor = promises.get(row.id)??0;
     const round=roundRows.find(r=>r.package_id===row.id&&r.package_version===row.version)??roundRows.find(r=>r.package_id===row.id);
     const policy=assessPackageFunding({state:row.data.fundingState,version:row.version,budgetMinor:Number(row.budget_minor),eligibleMinor:totals.fundingEligibleMinor,provenance:project.mode,round:round?{packageVersion:round.package_version,state:round.state}:undefined});
     return {...row.data,...totals,id:row.id,budgetMinor:Number(row.budget_minor),version:row.version,pledgedMinor,fundingState:policy.state};
@@ -55,9 +58,12 @@ export async function addSamplePledge(session: Session, input:{amountMinor:numbe
   if(session.role!=="donor") throw new DomainError("ROLE_DENIED","Choose the donor role to make your own sample pledge.",403);
   await database().transaction(async tx=>{
     await requireCurrentRole(session,"donor",tx);
-    const [item] = await query<{version:number}>("SELECT version FROM fp_packages WHERE project_id=$1 AND id=$2 FOR UPDATE",[session.projectId,input.packageId],tx);
+    await projectClaimLock(tx,session.projectId);await lockFundingScope(session,tx);
+    if((await query("SELECT id FROM fp_funding_policies WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3",[session.tenantId,session.projectId,input.packageId],tx)).length)throw new DomainError("PURPOSE_PLEDGE_REQUIRED","Open the funding desk to choose this purpose's exact current pledge and deadline.");
+    const [item] = await query<{version:number;state:string}>("SELECT version,data->>'fundingState' state FROM fp_packages WHERE project_id=$1 AND id=$2 FOR UPDATE",[session.projectId,input.packageId],tx);
     if(!item) throw new DomainError("PACKAGE_NOT_FOUND","That package is not part of this project.",404);
     if(item.version!==input.expectedVersion) throw new DomainError("VERSION_CHANGED","The plan changed. Review the current package before pledging.");
+    if(["cancelled","compensating"].includes(item.state))throw new DomainError("PURPOSE_CLOSED","This purpose is closed. Review current purposes in the funding desk.");
     const id = `${session.tenantId}:${input.intentId}`;
     const [existing]=await query<{amount_minor:string;package_id:string}>("SELECT amount_minor,package_id FROM fp_obligations WHERE id=$1",[id],tx);
     if(existing){
@@ -71,11 +77,15 @@ export async function addSamplePledge(session: Session, input:{amountMinor:numbe
 export async function advanceTour(session: Session, step: number): Promise<void> {
   if(session.mode!=="sample") throw new DomainError("SAMPLE_ONLY","The walkthrough runs in a separate sample workspace.");
   await database().transaction(async tx=>{
+    await projectClaimLock(tx,session.projectId);await lockFundingScope(session,tx);
     await requireMakerspaceScenario(session,tx);
     const [project] = await query<{tour_step:number}>("SELECT tour_step FROM fp_projects WHERE id=$1 FOR UPDATE",[session.projectId],tx);
     if(!project || step<=project.tour_step) return;
     if(step>project.tour_step+1) throw new DomainError("TOUR_SEQUENCE","Continue from the current walkthrough step.");
     if(step===2){
+      if((await query("SELECT id FROM fp_funding_policies WHERE tenant_id=$1 AND project_id=$2 AND package_id='electronics'",[session.tenantId,session.projectId],tx)).length)throw new DomainError("SAMPLE_PURPOSE_CHANGED","Your workspace now has a separately reviewed funding purpose. Start another Sample walkthrough to replay the original collection story.");
+      const [purpose]=await query<{state:string}>("SELECT data->>'fundingState' state FROM fp_packages WHERE project_id=$1 AND id='electronics'",[session.projectId],tx);
+      if(!purpose||["cancelled","compensating"].includes(purpose.state))throw new DomainError("SAMPLE_PURPOSE_CLOSED","This purpose was closed in your workspace. Its saved donor decisions remain in place; start a separate Sample walkthrough to explore the original story.");
       const obligationId = `${session.projectId}-obligation-hero-8`;
       const receipt = sampleReceipt(session.tenantId,session.projectId,obligationId,"electronics",3500,"hero-8-invoice",true);
       await tx.query("INSERT INTO fp_settlement_receipts(id,tenant_id,project_id,obligation_id,package_id,provider_ref,provenance,data) VALUES($1,$2,$3,$4,'electronics',$5,'sample',$6::jsonb)",[receipt.id,session.tenantId,session.projectId,obligationId,receipt.actualProviderPaymentRef,JSON.stringify(receipt)]);

@@ -7,6 +7,9 @@ import { PLANNING_SCHEMA } from "./planning-schema";
 import { PROOF_SCHEMA } from "./proof-schema";
 import { COMMUNITY_SCHEMA } from "./community-schema";
 import { FUNDING_SCHEMA } from "./funding-schema";
+import { FUNDING_LIFECYCLE_SCHEMA } from "./funding-lifecycle-schema";
+import { FUNDING_RECONCILIATION_SCHEMA } from "./funding-reconciliation-schema";
+import { PURPOSE_SCHEMA } from "./purpose-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -49,7 +52,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 14;
+const CURRENT_SCHEMA_VERSION = 18;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -78,6 +81,29 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
     AND tgname IN ('fp_funding_assignment_immutable','fp_funding_deduction_immutable','fp_receipt_version_on_change',
       'fp_funding_assignment_source_scope','fp_funding_deduction_source_scope')`);
   if (!fundingTriggers.rows[0]?.ready) return false;
+  const lifecycle = await tx.query<{ready:boolean}>("SELECT bool_and(to_regclass(name) IS NOT NULL) ready FROM unnest($1::text[]) name", [[
+    "fp_funding_cases","fp_funding_choices","fp_funding_policies","fp_funding_actions","fp_funding_case_events","fp_funding_current_choice","fp_funding_choice_owner","fp_funding_active_case",
+    "fp_purpose_pledges","fp_purpose_pledge_owner","fp_purpose_pledge_policy","fp_sponsor_offers","fp_sponsor_acceptances","fp_sponsor_events","fp_sample_funding_origins",
+    "fp_funding_reconciliations","fp_funding_reconciliation_consents","fp_funding_return_observations","fp_funding_return_holds","fp_funding_external_returns",
+    "fp_funding_active_adjustment","fp_funding_current_adjustment_consent","fp_funding_active_return_hold","fp_funding_return_observation_scope",
+    "fp_sample_funding_use_evidence",
+  ]]);
+  if (!lifecycle.rows[0]?.ready) return false;
+  const lifecycleGuards = await tx.query<{ready:boolean}>(`SELECT count(*)=4 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O'
+    AND tgrelid=ANY(ARRAY[to_regclass('fp_funding_cases'),to_regclass('fp_funding_choices'),to_regclass('fp_funding_policies'),to_regclass('fp_funding_case_events')])
+    AND tgname IN ('fp_funding_case_contract','fp_funding_choice_contract','fp_funding_policy_contract','fp_funding_case_event_immutable')`);
+  if (!lifecycleGuards.rows[0]?.ready) return false;
+  const purposeGuards=await tx.query<{ready:boolean}>(`SELECT count(*)=5 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O'
+    AND tgrelid=ANY(ARRAY[to_regclass('fp_purpose_pledges'),to_regclass('fp_sponsor_offers'),to_regclass('fp_sponsor_acceptances'),to_regclass('fp_sponsor_events'),to_regclass('fp_sample_funding_origins')])
+    AND tgname IN ('fp_purpose_pledge_contract','fp_sponsor_offer_contract','fp_sponsor_acceptance_contract','fp_sponsor_event_immutable','fp_sample_funding_origin_immutable')`);
+  if(!purposeGuards.rows[0]?.ready)return false;
+  const reconciliationGuards=await tx.query<{ready:boolean}>(`SELECT count(*)=6 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O'
+    AND tgrelid=ANY(ARRAY[to_regclass('fp_funding_reconciliations'),to_regclass('fp_funding_reconciliation_consents'),to_regclass('fp_funding_return_observations'),to_regclass('fp_funding_return_holds'),to_regclass('fp_funding_external_returns'),to_regclass('fp_sample_funding_use_evidence')])
+    AND tgname IN ('fp_funding_reconciliation_contract','fp_funding_reconciliation_consent_contract','fp_funding_return_observation_immutable','fp_funding_return_hold_contract','fp_funding_external_return_immutable','fp_sample_funding_use_immutable')`);
+  if(!reconciliationGuards.rows[0]?.ready)return false;
+  const refundColumns=await tx.query<{ready:boolean}>(`SELECT count(*)=3 ready FROM pg_attribute WHERE attrelid=to_regclass('fp_refunds') AND NOT attisdropped
+    AND attname IN ('funding_package_id','funding_choice_id','funding_source_digest')`);
+  if(!refundColumns.rows[0]?.ready)return false;
   const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
@@ -444,6 +470,9 @@ ${PLANNING_SCHEMA}
 ${PROOF_SCHEMA}
 ${COMMUNITY_SCHEMA}
 ${FUNDING_SCHEMA}
+${FUNDING_LIFECYCLE_SCHEMA}
+${FUNDING_RECONCILIATION_SCHEMA}
+${PURPOSE_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -459,4 +488,7 @@ INSERT INTO fp_schema_versions(version) VALUES(11) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(12) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(13) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(14) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(15) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(17) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(18) ON CONFLICT DO NOTHING;
 `;
