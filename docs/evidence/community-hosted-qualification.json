@@ -1,0 +1,57 @@
+{
+  "sourceCommit": "8df01962c51a1a734f0f0ce0b63a9f0ad6065fe4",
+  "archiveSha256": "b47af442a9a773d151e494cf3e2e04f47bb960fd72acf3e99ceb7251f833ecde",
+  "deploymentId": "dpl_EtjnogeN9nNRb7BTALSafNT5VU9y",
+  "url": "https://paypal-ai-fieldproof.vercel.app",
+  "qualifiedAt": "2026-11-11T12:28:01.455Z",
+  "promoted": true,
+  "automated": {
+    "requests": 53,
+    "templates": [
+      "community-garden",
+      "mutual-aid",
+      "makerspace"
+    ],
+    "passed": true,
+    "scope": "New disclosed hosted Sample projects only; existing original financial scope is separately fingerprinted",
+    "providerCalls": 0,
+    "modelSubmissions": 0,
+    "plan": "fictional garden plan saved/reviewed/shared through HTTP",
+    "translation": "Sample exercise only; no fluent review",
+    "sourceWithdrawal": "invalidates draft, translation review and supporter preview"
+  },
+  "migration": {
+    "schema": 13,
+    "newTables": 14,
+    "existingTables": 78,
+    "existingRows": 2516,
+    "existingRowHashesUnchanged": true,
+    "verifiedBackupSha256": "bed7190d5230a062909d54d19856b94e025fb9fca01fd739373e4758bbfdf2ae"
+  },
+  "originalScopeAfterQualification": {
+    "tables": 28,
+    "rows": 287,
+    "allScopedRowHashesUnchanged": true
+  },
+  "native": {
+    "templates": "All three illustrated cards and exact budgets visible; separate saved workspaces shown",
+    "spanish": "Exact USD4860 and zero financial/physical values; initial unreviewed-language disclosure visible",
+    "viewportWidth": 390,
+    "documentWidth": 390,
+    "sourceDialog": {
+      "width": 352,
+      "height": 814,
+      "scrollHeight": 860,
+      "escapeFocus": "Ver fuentes de project:budget"
+    },
+    "stalePreviewAbsent": true,
+    "temporaryUniqueHostCookiesRemoved": true,
+    "viewportRestored": true,
+    "originalBrowserSessionUntouched": true
+  },
+  "limitations": [
+    "Three actual local model tasks are a separate qualification, not a multilingual benchmark.",
+    "No fluent human review, physical work or external messages are represented.",
+    "This community release is one completed milestone; full finance, organization, evaluation and final demonstration scope remains."
+  ]
+}
