@@ -1,4 +1,5 @@
-import { PostgresDatabase, SqlPaymentStore, type SqlConnection } from "@fracture/paypal-core";
+import { PostgresDatabase, SqlPaymentStore, type SqlConnection, type SqlDatabase } from "@fracture/paypal-core";
+import { DomainError } from "../domain/money";
 import { paymentOperationCodec } from "./private-values";
 import { RUNTIME_CONTROL_SCHEMA } from "./runtime-control";
 
@@ -19,11 +20,37 @@ export async function initializeDatabase(): Promise<void> {
   return state.fieldproofReady;
 }
 export async function initializeDatabaseAt(target: PostgresDatabase): Promise<void> {
+  try {
     await target.transaction(async tx => {
+      // A cold request must not wait behind a long workspace import or another migration.
+      await tx.query("SET LOCAL lock_timeout='2000ms'; SET LOCAL statement_timeout='15000ms'");
+      if (await schemaReady(tx)) return;
       await tx.query("SELECT pg_advisory_xact_lock(410202611)");
+      if (await schemaReady(tx)) return;
       await tx.query(schema);
+      // Keep the app marker and payment-store migration in the same transaction. A failed
+      // initialization must not leave a ready marker ahead of its operation tables/index.
+      const transactionalStore: SqlDatabase = {
+        dialect: tx.dialect, query: tx.query.bind(tx),
+        transaction: work => work(tx), close: async () => undefined,
+      };
+      await new SqlPaymentStore(transactionalStore, { operationDocumentCodec: paymentOperationCodec }).initialize();
     });
-    await new SqlPaymentStore(target,{operationDocumentCodec:paymentOperationCodec}).initialize();
+  } catch (error) {
+    const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+    if (["55P03", "57014", "40P01"].includes(code))
+      throw new DomainError("DATABASE_INITIALIZING", "The private workspace is finishing a database operation. Wait a moment and refresh; no payment has been retried.", 503);
+    throw error;
+  }
+}
+
+const CURRENT_SCHEMA_VERSION = 9;
+async function schemaReady(tx: SqlConnection): Promise<boolean> {
+  const existing = await tx.query<{ app: string | null; operations: string | null; attempts: string | null; locks: string | null; events: string | null; deliveries: string | null; identity: string | null }>(
+    "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity");
+  if (!existing.rows[0] || Object.values(existing.rows[0]).some(value => value === null)) return false;
+  const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
+  return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
 
 const schema = `

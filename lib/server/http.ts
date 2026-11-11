@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { DomainError } from "../domain/money";
 
 export const PRIVATE_HEADERS = { "Cache-Control": "private, no-store, max-age=0", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
-export function privateJson(value: unknown, status = 200) { return NextResponse.json(value, { status, headers: PRIVATE_HEADERS }); }
+export function privateJson(value: unknown, status = 200) { return NextResponse.json(value, { status, headers: { ...PRIVATE_HEADERS, ...(status === 503 ? { "Retry-After": "30" } : {}) } }); }
 export function routeFailure(error: unknown) {
   if (error instanceof DomainError) return privateJson({ error: error.message, code: error.code }, error.status);
   if (error instanceof ZodError || error instanceof SyntaxError) return privateJson({ error: "Check the submitted fields and try again.", code: "INVALID_INPUT" }, 400);

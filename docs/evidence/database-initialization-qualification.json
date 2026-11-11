@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "environment": "isolated_local_postgresql_schema",
+  "trigger": "A cold hosted runtime was observed waiting behind the workspace import during schema initialization.",
+  "observedChecks": {
+    "blockedMigration": {
+      "actualDatabaseAdvisoryLockHeld": true,
+      "elapsedMilliseconds": 2070,
+      "safeCode": "DATABASE_INITIALIZING",
+      "httpStatus": 503,
+      "retryAfterSeconds": 30,
+      "partialSchemaWritten": false,
+      "succeededAfterLockRelease": true
+    },
+    "readySchemaDuringImportLocks": {
+      "actualAdvisoryAndTableLocksHeld": true,
+      "elapsedMilliseconds": 7,
+      "initializedWithoutRepeatingDdl": true
+    },
+    "missingCoreIdentityIndex": {
+      "applicationVersionAloneAccepted": false,
+      "indexRestoredInMigrationTransaction": true
+    },
+    "fullRegression": { "tests": 157, "suites": 20, "passed": 157, "failed": 0, "skipped": 0 },
+    "typescript": "passed",
+    "productionBuild": "passed"
+  },
+  "sourceWorkspaceWrites": 0,
+  "hostedDatabaseWrites": 0,
+  "providerCalls": 0,
+  "qualificationLimit": "These are local regression results. Deployment and actual hosted cutover remain separately recorded; no in-progress import was canceled or retried by this check."
+}
