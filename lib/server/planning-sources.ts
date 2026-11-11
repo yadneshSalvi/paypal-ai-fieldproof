@@ -86,7 +86,7 @@ export async function importSamplePlanningSources(session: Session, intentId: st
     { name: "eastside-review-scope", purpose: "signoff" as const, title: "Sample · Reviewer scope exercise.png" },
   ];
   for (const asset of assets) {
-    const svg = await readFile(resolve(`public/samples/${asset.name}.svg`)), bytes = await sharp(svg, { density: 128 }).png().toBuffer();
+    const svg = await readFile(resolve(`public/samples/outlined/${asset.name}.svg`)), bytes = await sharp(svg, { density: 128 }).png().toBuffer();
     const draft = await createUploadDocument(session, { intentId: derivedIntent(intentId, asset.name), filename: asset.title, purpose: asset.purpose,
       contentType: "image/png", size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex"), permissionConfirmed: true }, "sample_document");
     if (draft.document.state === "awaiting_upload") await storage.write(draft.pathname, bytes, "image/png");

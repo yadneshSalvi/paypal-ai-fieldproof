@@ -1,0 +1,73 @@
+{
+  "purpose": "Font-independent raster inputs. Original editable Sample SVGs are retained separately. Existing stored evidence is never rewritten.",
+  "generator": "@napi-rs/canvas 1.1.0 convertSVGTextToPath",
+  "fontLicense": "/asset-fonts/OFL.txt",
+  "fonts": [
+    {
+      "family": "sans",
+      "weight": 400,
+      "sha256": "828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901"
+    },
+    {
+      "family": "sans",
+      "weight": 700,
+      "sha256": "973b42f17d4dbb83000847469e7777abe95c303f547d7503c934227e697a0516"
+    },
+    {
+      "family": "mono",
+      "weight": 400,
+      "sha256": "328d50b6ece9ca25c46eea3e885ba497f6237f2fb84ef7b92f88e14a1a25e381"
+    }
+  ],
+  "assets": [
+    {
+      "source": "public/samples/eastside-sketch.svg",
+      "output": "public/samples/outlined/eastside-sketch.svg",
+      "sourceSha256": "46ba0363eef404c421bef1de493116ca89abc785cde1c7658b31d8ece04a6b44",
+      "sha256": "a3887c953a928ff1a9c98000454ae2eda37000b4e809d709614402f1e2c6d2c3",
+      "bytes": 384738
+    },
+    {
+      "source": "public/samples/eastside-quotes.svg",
+      "output": "public/samples/outlined/eastside-quotes.svg",
+      "sourceSha256": "7c7b5179de56319dbacc764db596f6aa82975f9e4761491f326c728c3a7b5af6",
+      "sha256": "d486e99213b350d609505384861507fcacb0a66a64fd7ecde7217c4311cdaf8e",
+      "bytes": 684924
+    },
+    {
+      "source": "public/samples/eastside-alignment.svg",
+      "output": "public/samples/outlined/eastside-alignment.svg",
+      "sourceSha256": "bfd25db38e01b42c04e566fef9d95667bbb9f2a725ca37b3f04a33ddf65366bb",
+      "sha256": "80e439007ee3d67471e145ecb8a72bcd17bc48db29e4e694a858a28f380c78c9",
+      "bytes": 173143
+    },
+    {
+      "source": "public/samples/eastside-review-scope.svg",
+      "output": "public/samples/outlined/eastside-review-scope.svg",
+      "sourceSha256": "4fe73b79c08412013b35ccae52bd56ac3477d6b8eab41f9b62e844aedc11ffad",
+      "sha256": "9398331d0d009c3ca8fe12dedb5df186d94beb590d089827f99373451955fb90",
+      "bytes": 564764
+    },
+    {
+      "source": "public/samples/maria-receipt.svg",
+      "output": "public/samples/outlined/maria-receipt.svg",
+      "sourceSha256": "801b18982f567b208adb252cc8e345e911c00b669fdc8ea65a3585f5e5cd25b2",
+      "sha256": "b0cd3f110f39bbb4db6457fea589ac0acb8530871b90af5f8279cd20a7c60132",
+      "bytes": 376718
+    },
+    {
+      "source": "authored-sample-proof-stamp",
+      "output": "public/proof-stamps/sample.svg",
+      "sourceSha256": "83c87e15e64ac7a936298738d15587f96d4db000aa6b3d2a3297c36f2ef7b817",
+      "sha256": "7c1390f0806c979ccde5b98bfc8dca9f09298345fb835f945042655ee2e47afc",
+      "bytes": 24348
+    },
+    {
+      "source": "authored-redacted-proof-stamp",
+      "output": "public/proof-stamps/redacted.svg",
+      "sourceSha256": "5839e796b00f23d3fe73357ac6a598a1d5f42bd9084a1b65c838b66b16746e39",
+      "sha256": "e4e7f37026389db2ae865119a21d4b1a30da85d552458c28ff55a7ef97b5ca00",
+      "bytes": 28347
+    }
+  ]
+}

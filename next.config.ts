@@ -7,6 +7,9 @@ const config: NextConfig = {
   poweredByHeader: false,
   logging: { incomingRequests: { ignore: [/\/api\/auth\//, /\/sandbox/] }, browserToTerminal: false, serverFunctions: false },
   serverExternalPackages: ["@fracture/paypal-core", "paypal", "pg", "pdfjs-dist", "@napi-rs/canvas", "sharp"],
+  outputFileTracingIncludes: {
+    "/api/*": ["./public/samples/outlined/*.svg", "./public/proof-stamps/*.svg"],
+  },
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },

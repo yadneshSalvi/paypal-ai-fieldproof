@@ -170,7 +170,7 @@ export async function documentOriginal(session: Session, id: string, storage: Do
 }
 export async function importSampleReceipt(session: Session, intentId: string, variant: "original" | "rotated" | "cropped" = "original", storage: DocumentStorage = privateDocumentStorage): Promise<DocumentView> {
   await assertUploader(session, "receipt");
-  const original = await readFile(path.join(process.cwd(), "public/samples/maria-receipt.svg"));
+  const original = await readFile(path.join(process.cwd(), "public/samples/outlined/maria-receipt.svg"));
   let image = sharp(original, { density: 192 });
   if (variant === "rotated") image = image.rotate(3, { background: "#ebe7db" });
   if (variant === "cropped") image = image.extract({ left: 36, top: 36, width: 1528, height: 2008 });
