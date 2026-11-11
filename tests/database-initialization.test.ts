@@ -34,7 +34,8 @@ describe("bounded cold database initialization", () => {
       assert.equal((await target.query("SELECT to_regclass('fp_schema_versions')::text AS present")).rows[0].present, null);
     } finally { release(); await holder; }
     await initializeDatabaseAt(target);
-    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 11);
+    assert.equal((await target.query("SELECT max(version) AS version FROM fp_schema_versions")).rows[0].version, 12);
+    for (const table of ["fp_proof_heads", "fp_proof_derivatives", "fp_proof_snapshots"]) assert.ok((await target.query("SELECT to_regclass($1)::text AS present", [table])).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('paycore_provider_identity')::text AS present")).rows[0].present);
     assert.ok((await target.query("SELECT to_regclass('fp_plan_provider_observations')::text AS present")).rows[0].present);
     assert.equal((await target.query("SELECT count(*)::int AS count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fp_plan_runs' AND column_name='resume_until'")).rows[0].count, 1);

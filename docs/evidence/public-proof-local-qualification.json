@@ -1,0 +1,71 @@
+{
+  "recordedAt": "2026-11-11T08:35:30.033427+00:00",
+  "scope": "Local isolated public-proof implementation and native fictional workflow; hosted qualification pending",
+  "sourceFiles": {
+    "app/api/proof/[[...proofPath]]/route.ts": "359fd48bee1c838d0f67111eb8f9aed4382f7a5d9d29347e7f1a19e64c4bc89f",
+    "app/api/public-proof/[slug]/[[...asset]]/route.ts": "99ddd0a81da71eb39b8b4a890be3c3969fb6e341e3714b2fa4de44db23d10b7d",
+    "app/proof/[slug]/page.tsx": "f42fa669765cad00a76622e716830e5a048208d36339167afc4ea84a3899a0da",
+    "app/proof/proof.css": "ad44fc1f82589b0951258dc68f0448fc60a98ff2c2c523d791d909e5bbb7add9",
+    "app/proof-desk/page.tsx": "f7654ac8e5afb797531837f42c0599b1fbfedc3c06e0c3b4ec485e99f12085f6",
+    "components/proof/proof-desk.tsx": "48ddefaa86682ef7d2abea4dfa8e4d35d566812c479d4960704c13e78cc2f5bd",
+    "components/proof/proof-page.tsx": "9791a80b31f4aba93f47fd8df639b3766d19ca909e69e603ec71c47db1edd3d8",
+    "lib/proof/contracts.ts": "971dfa2031558305f96fb81ba030fd4ebef9354c04c2f396c5d70054cf44f324",
+    "lib/server/db.ts": "e4769926893bea509572de0dd44245205a689680ac5d4c666e47642919028a34",
+    "lib/server/proof-images.ts": "abdc21364c2964da4b5eeac62c254982be82a5630cb73b2b4aa8cbd81ea7000e",
+    "lib/server/proof-schema.ts": "64d1b17f7f9ea02aaaeac2edea9f242612ea9cc383f2eb0501f834827194b794",
+    "lib/server/proof.ts": "62f5d30e416e9b9e812487d094d879cf3f7944ad9eee6fd570585fffa22104b4",
+    "next.config.ts": "551dbd7bd7e289fa69391f7673fb392d1f779ce06a37b85dfcc2b8dfbae69144",
+    "scripts/planning-qa.ts": "9a910363e85c171f3f84cc32fc7ab2dfb37aecbaf90af7525b1468f5c54fa440",
+    "tests/database-initialization.test.ts": "797ff395fb1ea5255d264e1a24e6dd48f8bf5df3cb9290d3586782053068b6d3",
+    "tests/public-proof.test.ts": "dbab80a3d542e832a8e06a1a82db73712f7248a7fcb08d860b1467773f5058e0"
+  },
+  "checks": {
+    "focusedDomainTests": 15,
+    "focusedMigrationAndProofFinal": {
+      "passed": 18,
+      "failed": 0
+    },
+    "broaderRegression": {
+      "total": 282,
+      "passed": 281,
+      "failed": 1,
+      "failure": "Cold-initialization assertion still expected schema11; corrected to schema12 and all three original cold-initialization tests passed in the final18-test rerun."
+    },
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "native": "Fictional source mask controls, raster inspection, exact copy review, full page review, separate publication and explicit withdrawal passed. Unchecked approval and withdrawal controls were disabled.",
+    "mobile": {
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "imagesLoaded": true
+    },
+    "print": {
+      "fullRecordA4Pages": 2,
+      "fullRecordLetterPages": 2,
+      "hallwayPosterA4Pages": 1,
+      "hallwayPosterLetterPages": 1,
+      "renderedPagesInspected": true
+    },
+    "withdrawal": {
+      "anonymousCurrentSnapshot": 410,
+      "anonymousHistoricalSnapshot": 410,
+      "image": 410,
+      "qr": 410,
+      "cacheControl": "private, no-store, max-age=0",
+      "openBrowserRemovedContentWithoutReloadObservedByMs": 19120
+    }
+  },
+  "providerFinancialWrites": 0,
+  "modelCalls": 0,
+  "actualPhysicalSignoffs": 0,
+  "originalProjectTouched": false,
+  "limitations": [
+    "Automated tests and a fictional local native review do not establish independent human redaction or physical review.",
+    "Public access revocation cannot recall downloaded or printed copies.",
+    "Full organizational Board Packs and remaining product scope are separate units."
+  ],
+  "corrections": [
+    "QA APP_URL originally inherited port4102; launcher now explicitly binds port4502 and native QR/printed destination was rechecked.",
+    "A separate one-page hallway poster was added alongside the two-page full record."
+  ]
+}

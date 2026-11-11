@@ -41,7 +41,7 @@ if (args.includes("--resume") || args.includes("--test") || args.includes("--bui
 const target = new URL(runtime.databaseUrl);
 if (!["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) || target.port !== "5432" || !/^fp_planning_qa_[a-z0-9_]+$/.test(runtime.databaseName)
   || target.pathname !== `/${runtime.databaseName}` || target.username !== runtime.databaseName || runtime.authSecret.length < 32) throw new Error("The saved planning database failed its isolation check.");
-const environment: NodeJS.ProcessEnv = { ...process.env, DATABASE_URL: runtime.databaseUrl, AUTH_SECRET: runtime.authSecret, NODE_ENV: "development", FIELDPROOF_PLANNING_QA: "true", FIELDPROOF_STUDIO_QA: "false", NEXT_TELEMETRY_DISABLED: "1" };
+const environment: NodeJS.ProcessEnv = { ...process.env, DATABASE_URL: runtime.databaseUrl, AUTH_SECRET: runtime.authSecret, APP_URL: `http://localhost:${port}`, NODE_ENV: "development", FIELDPROOF_PLANNING_QA: "true", FIELDPROOF_STUDIO_QA: "false", NEXT_TELEMETRY_DISABLED: "1" };
 for (const key of Object.keys(environment)) if (/^(?:PAYPAL_|NEXT_PUBLIC_PAYPAL_)|^BLOB_READ_WRITE_TOKEN$/.test(key)) environment[key] = "";
 environment.PAYPAL_ENVIRONMENT = "sandbox"; environment.PAYPAL_PROJECT_ISOLATED = "false";
 environment.CRON_SECRET = randomBytes(48).toString("base64url");

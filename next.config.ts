@@ -13,7 +13,7 @@ const config: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
       { key: "X-Frame-Options", value: "DENY" },
-    ] }];
+    ] }, { source: "/proof/:slug", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }, { key: "Referrer-Policy", value: "no-referrer" }] }];
   },
 };
 export default config;

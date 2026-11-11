@@ -4,6 +4,7 @@ import { paymentOperationCodec } from "./private-values";
 import { RUNTIME_CONTROL_SCHEMA } from "./runtime-control";
 import { STUDIO_SCHEMA } from "./studio-schema";
 import { PLANNING_SCHEMA } from "./planning-schema";
+import { PROOF_SCHEMA } from "./proof-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -46,7 +47,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 11;
+const CURRENT_SCHEMA_VERSION = 12;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -56,6 +57,8 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const checkpoint = await tx.query<{ ready: boolean }>("SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('fp_plan_runs') AND attname='resume_until' AND NOT attisdropped) AS ready");
   const observations = await tx.query<{ ready: string | null }>("SELECT to_regclass('fp_plan_provider_observations')::text AS ready");
   if (!checkpoint.rows[0]?.ready || !observations.rows[0]?.ready) return false;
+  const proof = await tx.query<Record<string, string | null>>("SELECT to_regclass('fp_proof_heads')::text AS heads,to_regclass('fp_proof_derivatives')::text AS derivatives,to_regclass('fp_proof_snapshots')::text AS snapshots");
+  if (!proof.rows[0] || Object.values(proof.rows[0]).some(value => value === null)) return false;
   const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
@@ -419,6 +422,7 @@ CREATE TABLE IF NOT EXISTS fp_transfer_webhook_archive (
 );
 ${STUDIO_SCHEMA}
 ${PLANNING_SCHEMA}
+${PROOF_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -431,4 +435,5 @@ INSERT INTO fp_schema_versions(version) VALUES(8) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(9) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(10) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(11) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(12) ON CONFLICT DO NOTHING;
 `;
