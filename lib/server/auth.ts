@@ -82,7 +82,7 @@ export function assertSameOrigin(request: Request): void {
   const organization = organizationReviewEnabled();
   const boardPack = boardPackReviewEnabled();
   const onboarding = onboardingReviewEnabled();
-  const allowed = organization ? ["http://localhost:4592"] : boardPack ? ["http://localhost:4595"] : onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  const allowed = organization ? ["http://localhost:4611"] : boardPack ? ["http://localhost:4595"] : onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
   // Vercel supplies the exact immutable deployment hostname. This permits
   // pre-promotion qualification without trusting sibling or caller-supplied hosts.
   const deploymentHost = process.env.VERCEL_URL;
