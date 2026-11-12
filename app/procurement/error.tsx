@@ -1,0 +1,4 @@
+"use client";
+import Link from "next/link";
+import { ProcurementShell } from "@/components/procurement/shared";
+export default function ProcurementError({ retry }: { error: unknown; retry: () => void }) { return <ProcurementShell><section className="pr-entry-copy pr-error-page"><p className="pr-kicker">THE PROCUREMENT DESK</p><h1>The current record could not be checked.</h1><p>Your original requests, supplier revisions, operational history and independent financial/evidence records remain retained. Check this same current view before starting another decision.</p><div className="pr-actions"><button className="pr-button primary" onClick={retry}>Check this current view again</button><Link className="pr-button secondary" href="/community?return=/procurement">Open original saved profiles</Link></div></section></ProcurementShell>; }

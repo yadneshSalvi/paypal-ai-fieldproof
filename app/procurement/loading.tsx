@@ -1,0 +1,2 @@
+import { ProcurementShell } from "@/components/procurement/shared";
+export default function ProcurementLoading() { return <ProcurementShell><section className="pr-loading" aria-busy="true" aria-label="Loading current procurement scope"><p className="pr-kicker">THE PROCUREMENT DESK</p><h1>Checking the current record.</h1><p role="status">Loading the original project profile, package decisions and permitted source history…</p><div className="pr-loading-grid" aria-hidden="true"><i/><i/><i/></div></section></ProcurementShell>; }
