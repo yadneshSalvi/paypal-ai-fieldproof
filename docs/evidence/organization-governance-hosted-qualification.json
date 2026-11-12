@@ -1,0 +1,91 @@
+{
+  "feature": "Organization governance and scoped aggregate portfolios",
+  "status": "canonical_release_qualified_at_recorded_scope",
+  "qualificationDate": "2026-11-12",
+  "canonicalUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "productSource": "3d86cadf70fe5effae33afcf4057d3187677d15c",
+  "deploymentId": "dpl_4vcjUvuws9vGh2ayVJdBDKeQpGK4",
+  "localNativeSource": "098574259d58c3d0ad7fe86faae170cc6ddaae32",
+  "productEquivalence": "Every application, configuration, dependency and test byte matches the accepted local native correction. Only sanitized documentation differs.",
+  "sourceArchive": {
+    "trackedFiles": 521,
+    "sha256": "402a6a41db860d3d5b1d7839175827621d32c91d3162a0f9f9c6f8de2d254d02",
+    "everyGitBlobVerified": true,
+    "actualSecretValuesScanned": 58,
+    "secretFindings": 0
+  },
+  "productionMigration": {
+    "schemaBefore": 20,
+    "schemaAfter": 21,
+    "attempts": 1,
+    "completedAt": "2026-11-12T13:59:54Z",
+    "originalTables": 117,
+    "originalRowsPreserved": 8120,
+    "newEmptyTables": 20,
+    "newFunctions": 5,
+    "enabledGuards": 25,
+    "oldBackfills": 0,
+    "exactSqlSha256": "af21df1e006090850de189d560649209e8e0c589b12aa7775a00867c3f6686ab",
+    "heldBackupBytes": 1188930,
+    "verifiedBackupTocEntries": 693,
+    "heldBackupSha256": "0e77283b75b355ff78e3ed5ec0b8e64c8e5f48ac650c83747573e49bb58b636d",
+    "originalExecutionModeRestored": true,
+    "restoredHeld": false,
+    "restoredControlVersion": 11,
+    "restoredAt": "2026-11-12T14:06:52.557Z"
+  },
+  "protectedHostedReads": {
+    "requests": 32,
+    "assertions": 156,
+    "assets": 18,
+    "privateCapabilityVariants": 9,
+    "privateFindings": 0,
+    "originalProfiles": 3,
+    "originalRowsAndCatalogUnchanged": 8121,
+    "transport": "Official Vercel CLI authenticated GET, no redirects or retries. Deployment protection stayed enabled.",
+    "newAuthorityOrFinancialActions": 0,
+    "nonAuthorizingBrowserNonceWrites": 1,
+    "completedAt": "2026-11-12T14:05:32.969Z"
+  },
+  "stagedNative": {
+    "originalProfiles": 3,
+    "projectOrganizerAndSponsorDonorScopesRetained": true,
+    "organizationMembershipCreated": false,
+    "originalDeadlinesRetainedInUi": true,
+    "networkEvents": 208,
+    "networkTruncated": false,
+    "mutations": 0,
+    "consoleWarningsErrors": 0,
+    "firstAnonymousNavigationPrecededNetworkCapture": true,
+    "mobileWidths": [
+      360,
+      390
+    ],
+    "horizontalOverflow": false,
+    "dialogEscapeFocusRestored": true,
+    "cookieCleanup": "Exact two-cookie baseline for staged/canonical origins restored; temporary original-profile cookies removed.",
+    "viewportReset": true
+  },
+  "canonicalContinuity": {
+    "requests": 3,
+    "assertions": 23,
+    "privateFindings": 0,
+    "originalProfiles": 3,
+    "exactProjectRoleExpiryRetained": true,
+    "newNonceOrCookieWrites": 0,
+    "newAffiliationsOrCopiedRules": 0,
+    "databaseReads": 0,
+    "mutations": 0,
+    "originalEntryReused": true,
+    "evidenceSha256": "02a5f62ac2f9212a248aadacfd07fd295faed63c50a0ff6a2c7ad2c8f435a754"
+  },
+  "provenance": "Controlled original profiles and explicitly fictional Sample projects. Possession-based, self-declared access does not verify a person, legal entity, email, PayPal ownership or independent participant.",
+  "limits": [
+    "Hosted checks preserve original profile compatibility; the separately recorded local native workflow proves new organization entry, policy and portfolio actions. No new organization, invitation, report or actor was created for hosted qualification.",
+    "No provider, model, email, purchase, physical-work certification or automatic financial action occurred in this release qualification.",
+    "The original local invitation retry loop and truncated network evidence, prior cookie metadata discrepancy, and print-polish findings remain retained in the local qualification record.",
+    "True200% zoom, screen-reader and computed contrast review are not established by these bounded native observations.",
+    "Scheduled lifecycle drafts, personal inbox, independent public-name recognition and procurement remain separate implementation and release units.",
+    "Private original credentials, cookies, invitation fragments, raw snapshots and network evidence remain outside public source."
+  ]
+}
