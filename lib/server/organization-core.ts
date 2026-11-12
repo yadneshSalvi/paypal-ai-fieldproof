@@ -10,6 +10,7 @@ import { DomainError } from "../domain/money";
 import { database, initializeDatabase, query } from "./db";
 import { openPrivate, sealPrivate } from "./private-values";
 import { organizationReviewEnabled } from "./organization-review";
+import { lifecycleReviewEnabled } from "./lifecycle-review";
 
 export type OrgTx = SqlConnection;
 export interface OrganizationRequest {
@@ -53,10 +54,10 @@ export interface OrgCommandRow {
   membership_version: number | null; browser_hash: string | null;
   result: OrgCommandReceipt; encrypted_recovery: string | null; created_at: Date;
 }
-export const organizationCookieName = () => organizationReviewEnabled() ? "fieldproof_governance_stage13_org_session" : "fieldproof_organization_session";
+export const organizationCookieName = () => lifecycleReviewEnabled() ? "fieldproof_lifecycle_stage14_org_session" : organizationReviewEnabled() ? "fieldproof_governance_stage13_org_session" : "fieldproof_organization_session";
 export const organizationLibraryCookieName = () => `${organizationCookieName()}_library`;
 export const organizationBrowserCookieName = () => `${organizationCookieName()}_entry_browser`;
-export const organizationCookieSecure = () => process.env.NODE_ENV === "production" && !organizationReviewEnabled();
+export const organizationCookieSecure = () => process.env.NODE_ENV === "production" && !lifecycleReviewEnabled() && !organizationReviewEnabled();
 export const orgHash = (value: unknown) => sha256(canonicalJson(value));
 export const orgToken = () => randomBytes(48).toString("base64url");
 export const orgTokenHash = (value: string) => sha256(value);

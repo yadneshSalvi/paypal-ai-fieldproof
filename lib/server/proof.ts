@@ -304,6 +304,11 @@ export async function readPublicProof(slug: string, revision?: number): Promise<
 export async function readPublicProofWithin(slug: string, revision: number, tx: SqlConnection): Promise<PublicProof> {
   return (await publicRecord(slug, revision, tx)).record;
 }
+/** A live, independently consented recognition wall uses only the latest
+ * currently permitted public edition. It adds no name to immutable proofs. */
+export async function readCurrentPublicProofWithin(slug: string, tx: SqlConnection): Promise<PublicProof> {
+  return (await publicRecord(slug, undefined, tx)).record;
+}
 export async function publicProofImage(slug: string, id: string, revision?: number, storage: DocumentStorage = planningDocumentStorage()) {
   await initializeDatabase();
   return database().transaction(async tx => {

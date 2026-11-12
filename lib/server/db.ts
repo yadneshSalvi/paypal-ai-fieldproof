@@ -13,6 +13,7 @@ import { PURPOSE_SCHEMA } from "./purpose-schema";
 import { BOARD_PACK_SCHEMA } from "./board-pack-schema";
 import { SUPPORTER_ACCESS_SCHEMA } from "./supporter-access-schema";
 import { ORGANIZATION_SCHEMA, ORGANIZATION_TABLES } from "./organization-schema";
+import { LIFECYCLE_SCHEMA, LIFECYCLE_TABLES } from "./lifecycle-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -55,7 +56,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 21;
+const CURRENT_SCHEMA_VERSION = 22;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -122,6 +123,10 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
   if (!organizations.rows[0]?.ready) return false;
   const organizationGuards = await tx.query<{ ready: boolean }>("SELECT count(*)=25 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid=ANY(SELECT to_regclass(name) FROM unnest($1::text[]) name)", [[...ORGANIZATION_TABLES]]);
   if (!organizationGuards.rows[0]?.ready) return false;
+  const privateLifecycle=await tx.query<{ready:boolean}>("SELECT bool_and(to_regclass(name) IS NOT NULL) ready FROM unnest($1::text[]) name",[[...LIFECYCLE_TABLES]]);
+  if(!privateLifecycle.rows[0]?.ready)return false;
+  const privateLifecycleGuards=await tx.query<{ready:boolean}>("SELECT count(*)=19 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid=ANY(SELECT to_regclass(name) FROM unnest($1::text[]) name)",[[...LIFECYCLE_TABLES]]);
+  if(!privateLifecycleGuards.rows[0]?.ready)return false;
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
 
@@ -493,6 +498,7 @@ ${PURPOSE_SCHEMA}
 ${SUPPORTER_ACCESS_SCHEMA}
 ${BOARD_PACK_SCHEMA}
 ${ORGANIZATION_SCHEMA}
+${LIFECYCLE_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -514,4 +520,5 @@ INSERT INTO fp_schema_versions(version) VALUES(18) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(19) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(20) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(21) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(22) ON CONFLICT DO NOTHING;
 `;

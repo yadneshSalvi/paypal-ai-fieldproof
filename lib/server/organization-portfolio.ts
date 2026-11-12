@@ -42,7 +42,7 @@ async function getReport(tx: OrgTx, identity: OrgIdentity, id: string) {
   if (!row) throw unavailable();
   return { row, value: decode(row) };
 }
-async function liveWithin(tx: OrgTx, identity: OrgIdentity, filters: C.OrgPortfolioFilter) {
+export async function collectOrganizationPortfolioSource(tx: OrgTx, identity: OrgIdentity, filters: C.OrgPortfolioFilter) {
   const [{ at }] = await query<{ at: Date }>("SELECT transaction_timestamp() AS at", [], tx), asOf = at.toISOString();
   const links = await query<OrgLinkRow>("SELECT * FROM fp_org_project_links WHERE organization_id=$1 ORDER BY id", [identity.organization.id], tx);
   if (links.length > 200) throw new DomainError("ORG_RESOURCE_UNAVAILABLE", "This organization exceeds the reviewed two-hundred-project aggregate boundary.", 422);
@@ -65,7 +65,7 @@ async function liveWithin(tx: OrgTx, identity: OrgIdentity, filters: C.OrgPortfo
 }
 /** Fresh READ COMMITTED access checks are deliberately outside the coherent
  * capture. Waiting on authority must not preserve an earlier source permission. */
-async function checkDependencies(tx: OrgTx, identity: OrgIdentity, dependencies: OrganizationProjectAggregateDependencies[]) {
+export async function checkOrganizationPortfolioDependencies(tx: OrgTx, identity: OrgIdentity, dependencies: OrganizationProjectAggregateDependencies[]) {
   const reasons: string[] = [];
   for (const dependency of dependencies) {
     const scope = [dependency.tenantId, dependency.projectId];
@@ -111,7 +111,7 @@ async function checkDependencies(tx: OrgTx, identity: OrgIdentity, dependencies:
   return [...new Set(reasons)];
 }
 async function viewWithin(tx: OrgTx, identity: OrgIdentity, value: PortfolioEnvelope, currentBasisHash: string): Promise<C.OrgPortfolioView> {
-  const withdrawn = await checkDependencies(tx, identity, value.dependencies), changed = value.report.snapshot.basisHash !== currentBasisHash;
+  const withdrawn = await checkOrganizationPortfolioDependencies(tx, identity, value.dependencies), changed = value.report.snapshot.basisHash !== currentBasisHash;
   return C.orgPortfolioViewSchema.parse({ summary: summary(value.report), status: withdrawn.length ? "withdrawn" : changed ? "historical" : "current",
     checkedAt: (await orgNow(tx)).toISOString(), currentBasisHash, report: withdrawn.length ? null : value.report,
     reasons: withdrawn.length ? withdrawn : changed ? ["Project records or disclosure changed after this exact saved cutoff. Its original figures remain frozen."] : [], canPrint: !withdrawn.length, canExport: !withdrawn.length });
@@ -120,20 +120,20 @@ async function viewWithin(tx: OrgTx, identity: OrgIdentity, value: PortfolioEnve
 export async function readOrganizationPortfolio(request: OrganizationRequest, before?: string, rawFilters: C.OrgPortfolioFilter = emptyFilters) {
   const filters = normalizeOrganizationPortfolioFilters(rawFilters);
   const captured = await organizationTransaction(async tx => {
-    const identity = await requireOrganization(tx, request, request.organizationScope), live = await liveWithin(tx, identity, filters);
+    const identity = await requireOrganization(tx, request, request.organizationScope), live = await collectOrganizationPortfolioSource(tx, identity, filters);
     const owner = `${audience(identity)}:portfolio`, cursor = orgCursor(before, owner);
     const rows = await query<PortfolioRow>("SELECT * FROM fp_org_portfolios WHERE organization_id=$1 AND membership_id=$2 AND role=$3 AND membership_version=$4 AND scope_hash=$5 AND ($6::timestamptz IS NULL OR (as_of,id)<($6::timestamptz,$7::text)) ORDER BY as_of DESC,id DESC LIMIT $8", [identity.organization.id, identity.member.id, identity.member.role, identity.member.version, audience(identity), cursor?.at ?? null, cursor?.id ?? null, C.ORG_PAGE_SIZE + 1], tx);
     const page = orgPage(rows.map(row => ({ ...row, created_at: row.as_of })), owner), values = page.rows.map(decode);
     const selected = before ? null : values[0] ?? null;
     const selectedBasisHash = selected && orgHash(selected.report.snapshot.filters) !== orgHash(filters)
-      ? (await liveWithin(tx, identity, selected.report.snapshot.filters)).snapshot.basisHash : live.snapshot.basisHash;
+      ? (await collectOrganizationPortfolioSource(tx, identity, selected.report.snapshot.filters)).snapshot.basisHash : live.snapshot.basisHash;
     await assertOrganizationCurrent(tx, request, identity);
     return { scope: identity.scope, audience: audience(identity), ...live, values, nextCursor: page.nextCursor, selected, selectedBasisHash };
   }, true);
   return organizationTransaction(async tx => {
     const identity = await requireOrganization(tx, request, request.organizationScope);
     if (captured.scope !== identity.scope || captured.audience !== audience(identity)) throw unavailable();
-    if ((await checkDependencies(tx, identity, captured.dependencies)).length) throw new DomainError("ORG_PROJECT_SOURCE_CHANGED", "An approved project or counted source changed while this aggregate was prepared. Refresh its current scope.", 409);
+    if ((await checkOrganizationPortfolioDependencies(tx, identity, captured.dependencies)).length) throw new DomainError("ORG_PROJECT_SOURCE_CHANGED", "An approved project or counted source changed while this aggregate was prepared. Refresh its current scope.", 409);
     const selected = captured.selected ? await viewWithin(tx, identity, captured.selected, captured.selectedBasisHash) : null;
     const portfolio = C.orgPortfolioDeskSchema.parse({ scope: identity.scope, live: captured.snapshot, history: captured.values.map(value => summary(value.report)),
       nextCursor: captured.nextCursor, selected, canCapture: true });
@@ -145,7 +145,7 @@ export async function readOrganizationPortfolio(request: OrganizationRequest, be
 export async function readOrganizationPortfolioReport(request: OrganizationRequest, id: string) {
   const captured = await organizationTransaction(async tx => {
     const identity = await requireOrganization(tx, request, request.organizationScope), saved = await getReport(tx, identity, id);
-    const current = await liveWithin(tx, identity, saved.value.report.snapshot.filters);
+    const current = await collectOrganizationPortfolioSource(tx, identity, saved.value.report.snapshot.filters);
     return { ...saved, currentBasisHash: current.snapshot.basisHash, audience: audience(identity) };
   }, true);
   return organizationTransaction(async tx => {
@@ -163,7 +163,7 @@ export async function captureOrganizationPortfolio(request: OrganizationRequest,
     if (request.organizationScope !== input.expectedScope) throw new DomainError("ORG_CONTEXT_CHANGED", "Capture the original reviewed organization context.", 409);
     const actorKey = `session:${identity.session.id}`, saved = await findOrgCommand(tx, actorKey, input.intentId, "capture_portfolio", input);
     if (saved) return C.orgCommandReceiptSchema.parse(saved.result);
-    const current = await liveWithin(tx, identity, normalizeOrganizationPortfolioFilters(input.filters));
+    const current = await collectOrganizationPortfolioSource(tx, identity, normalizeOrganizationPortfolioFilters(input.filters));
     if (current.snapshot.basisHash !== input.expectedBasisHash) throw new DomainError("ORG_PROJECT_SOURCE_CHANGED", "The reviewed portfolio basis changed. Review its current exact figures before capturing a new edition.", 409);
     await orgRateLimit(tx, `${identity.organization.id}:${identity.member.id}:portfolio:${new Date().toISOString().slice(0, 10)}`, 200);
     const id = randomUUID(), report = C.orgPortfolioReportSchema.parse({ schemaVersion: C.ORG_PORTFOLIO_VERSION, id, label: input.label, contentHash: "0".repeat(64),
