@@ -4,7 +4,7 @@ let tabIdentity: string | undefined;
 export function workspaceTabIdentity(){return tabIdentity??=crypto.randomUUID();}
 /** A stale-tab guard, never an authorization capability. Tokens stay HttpOnly. */
 export function bindWorkspaceContext(projectId: string | null) { if (typeof window!=="undefined"&&pageProjectId === undefined) pageProjectId = projectId; }
-export function adoptWorkspaceContext(projectId:string){pageProjectId=projectId;notifyWorkspaceChange();}
+export function adoptWorkspaceContext(projectId:string|null){pageProjectId=projectId;notifyWorkspaceChange();}
 function notifyWorkspaceChange(){const channel = new BroadcastChannel("fieldproof-workspace-changed");channel.postMessage({origin:workspaceTabIdentity()});channel.close();}
 export function workspaceFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "unit": "Native shared-project supporter onboarding",
+  "recordedAt": "2026-11-12T04:50:00Z",
+  "sourceBase": "ccf5103a23e7bedc717df5b948a9e43c7a10b3ce",
+  "productionBuildId": "cnB3bgXMHAOmcxEAT6HIx",
+  "schemaVersion": 19,
+  "authentication": {
+    "method": "possession-based one-use invitation, with a separate recipient return capability",
+    "role": "donor",
+    "purposes": ["donor", "sponsor"],
+    "scope": "one immutable tenant and project",
+    "identityProvenance": "self_declared",
+    "verifiedHumanOrEmailOrPayPalOwnership": false,
+    "fixedDeadlineStartsAtIssuance": true,
+    "maximumHours": 168,
+    "restorationCreatesNewSession": false,
+    "restorationExtendsExpiry": false
+  },
+  "verification": {
+    "fullRegression": { "tests": 504, "suites": 76, "passed": 504, "failed": 0, "skipped": 0, "durationMs": 146497.951333 },
+    "typeScript": "passed in the final production build",
+    "productionBuild": "passed",
+    "adversarialDatabaseCases": 15,
+    "pureEntryDraftCases": 8,
+    "templateNavigationAndPrivacyRenderCases": 3,
+    "productionHttpGroups": { "passed": 16, "failed": 0, "controlledSyntheticActors": true, "nativeBrowserAutomation": false },
+    "staticAssets": { "exactByteMatchesOverHttp": 130, "failed": 0 },
+    "privacyScan": { "files": 1168, "privateValues": 112, "buildTraces": 41, "privateValueFindings": 0, "privateFileTraceFindings": 0 },
+    "originalNativeFixture": { "projects": 2, "sessions": 3, "invitations": 10, "entryCases": 11, "originalTermsPreserved": true, "originalPaymentOperations": 0 }
+  },
+  "observedContracts": [
+    "Concurrent repeated issuance produces one original link and deadline.",
+    "Current inviter membership and session authority are checked around delayed database work.",
+    "Independent competing holders produce at most one recipient grant.",
+    "Exact browser, intent and payload retries return the original accepted session.",
+    "Fresh return capability possession restores the exact original session and fixed expiry.",
+    "An unrelated active or ended credential must be explicitly set aside before entry.",
+    "Revocation preserves original grant, commitments and financial history while ending access.",
+    "A sponsor has its own donor actor and can accept only its own unpaid grant or pledge choices.",
+    "No session token is returned as JSON; public HTML, events and snapshots exclude private invitation data.",
+    "Invitation pages and APIs are private and non-cacheable, with no-referrer headers.",
+    "All template organizers can navigate to invitations; non-organizer template views omit that action."
+  ],
+  "retainedFailures": [
+    "The first adversarial run found five stale-context or expiry-after-lock defects; the corrected expanded fifteen-case run passes without weakened assertions.",
+    "The first draft test harness compared JSON property insertion order; it was corrected to compare normalized saved representation while preserving contract-value assertions.",
+    "The first build reached successful compilation but rejected in-progress test callback return types; explicit never-returning test helpers resolved that TypeScript error.",
+    "The first HTTP harness expected GET 404 from POST-only disabled fixture routes; correct behavior is GET 405 and disabled POST 404.",
+    "Node fetch ignored a supplied Host header in a negative HTTP test; a raw HTTP request verified actual mismatched-host rejection. The earlier valid request and its records were retained."
+  ],
+  "qualificationLimits": {
+    "rootNativeBrowserReview": "pending; no keyboard, visual, device or screen-reader success is inferred from source, HTTP or render tests",
+    "independentHumanParticipants": 0,
+    "externalMessagesSent": 0,
+    "actualProviderOrModelCalls": 0,
+    "paymentOrPhysicalWorkEvidenceCreated": false,
+    "integrationPushOrDeployment": false,
+    "fullFieldproofReleaseComplete": false
+  }
+}

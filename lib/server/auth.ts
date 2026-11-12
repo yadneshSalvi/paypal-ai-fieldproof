@@ -6,8 +6,10 @@ import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
 import { communityQaEnabled, fundingQaEnabled, supporterQaEnabled, supporterQaProfile } from "./provider-access";
+import { onboardingReviewEnabled } from "./onboarding-review";
 
 export function sessionCookieName(): string {
+  if (onboardingReviewEnabled()) return "fieldproof_supporter_onboarding_session";
   if(supporterQaEnabled())return supporterQaProfile().cookie;
   if(fundingQaEnabled())return "fieldproof_funding_lifecycle_qa_session";
   if (process.env.NODE_ENV === "production") return "fieldproof_session";
@@ -26,7 +28,7 @@ export function sessionCookieName(): string {
   // intact while this explicitly isolated review process uses port 4202.
   return "fieldproof_studio_qa_session";
 }
-export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!fundingQaEnabled()&&!supporterQaEnabled();
+export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!onboardingReviewEnabled()&&!fundingQaEnabled()&&!supporterQaEnabled();
 export interface Session {
   id: string; tenantId: string; projectId: string; actorId: string;
   role: WorkspaceRole; expiresAt: string; mode: "sample" | "live_sandbox";
@@ -73,18 +75,21 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
 }
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
-  const allowed=["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  const onboarding = onboardingReviewEnabled();
+  const allowed = onboarding ? ["http://localhost:4563"] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
   // Vercel supplies the exact immutable deployment hostname. This permits
   // pre-promotion qualification without trusting sibling or caller-supplied hosts.
   const deploymentHost = process.env.VERCEL_URL;
-  if (process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
+  if (!onboarding && process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
     allowed.push(`https://${deploymentHost}`);
   // The isolated Studio review process never runs on the retired source writer's port.
-  if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
-  if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
-  if (communityQaEnabled()) allowed.push("http://localhost:4512");
-  if (fundingQaEnabled()) allowed.push("http://localhost:4535");
-  if (supporterQaEnabled()) allowed.push(supporterQaProfile().origin);
+  if (!onboarding) {
+    if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
+    if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
+    if (communityQaEnabled()) allowed.push("http://localhost:4512");
+    if (fundingQaEnabled()) allowed.push("http://localhost:4535");
+    if (supporterQaEnabled()) allowed.push(supporterQaProfile().origin);
+  }
   const host=request.headers.get("host");
   if (!origin || !allowed.includes(origin) || new URL(origin).host !== host) throw new DomainError("ORIGIN_DENIED", "Refresh this page before trying again.", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);
