@@ -1,0 +1,35 @@
+import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import { test } from "node:test";
+import type { SqlDatabase } from "@fracture/paypal-core";
+import { readCatalog, readIdentity, readRows, readSequences } from "../lib/operations/catalog";
+import { assertRegistry, SCHEMA21_TABLES, SCHEMA21_CATALOG_HASH } from "../lib/operations/current-registry";
+import { EXTENSION_FUNCTIONS, EXTENSION_FRAGMENTS, EXTENSION_TABLES } from "../lib/operations/extensions";
+import { digest, type Catalog } from "../lib/operations/contracts";
+const state=(globalThis as typeof globalThis & {fieldproofOperationsV2Test?:{source:SqlDatabase;target:SqlDatabase;schemas:{source:string;target:string}}}).fieldproofOperationsV2Test;
+assert(state,"Use only the reviewed owned two-schema transport-denying runner.");
+test("joined schema24 has two equal complete177-table catalogs and the qualified schema21 base",async()=>{
+ const observations=[];
+ for(const kind of ["source","target"] as const) observations.push(await state[kind].transaction(async tx=>{
+  await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY; SET LOCAL timezone='UTC'");
+  const catalog=await readCatalog(tx),tables=await readRows(tx,catalog),sequences=await readSequences(tx,catalog);
+  assertRegistry(catalog,tables.find(table=>table.name==="fp_schema_versions")!.rows.map(text=>JSON.parse(text)));
+  const identity=await readIdentity(tx,{endpoint:"owned-synthetic-catalog",schema:state.schemas[kind]},true);
+  assert.equal(catalog.postgresMajor,18);assert.equal(catalog.tables.length,177);assert.equal(catalog.functions.length,28);assert.equal(catalog.sequences.length,1);
+  assert.equal(catalog.extraRelations.length,0);assert.equal(catalog.extraTypes.length,0);
+  for(const table of catalog.tables) assert(table.triggers.every(trigger=>trigger.enabled==="O"),"All original FK and user guard modes remain enabled.");
+  const baseNames=new Set(SCHEMA21_TABLES.map(table=>table.name)),extensionNames=new Set(EXTENSION_TABLES.map(table=>table.name));
+  const newEdges=new Set(catalog.tables.filter(table=>extensionNames.has(table.name as never)).flatMap(table=>table.foreignKeys.map(edge=>edge.name)));
+  const projected:Catalog={...catalog,tables:catalog.tables.filter(table=>baseNames.has(table.name as never)).map(table=>({...table,triggers:table.triggers.filter(trigger=>!trigger.internal || !newEdges.has(String(trigger.constraint)))})),functions:catalog.functions.filter(fn=>!EXTENSION_FUNCTIONS.includes(String(fn.name) as never))};
+  assert.equal(digest(projected),SCHEMA21_CATALOG_HASH,"Only the explicit new families, functions and their incoming RI guards may extend the frozen base catalog.");
+  assert.deepEqual(catalog.functions.filter(fn=>EXTENSION_FUNCTIONS.includes(String(fn.name) as never)).map(fn=>fn.name).sort(),[...EXTENSION_FUNCTIONS].sort());
+  for(const fragment of EXTENSION_FRAGMENTS) assert.equal(catalog.tables.filter(table=>fragment.tables.includes(table.name as never)).length,fragment.tables.length);
+  return {catalog,tables,sequences,identity,projectedBaseHash:digest(projected)};
+ }));
+ assert.deepEqual(observations[0].catalog,observations[1].catalog);
+ const unit=path.resolve(process.cwd(),".local/operations-complete-v2-unit");
+ await writeFile(path.join(unit,"schema24-catalog.private.json"),JSON.stringify(observations[0].catalog,null,2)+"\n",{mode:0o600});
+ await writeFile(path.join(unit,"schema24-catalog-receipt.private.json"),JSON.stringify({schemaVersion:24,tables:177,functions:28,fragments:EXTENSION_FRAGMENTS,catalogHash:digest(observations[0].catalog),projectedBaseHash:observations[0].projectedBaseHash,namespaceIdentities:observations.map(row=>row.identity),initializedRows:observations.map(row=>row.tables.reduce((sum,table)=>sum+table.count,0)),sequences:observations[0].sequences,sourceCommit:"ddadae2c259ce874ab760b1f9f133cf653021e85",actualRestoreRun:false},null,2)+"\n",{mode:0o600});
+ console.log(JSON.stringify({schemaVersion:24,tables:177,functions:28,catalogHash:digest(observations[0].catalog),projectedBaseHash:observations[0].projectedBaseHash,actualRestoreRun:false}));
+});

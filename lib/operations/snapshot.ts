@@ -8,7 +8,7 @@ import { inspectPrivateLineage } from "./private-lineage";
 /** Locks precede the first MVCC query, so a waiter sees commits that completed
  * while it waited. Read plans never mutate rows, authority, counters or leases. */
 export async function beginSnapshot(tx: SqlConnection, endpoint: Pick<TransferEndpoint, "schema">, writable = false): Promise<void> {
-  requireOperation(tx.dialect === "postgres", "UNSUPPORTED_COVERAGE", "Workspace v2 is qualified only for PostgreSQL18 schema21.");
+  requireOperation(tx.dialect === "postgres", "UNSUPPORTED_COVERAGE", "Workspace v2 is qualified only for PostgreSQL18 schema24.");
   await tx.query(`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ${writable ? "" : ", READ ONLY"}; SET LOCAL timezone='UTC'; SET LOCAL lock_timeout='5000ms'; SET LOCAL statement_timeout='120000ms'`);
   try { await tx.query(`LOCK TABLE ${TABLE_NAMES.map(name => `${identifier(endpoint.schema)}.${identifier(name)}`).join(",")} IN ${writable ? "ACCESS EXCLUSIVE" : "SHARE"} MODE`); }
   catch { throw new OperationsError("UNSUPPORTED_COVERAGE", "The explicit current namespace could not be locked. Keep it held; missing, older, conflicting or busy catalogs are never initialized by transfer."); }
@@ -46,7 +46,7 @@ export function assertFreshDestination(snapshot: Snapshot): void {
   requireOperation(snapshot.execution.held && snapshot.execution.activeRequests === 0 && snapshot.execution.activeWorkers === 0 && control.length === 1 && control[0].version === 2 && String(control[0].reason).trim().length >= 8 && events.length === 1 && events[0].held === true && events[0].version === 2 && events[0].reason === control[0].reason, "DESTINATION_NOT_FRESH", "Initialize a separate fresh target, then apply its single explicit operator hold before planning.");
   requireOperation(snapshot.sequences.every(sequence => !sequence.isCalled && sequence.lastValue === String(snapshot.catalog.sequences.find(item => item.name === sequence.name)?.start)), "DESTINATION_NOT_FRESH", "The destination has already consumed an original sequence or cursor.");
 }
-const activationTables = ["paycore_operations", "paycore_attempts", "paycore_webhook_events", "paycore_webhook_deliveries", "fp_outbox", "fp_webhook_jobs", "fp_provider_operations", "fp_payables", "fp_ai_runs", "fp_plan_runs", "fp_community_runs", "fp_studio_agent_runs", "fp_documents", "fp_request_leases", "fp_request_buckets", "fp_runtime_control_events"];
+const activationTables = ["paycore_operations", "paycore_attempts", "paycore_webhook_events", "paycore_webhook_deliveries", "fp_outbox", "fp_webhook_jobs", "fp_provider_operations", "fp_payables", "fp_ai_runs", "fp_plan_runs", "fp_community_runs", "fp_studio_agent_runs", "fp_documents", "fp_request_leases", "fp_request_buckets", "fp_runtime_control_events", "fp_lifecycle_schedules", "fp_lifecycle_occurrences", "fp_lifecycle_attempts", "fp_lifecycle_observer_heads", "fp_procurement_invites", "fp_procurement_access", "fp_recognition_heads"];
 export function activationReview(snapshot: Snapshot): ActivationReview {
   return { execution: "held", activation: "separate-root-review-required", uncertainFinancialReplay: false, records: activationTables.map(name => {
     const table = snapshot.tables.find(item => item.name === name)!; const states: Record<string, number> = {};

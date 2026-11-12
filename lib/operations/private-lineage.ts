@@ -1,5 +1,7 @@
 import { canonicalJson, sha256 } from "@fracture/paypal-core";
-import { digest, hash, requireOperation, type ArtifactAbsence, type ArtifactReference, type Row, type TableRows } from "./contracts";
+import { digest, hash, OperationsError, requireOperation, type ArtifactAbsence, type ArtifactReference, type Row, type TableRows } from "./contracts";
+import { extensionPrivateContext, authenticateExtensionNested } from "./extension-private";
+import { assertExtensionPrivateLineage } from "./extension-lineage";
 import { CURRENT_TABLES } from "./current-registry";
 import { openOriginal } from "./crypto";
 import { findOriginal, keyHash, type OriginalRows } from "./lineage";
@@ -66,7 +68,7 @@ export function privateContext(table: string, column: string, row: Row, rows: Or
     case "fp_supporter_access": return scoped("supporter-access", row) + ({ encrypted_identity: ":identity", encrypted_acceptance: ":acceptance", encrypted_session_token: ":session", encrypted_recovery_token: ":recovery" }[column] ?? ":unsupported");
     case "fp_supporter_commands": return `supporter-command:${row.tenant_id}:${row.project_id}:${row.actor_id}:${row.intent_id}`;
     case "fp_supporter_access_audit": return scoped("supporter-audit", row);
-    default: throw new Error("Missing current private-source codec.");
+    default: { const context = extensionPrivateContext(table, column, row, rows); requireOperation(context !== null, "PRIVATE_LINEAGE", "An original private value has no qualified source codec."); return context; }
   }
 }
 function ciphers(value: unknown, result = new Set<string>()): Set<string> {
@@ -85,6 +87,7 @@ export function inspectPrivateLineage(rows: OriginalRows, tables: readonly Table
 } {
   const authenticated = new Set<string>(), fingerprints: string[] = [], needs = new Map<string, ArtifactNeed>(), decrypted = new Map<string, unknown>(), paymentOperations: Row[] = [];
   let fields = 0;
+  const nestedSources: unknown[] = [];
   const read = (cipher: unknown, context: string, recipient = false) => {
     const value = openOriginal(cipher, context, secret, recipient); authenticated.add(String(cipher)); fingerprints.push(digest([context, hash(String(cipher))])); fields++;
     return value;
@@ -105,6 +108,8 @@ export function inspectPrivateLineage(rows: OriginalRows, tables: readonly Table
       opened[column] = read(row[column], privateContext(contract.name, column, row, rows), contract.name === "fp_recipient_accounts");
       decrypted.set(`${keyHash(contract.name, row)}:${column}`, opened[column]);
     }
+    authenticateExtensionNested(contract.name, row, opened, read);
+    for (const [column, value] of Object.entries(opened)) decrypted.set(`${keyHash(contract.name,row)}:${column}`, value);
     if (contract.name === "fp_payment_commands") {
       const command = parseObject(row.command), scope = parseObject(command.scope), action = parseObject(command.action);
       requireOperation(command.operationId === row.operation_id && scope.tenantId === row.tenant_id && scope.projectId === row.project_id, "PRIVATE_LINEAGE", "An original stored command crosses its operation identity.");
@@ -129,9 +134,9 @@ export function inspectPrivateLineage(rows: OriginalRows, tables: readonly Table
         requireOperation(command.operationId === row.id && scope.tenantId === row.tenant_id && scope.projectId === row.project_id && command.payloadHash === row.payload_hash && command.businessKey === row.business_key && command.providerRequestId === row.provider_request_id && operation.status === row.status && operation.version === row.version && String(money.minor) === row.amount_minor, "PRIVATE_LINEAGE", "An original payment operation does not match its immutable SQL identity or state.");
         if (action.savedWallet && typeof parseObject(action.savedWallet).vaultId === "string" && String(parseObject(action.savedWallet).vaultId).startsWith("v1.")) read(parseObject(action.savedWallet).vaultId, scoped("payment-wallet", row));
         paymentOperations.push(operation);
-        for (const cipher of ciphers(operation)) requireOperation(authenticated.has(cipher), "PRIVATE_LINEAGE", "The payment document contains an unqualified nested private binding.");
+        nestedSources.push(operation);
       }
-      for (const cipher of ciphers(object)) requireOperation(authenticated.has(cipher), "PRIVATE_LINEAGE", "The payment history contains an unqualified nested private binding.");
+      nestedSources.push(object);
     }
     if (contract.name === "fp_documents") {
       const data = parseObject(opened.encrypted_data), pages = data.pages;
@@ -144,15 +149,17 @@ export function inspectPrivateLineage(rows: OriginalRows, tables: readonly Table
     }
     if (contract.name === "fp_photo_alignments") { const data = parseObject(opened.encrypted_data), image = parseObject(data.sharedImage); addArtifact(contract.name, row, "sharedImage", image.pathname, image.sha256, null, "image/png"); }
     if (contract.name === "fp_proof_derivatives") { const data = parseObject(opened.encrypted_data); addArtifact(contract.name, row, "redactedImage", data.pathname, row.content_hash, null, "image/png"); }
-    if (["fp_plan_versions", "fp_photo_alignments", "fp_reviewer_qualifications", "fp_work_signoffs", "fp_proof_snapshots", "fp_board_packs"].includes(contract.name)) {
+    if (["fp_plan_versions", "fp_photo_alignments", "fp_reviewer_qualifications", "fp_work_signoffs", "fp_proof_snapshots", "fp_board_packs", "fp_package_operation_events", "fp_procurement_quote_versions", "fp_lifecycle_snapshots"].includes(contract.name)) {
       for (const value of Object.values(opened)) validateCapturedSources(value, row, rows);
     }
     // Funding canonical contracts are content-addressed private source facts.
     if (contract.name.startsWith("fp_funding_") && typeof row.digest === "string" && opened.encrypted_data !== undefined)
       requireOperation(sha256(canonicalJson(opened.encrypted_data)) === row.digest, "PRIVATE_LINEAGE", "A funding source differs from its original immutable content hash.");
-    for (const cipher of ciphers(row)) requireOperation(authenticated.has(cipher), "PRIVATE_LINEAGE", "A private value has no reviewed identity-binding codec.");
-    for (const value of Object.values(opened)) for (const cipher of ciphers(value)) requireOperation(authenticated.has(cipher), "PRIVATE_LINEAGE", "A nested private value has no reviewed identity-binding codec.");
+    nestedSources.push(row, ...Object.values(opened));
   }
+  for (const source of nestedSources) for (const cipher of ciphers(source)) requireOperation(authenticated.has(cipher), "PRIVATE_LINEAGE", "An original or nested private value has no reviewed identity-binding codec.");
+  try { assertExtensionPrivateLineage(rows, decrypted); }
+  catch(error) { if(error instanceof OperationsError) throw error; requireOperation(false,"PRIVATE_LINEAGE","An authenticated extension source has an unsupported original contract or hash binding."); }
   // Include the exact table row digests, so a removed private row cannot pass by
   // preserving the remaining ciphertext alone.
   const list = [...needs.values()].sort((a,b) => a.key.localeCompare(b.key, "en"));

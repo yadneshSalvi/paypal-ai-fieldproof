@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import {
-  OPERATIONS_FORMAT, OPERATIONS_SOURCE_COMMIT, OperationsError, canonical, digest, equalHash, exactKeys, hash, identifier, requireOperation,
+  OPERATIONS_FORMAT, OPERATIONS_SOURCE_COMMIT, CURRENT_SCHEMA, OperationsError, canonical, digest, equalHash, exactKeys, hash, identifier, requireOperation,
   type BackupEvidence, type Row, type Snapshot, type TableRows, type TransferEndpoint, type TransferPlanV2, type TransferReceiptV2, type WorkspaceBundleV2,
 } from "../operations/contracts";
+import { withHistoricalRestoreGuards } from "../operations/restore-guards";
 import { assertCatalog, assertRegistry } from "../operations/current-registry";
 import { readCatalog, readRows, readSequences } from "../operations/catalog";
 import { encryptionKeyHash } from "../operations/crypto";
@@ -40,13 +41,13 @@ export async function exportWorkspaceV2(source: TransferEndpoint, backup: Backup
     const artifacts = await captureArtifacts(inspected.needs, source.artifactStore);
     const id = randomUUID();
     requireOperation(!rows.get("fp_workspace_imports")!.some(row => row.id === id), "IMPORT_CONFLICT", "The new private bundle identity conflicts with original history.");
-    return { format: OPERATIONS_FORMAT, id, codeCommit: OPERATIONS_SOURCE_COMMIT, schemaVersion: 21, scope: "whole-namespace", source: snapshot, configuration: configuration(source), backup,
+    return { format: OPERATIONS_FORMAT, id, codeCommit: OPERATIONS_SOURCE_COMMIT, schemaVersion: CURRENT_SCHEMA, scope: "whole-namespace", source: snapshot, configuration: configuration(source), backup,
       privateCoverage: { fields: inspected.fields, ciphertextHash: inspected.ciphertextHash, artifactBindingsHash: inspected.artifactBindingsHash }, ...artifacts, activation: activationReview(snapshot) };
   });
 }
 function validateBundle(bundle: WorkspaceBundleV2, secret: string): void {
   exactKeys(bundle, ["format", "id", "codeCommit", "schemaVersion", "scope", "source", "configuration", "backup", "privateCoverage", "artifacts", "absentArtifacts", "activation"]);
-  requireOperation(bundle.format === OPERATIONS_FORMAT && uuid(bundle.id) && bundle.codeCommit === OPERATIONS_SOURCE_COMMIT && bundle.schemaVersion === 21 && bundle.scope === "whole-namespace", "UNSUPPORTED_COVERAGE", "The bundle is not the current qualified whole-namespace schema21 format.");
+  requireOperation(bundle.format === OPERATIONS_FORMAT && uuid(bundle.id) && bundle.codeCommit === OPERATIONS_SOURCE_COMMIT && bundle.schemaVersion === CURRENT_SCHEMA && bundle.scope === "whole-namespace", "UNSUPPORTED_COVERAGE", "The bundle is not the current qualified whole-namespace schema24 format.");
   const snapshot = bundle.source;
   exactKeys(snapshot, ["identity", "catalog", "catalogHash", "capturedAt", "tables", "rowsHash", "sequences", "sequenceHash", "execution"]);
   exactKeys(snapshot.identity, ["database", "schema", "role", "endpoint", "restrictionHash"]);
@@ -116,33 +117,27 @@ async function priorReceipt(tx: SqlConnection, bundle: WorkspaceBundleV2, plan: 
   requireOperation(row.bundle_hash === digest(bundle) && row.manifest.format === "fieldproof-workspace-import-audit/v2" && receipt?.planHash === digest(plan) && receipt.bundleHash === digest(bundle) && receipt.destinationIdentityHash === plan.destinationIdentityHash && canonical(row.manifest) === canonical(auditManifest(bundle, plan, receipt)), "IMPORT_CONFLICT", "This import identity already belongs to a different original payload or reviewed plan.");
   return receipt;
 }
-async function insertOriginals(tx: SqlConnection, bundle: WorkspaceBundleV2): Promise<void> {
+async function insertOriginals(tx: SqlConnection, bundle: WorkspaceBundleV2, fresh: Snapshot): Promise<void> {
   const rows = originalRows(bundle.source.tables, bundle.source.catalog), sourceText = new Map<string, string>();
   for (const table of bundle.source.tables) for (const text of table.rows) sourceText.set(keyHash(table.name, JSON.parse(text)), text);
   const batches = insertionOrder(bundle.source.catalog, rows).filter(batch => batch.table !== "fp_runtime_control").map(batch => ({ table: batch.table, rows: batch.rows.map(row => sourceText.get(keyHash(batch.table, row))!) }));
   await tx.query("SELECT set_config('fieldproof.operations_restore_v2',$1,true)", [JSON.stringify(batches)]);
-  // A single database round trip inserts all ordered tables. Only the exact
-  // issuance trigger is suspended, only in this locked verified-empty target.
-  // Its O mode is pinned by the catalog and restored before any comparison.
-  await tx.query(`/* RESTORE ORIGINAL ROWS V2 */ DO $restore$
+  // The separately pinned target-only issuance exceptions do not suspend FK,
+  // immutable retention, transition or deferred final-head/history guards.
+  await withHistoricalRestoreGuards(tx, fresh, async () => tx.query(`/* RESTORE ORIGINAL ROWS V2 */ DO $restore$
     DECLARE batch jsonb; original text; relation text;
     BEGIN
       SET CONSTRAINTS ALL DEFERRED;
       FOR batch IN SELECT value FROM jsonb_array_elements(current_setting('fieldproof.operations_restore_v2')::jsonb) LOOP
         relation := batch->>'table';
         IF relation='fp_schema_versions' THEN DELETE FROM fp_schema_versions; END IF;
-        IF relation='fp_org_sessions' THEN
-          IF EXISTS(SELECT 1 FROM fp_org_sessions) OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='fp_org_sessions'::regclass AND tgname='fp_org_session_retained' AND tgenabled='O' AND NOT tgisinternal) THEN RAISE EXCEPTION 'Original session restore target is not eligible'; END IF;
-          ALTER TABLE fp_org_sessions DISABLE TRIGGER fp_org_session_retained;
-        END IF;
         FOR original IN SELECT jsonb_array_elements_text(batch->'rows') LOOP
           IF relation='fp_org_sessions' AND NOT EXISTS(SELECT 1 FROM fp_org_memberships m WHERE m.organization_id=(original::jsonb->>'organization_id') AND m.id=(original::jsonb->>'membership_id') AND m.expires_at>=(original::jsonb->>'expires_at')::timestamptz) THEN RAISE EXCEPTION 'Original session membership lineage changed'; END IF;
           EXECUTE format('INSERT INTO %I SELECT * FROM jsonb_populate_record(NULL::%I,$1::jsonb)',relation,relation) USING original;
         END LOOP;
-        IF relation='fp_org_sessions' THEN ALTER TABLE fp_org_sessions ENABLE TRIGGER fp_org_session_retained; END IF;
       END LOOP;
       SET CONSTRAINTS ALL IMMEDIATE;
-    END $restore$`);
+    END $restore$`));
   for (const sequence of bundle.source.sequences) {
     const definition = bundle.source.catalog.sequences.find(item => item.name === sequence.name)!;
     requireOperation(BigInt(sequence.lastValue) >= BigInt(String(definition.min)) && BigInt(sequence.lastValue) <= BigInt(String(definition.max)), "PRIVATE_LINEAGE", "An original sequence exceeds its reviewed bounds.");
@@ -188,10 +183,10 @@ export async function applyWorkspaceTransferV2(source: TransferEndpoint, destina
         assertFreshDestination(current);
         requireOperation(digest(current.identity) === plan.destinationIdentityHash && current.catalogHash === plan.destination.catalogHash && current.rowsHash === plan.destination.rowsHash && current.sequenceHash === plan.destination.sequenceHash, "DESTINATION_CHANGED", "The fresh destination changed after the exact reviewed plan.");
         await stageArtifacts(bundle.artifacts, bundle.absentArtifacts, destination.artifactStore, bundle.id);
-        await insertOriginals(tx, bundle);
+        await insertOriginals(tx, bundle, current);
         const importedAt = (await tx.query<{ value: string }>(`SELECT to_char(clock_timestamp(),'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') value`)).rows[0].value;
         const controlVersion = Math.max(bundle.source.execution.version, current.execution.version) + 1;
-        const receipt: TransferReceiptV2 = { format: "fieldproof-workspace-receipt/v2", bundleId: bundle.id, planHash: digest(plan), bundleHash: digest(bundle), importedAt, originalRows: bundle.source.tables.filter(table => table.name !== "fp_runtime_control").reduce((sum, table) => sum + table.count, 0), originalTables: 136, originalsHash: originalsHash(bundle.source.tables), destinationIdentityHash: plan.destinationIdentityHash, controlVersion, activationHash: digest(bundle.activation) };
+        const receipt: TransferReceiptV2 = { format: "fieldproof-workspace-receipt/v2", bundleId: bundle.id, planHash: digest(plan), bundleHash: digest(bundle), importedAt, originalRows: bundle.source.tables.filter(table => table.name !== "fp_runtime_control").reduce((sum, table) => sum + table.count, 0), originalTables: 176, originalsHash: originalsHash(bundle.source.tables), destinationIdentityHash: plan.destinationIdentityHash, controlVersion, activationHash: digest(bundle.activation) };
         const anchor = originalRows(bundle.source.tables, bundle.source.catalog).get("fp_projects")![0];
         await tx.query(`UPDATE fp_runtime_control SET held=true,version=$1,reason=$2,updated_at=$3::timestamptz WHERE key='execution';`, [controlVersion, plan.operatorReason, importedAt]);
         await tx.query("INSERT INTO fp_runtime_control_events(id,held,version,reason,occurred_at) VALUES($1,true,$2,$3,$4::timestamptz)", [`v2-import-hold:${bundle.id}`, controlVersion, plan.operatorReason, importedAt]);
@@ -209,13 +204,13 @@ export async function applyWorkspaceTransferV2(source: TransferEndpoint, destina
     throw new OperationsError("IMPORT_FAILED", "The reviewed restore did not complete. Keep both namespaces held and retry only its exact original bundle and plan after inspecting the private failure evidence.");
   }
 }
-export async function verifyWorkspaceTransferV2(destination: TransferEndpoint, bundle: WorkspaceBundleV2, plan: TransferPlanV2, receipt: TransferReceiptV2): Promise<{ verified: true; rows: number; originalFamilies: 136; unchangedTables: 134; execution: "held" }> {
+export async function verifyWorkspaceTransferV2(destination: TransferEndpoint, bundle: WorkspaceBundleV2, plan: TransferPlanV2, receipt: TransferReceiptV2): Promise<{ verified: true; rows: number; originalFamilies: 176; unchangedTables: 174; execution: "held" }> {
   validateBundle(bundle, destination.authSecret); const configurationHash = assertConfiguration(bundle, null, destination); validatePlan(bundle, plan, receipt.planHash, configurationHash);
   requireOperation(receipt.bundleId === bundle.id && receipt.bundleHash === digest(bundle) && receipt.destinationIdentityHash === plan.destinationIdentityHash && receipt.originalsHash === originalsHash(bundle.source.tables), "VERIFY_FAILED", "The original restore receipt does not match this bundle and destination.");
   return destination.database.transaction(async tx => {
     await beginSnapshot(tx, destination); const restored = await snapshotIn(tx, destination, true);
     requireOperation(digest(restored.identity) === plan.destinationIdentityHash, "VERIFY_FAILED", "The restore receipt belongs to a different destination.");
     compareRestored(restored.tables, restored.sequences, bundle, plan, receipt); await verifyArtifacts(bundle.artifacts, bundle.absentArtifacts, destination.artifactStore);
-    return { verified: true, rows: receipt.originalRows, originalFamilies: 136, unchangedTables: 134, execution: "held" };
+    return { verified: true, rows: receipt.originalRows, originalFamilies: 176, unchangedTables: 174, execution: "held" };
   });
 }

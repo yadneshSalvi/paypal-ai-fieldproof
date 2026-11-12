@@ -1,9 +1,10 @@
+import { EXTENSION_TABLES } from "./extensions";
 import type { Catalog, Row } from "./contracts";
 import { canonical, digest, requireOperation, SCHEMA_VERSIONS } from "./contracts";
 
 export interface TableContract { readonly name: string; readonly keys: readonly string[]; readonly family: string; readonly source: string; readonly privateColumns: readonly string[]; }
-/** Explicit current schema21 coverage, reviewed at 0fdd33d5. No prefix wildcard admits future families. */
-export const CURRENT_TABLES = [
+/** Frozen schema21 base, qualified in dbafefab. No prefix wildcard admits future families. */
+export const SCHEMA21_TABLES = [
   {"name": "fp_ai_attempts", "keys": ["run_id", "attempt"], "family": "core", "source": "lib/server/db.ts", "privateColumns": ["encrypted_result"]},
   {"name": "fp_ai_runs", "keys": ["id"], "family": "core", "source": "lib/server/db.ts", "privateColumns": ["encrypted_input", "encrypted_output"]},
   {"name": "fp_allocation_revisions", "keys": ["id"], "family": "core", "source": "lib/server/db.ts", "privateColumns": []},
@@ -142,30 +143,30 @@ export const CURRENT_TABLES = [
   {"name": "paycore_webhook_deliveries", "keys": ["id"], "family": "payment-core", "source": "vendor/fracture-paypal-core-0.2.7.tgz", "privateColumns": ["document"]},
   {"name": "paycore_webhook_events", "keys": ["tenant_id", "project_id", "event_id"], "family": "payment-core", "source": "vendor/fracture-paypal-core-0.2.7.tgz", "privateColumns": ["document"]}
 ] as const satisfies readonly TableContract[];
+export const CURRENT_TABLES: readonly TableContract[] = [...SCHEMA21_TABLES, ...EXTENSION_TABLES].sort((a,b) => a.name.localeCompare(b.name, "en"));
 export const TABLE_NAMES: readonly string[] = CURRENT_TABLES.map(table => table.name);
 export const TABLE_BY_NAME = new Map<string, TableContract>(CURRENT_TABLES.map(table => [table.name, table]));
 /** Observed in two independently initialized private PostgreSQL18 namespaces. */
 export const SCHEMA21_CATALOG_HASH = "54acfbd8fd9887c1fb3517912748cce1929de947b02b9248c99a07a079ada175";
+/** Observed in two reviewed independently initialized schema24 namespaces.
+ * The schema21 baseline receipt remains separately frozen and reproducible. */
+export const SCHEMA24_CATALOG_HASH = "aa7168ab4953d862c9ddc790e6db5616c2bec0281089b603ea1a1502bca2b0da";
 export function assertCatalog(catalog: Catalog): void {
-  requireOperation(digest(catalog) === SCHEMA21_CATALOG_HASH, "CATALOG_CHANGED", "The catalog differs from the qualified schema21 contract, including its keys, private columns, guards or PostgreSQL major version.");
+  requireOperation(digest(catalog) === SCHEMA24_CATALOG_HASH, "CATALOG_CHANGED", "The catalog differs from the qualified schema24 contract, including its keys, private columns, guards or PostgreSQL major version.");
 }
 
-/** Pending fragments are typed requirements, never an implicit compatibility switch. */
+/** Later fragments remain typed requirements, never an implicit compatibility switch. */
 export interface CoverageExtension {
-  family: "lifecycle22" | "procurement23" | "recognition24"; schemaVersion: 22 | 23 | 24;
+  family: string; schemaVersion: number;
   tables: readonly TableContract[]; catalog: Catalog; dependencies: readonly { table: string; columns: readonly string[]; target: string; targetColumns: readonly string[] }[];
   privateSources: readonly { table: string; column: string; codecVersion: string; binding: string }[];
   artifacts: readonly { table: string; codecVersion: string }[];
   qualification: { sourceCommit: string; testReceiptHash: string; fullCatalogHash: string; restoreReceiptHash: string };
 }
-export const PENDING_EXTENSIONS = [
-  { family: "lifecycle22", schemaVersion: 22, status: "unintegrated-unqualified" },
-  { family: "procurement23", schemaVersion: 23, status: "unintegrated-unqualified" },
-  { family: "recognition24", schemaVersion: 24, status: "unintegrated-unqualified" },
-] as const;
+export const PENDING_EXTENSIONS: readonly { family: string; schemaVersion: number; status: string }[] = [];
 export function assertRegistry(catalog: Catalog, schemaRows: readonly Row[]): void {
-  requireOperation(catalog.tables.length === 137 && canonical(catalog.tables.map(table => table.name).sort()) === canonical([...TABLE_NAMES].sort()), "UNSUPPORTED_COVERAGE", "This namespace has missing, unknown or unqualified table families.");
-  requireOperation(canonical(schemaRows.map(row => Number(row.version)).sort((a,b) => a-b)) === canonical([...SCHEMA_VERSIONS]), "UNSUPPORTED_COVERAGE", "Only the reviewed current schema21 marker set is supported; no initialization is performed.");
+  requireOperation(catalog.tables.length === 177 && canonical(catalog.tables.map(table => table.name).sort()) === canonical([...TABLE_NAMES].sort()), "UNSUPPORTED_COVERAGE", "This namespace has missing, unknown or unqualified table families.");
+  requireOperation(canonical(schemaRows.map(row => Number(row.version)).sort((a,b) => a-b)) === canonical([...SCHEMA_VERSIONS]), "UNSUPPORTED_COVERAGE", "Only the reviewed current schema24 marker set is supported; no initialization is performed.");
   for (const table of catalog.tables) {
     const contract = TABLE_BY_NAME.get(table.name)!;
     requireOperation(canonical(table.keys) === canonical(contract.keys), "UNSUPPORTED_COVERAGE", "The source table keys do not match the reviewed lineage registry.");

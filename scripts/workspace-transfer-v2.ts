@@ -40,13 +40,13 @@ export async function runWorkspaceTransferV2(args: readonly string[], output: (v
     const bundle = openTransferFile<WorkspaceBundleV2>((await readPrivateFile(flags.bundle)).toString("utf8"), "bundle", source.authSecret);
     if (command === "plan") {
       const plan = await planWorkspaceTransferV2(source, destination, bundle, flags.reason); await saveSealedFile(flags.out, "plan", plan.id, plan, source.authSecret);
-      const result = { ok: true, command, reviewHash: digest(plan), bundleHash: plan.bundleHash, destinationIdentityHash: plan.destinationIdentityHash, tables: 137, originalRowFamilies: 136, unchangedTables: 134, execution: "held", activation: "separate-root-review-required" };
+      const result = { ok: true, command, reviewHash: digest(plan), bundleHash: plan.bundleHash, destinationIdentityHash: plan.destinationIdentityHash, tables: 177, originalRowFamilies: 176, unchangedTables: 174, execution: "held", activation: "separate-root-review-required" };
       output(result); return result;
     }
     const plan = openTransferFile<TransferPlanV2>((await readPrivateFile(flags.plan)).toString("utf8"), "plan", source.authSecret);
     if (command === "apply") {
       const receipt = await applyWorkspaceTransferV2(source, destination, bundle, plan, flags["review-hash"]); await saveSealedFile(flags.out, "receipt", bundle.id, receipt, source.authSecret);
-      const result = { ok: true, command, receiptHash: digest(receipt), planHash: receipt.planHash, originalRows: receipt.originalRows, originalRowFamilies: 136, unchangedTables: 134, execution: "held", activation: "separate-root-review-required" };
+      const result = { ok: true, command, receiptHash: digest(receipt), planHash: receipt.planHash, originalRows: receipt.originalRows, originalRowFamilies: 176, unchangedTables: 174, execution: "held", activation: "separate-root-review-required" };
       output(result); return result;
     }
     const receipt = openTransferFile<TransferReceiptV2>((await readPrivateFile(flags.receipt)).toString("utf8"), "receipt", destination.authSecret), result = await verifyWorkspaceTransferV2(destination, bundle, plan, receipt);

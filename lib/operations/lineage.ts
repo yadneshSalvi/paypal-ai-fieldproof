@@ -1,5 +1,7 @@
 import { canonical, digest, exactKeys, requireOperation, type Catalog, type Row, type TableRows } from "./contracts";
-import { CURRENT_TABLES, TABLE_BY_NAME } from "./current-registry";
+import { assertExtensionLineage } from "./extension-lineage";
+import { EXTENSION_TABLES } from "./extensions";
+import { CURRENT_TABLES, SCHEMA21_TABLES, TABLE_BY_NAME } from "./current-registry";
 
 export type OriginalRows = Map<string, Row[]>;
 export function keyValues(table: string, row: Row): unknown[] { return TABLE_BY_NAME.get(table)!.keys.map(key => row[key]); }
@@ -64,6 +66,7 @@ export function assertOriginalLineage(rows: OriginalRows, catalog: Catalog): voi
     findOriginal(rows, "fp_workspace_library_entries", { library_id: row.library_id, session_id: session.id });
     if (row.from_session_id !== null) findOriginal(rows, "fp_sessions", { id: row.from_session_id });
   }
+  assertExtensionLineage(rows);
 }
 /** Original timestamp comparisons retain six digits, while wall clocks are used
  * only for current drain checks. No deadline is rounded or renewed. */
@@ -75,8 +78,14 @@ export function timestampMicros(value: string): bigint {
 export function insertionOrder(catalog: Catalog, rows: OriginalRows): { table: string; rows: Row[] }[] {
   const remaining = new Map(catalog.tables.map(table => [table.name, table]));
   const ordered: { table: string; rows: Row[] }[] = [], done = new Set<string>();
+  const extensions = new Set<string>(EXTENSION_TABLES.map(table=>table.name));
+  // The original scope guards encode actor/member joins that are not all SQL
+  // foreign keys. Restore the exact frozen base first, then the explicit40
+  // extension tables in their FK/self-reference order. No prefix admits later
+  // families and no original issuance guard is weakened to hide a missing edge.
+  const baseReady = () => SCHEMA21_TABLES.every(table=>done.has(table.name));
   while (remaining.size) {
-    const ready = [...remaining.values()].filter(table => table.foreignKeys.every(fk => fk.deferred || fk.target === table.name || done.has(fk.target)));
+    const ready = [...remaining.values()].filter(table => (!extensions.has(table.name) || baseReady()) && table.foreignKeys.every(fk => fk.deferred || fk.target === table.name || done.has(fk.target)));
     requireOperation(ready.length, "UNSUPPORTED_COVERAGE", "The current insertion graph contains an unsupported immediate dependency cycle.");
     for (const table of ready) {
       // Immediate self-references (history supersedes/parent pointers) must be

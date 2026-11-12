@@ -3,9 +3,9 @@ import type { SqlConnection, SqlDatabase } from "@fracture/paypal-core";
 
 /** This operator contract transfers a whole, held namespace. It grants no app authority. */
 export const OPERATIONS_FORMAT = "fieldproof-workspace-transfer/v2" as const;
-export const OPERATIONS_SOURCE_COMMIT = "0fdd33d5abe11fb921124b4fc085ee292619dd0f";
-export const CURRENT_SCHEMA = 21;
-export const SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21] as const;
+export const OPERATIONS_SOURCE_COMMIT = "ddadae2c259ce874ab760b1f9f133cf653021e85";
+export const CURRENT_SCHEMA = 24;
+export const SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24] as const;
 export type Row = Record<string, unknown>;
 export type FailureCode = "UNSUPPORTED_COVERAGE" | "CATALOG_CHANGED" | "INVALID_BUNDLE" | "SOURCE_CHANGED" | "SOURCE_NOT_DRAINED" | "BACKUP_REQUIRED" | "DESTINATION_NOT_FRESH" | "DESTINATION_CHANGED" | "DESTINATION_NOT_RESTRICTED" | "KEY_MISMATCH" | "PRIVATE_LINEAGE" | "ARTIFACT_MISSING" | "ARTIFACT_CONFLICT" | "REVIEW_REQUIRED" | "IMPORT_CONFLICT" | "IMPORT_FAILED" | "VERIFY_FAILED" | "INVALID_CONFIGURATION";
 export class OperationsError extends Error {
@@ -74,7 +74,7 @@ export interface ActivationReview {
   uncertainFinancialReplay: false; records: { table: string; count: number; rowsHash: string; states: Record<string, number> }[];
 }
 export interface WorkspaceBundleV2 {
-  format: typeof OPERATIONS_FORMAT; id: string; codeCommit: typeof OPERATIONS_SOURCE_COMMIT; schemaVersion: 21;
+  format: typeof OPERATIONS_FORMAT; id: string; codeCommit: typeof OPERATIONS_SOURCE_COMMIT; schemaVersion: 24;
   scope: "whole-namespace"; source: Snapshot; configuration: { encryptionKeyHash: string; merchantHash: string; artifactNamespace: string; artifactKind: ArtifactStore["kind"]; artifactBinding: string };
   backup: BackupEvidence; privateCoverage: { fields: number; ciphertextHash: string; artifactBindingsHash: string };
   artifacts: ArtifactRecord[]; absentArtifacts: ArtifactAbsence[]; activation: ActivationReview;
