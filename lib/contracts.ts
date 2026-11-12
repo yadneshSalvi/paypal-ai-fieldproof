@@ -126,6 +126,8 @@ export interface ProjectSnapshot {
   packages: PackageView[];
   obligations: DonorObligation[];
   receipts: SettlementReceipt[];
+  /** Detailed sources are scoped separately from whole-project package totals. */
+  financialScope?: "project" | "own" | "none";
   evidence: EvidenceItem[];
   events: ProjectEvent[];
   tourStep: number;

@@ -3,24 +3,36 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { assertSameOrigin, getSession, requireSession, sessionCookieName, writeSessionCookie } from "@/lib/server/auth";
 import { guardedApi } from "@/lib/server/maintenance";
-import { privateJson, requestJson, routeFailure } from "@/lib/server/http";
+import { PRIVATE_HEADERS, privateJson, requestJson, routeFailure } from "@/lib/server/http";
 import { DomainError } from "@/lib/domain/money";
 import { switchWorkspaceSchema } from "@/lib/community/contracts";
 import { createCommunityWorkspace, readWorkspaceLibrary, rememberWorkspaceCookie, switchCommunityWorkspace, workspaceLibraryCookieName } from "@/lib/server/community-workspaces";
 import { captureCommunitySnapshot, previewCommunityUpdate, readCommunityDesk, readSupporterStory, reviewCommunityTranslation, saveCommunityBackTranslation, saveCommunityDraft, saveCommunityTranslation } from "@/lib/server/community";
 import { communityContinuations, resumeCommunityRun, runCommunityModel, startCommunityRun } from "@/lib/server/community-model";
+import { assertSupporterContext, readContributionSource, readStoryImage } from "@/lib/server/supporter-story";
+import { supporterQaReadDelay } from "@/lib/server/supporter-qa";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=300;
 type Context={params:Promise<{communityPath?:string[]}>};
 async function library(){const jar=await cookies();return readWorkspaceLibrary(jar.get(workspaceLibraryCookieName())?.value??null,jar.get(sessionCookieName())?.value??null);}
-async function GETImplementation(_request:Request,context:Context){
+async function GETImplementation(request:Request,context:Context){
   try{
     const path=(await context.params).communityPath?.join("/")??"";
     if(path==="workspaces")return privateJson({library:await library()});
     const session=await requireSession();
-    if(path==="supporter")return privateJson({story:await readSupporterStory(session)});
+    if(path==="supporter"){
+      const expected=request.headers.get("X-Fieldproof-Story-Context");if(expected)await assertSupporterContext(session,expected);
+      return privateJson({story:await readSupporterStory(session)});
+    }
+    const parts=path.split("/");
+    if(parts[0]==="supporter"&&parts.length===3&&["sources","images"].includes(parts[1])){
+      const url=new URL(request.url),expected=z.object({contextHash:z.string().regex(/^[a-f0-9]{64}$/),sourceHash:z.string().regex(/^[a-f0-9]{64}$/)}).parse({contextHash:url.searchParams.get("context"),sourceHash:url.searchParams.get("source")});
+      const id=z.string().min(1).max(240).parse(parts[2]);
+      if(parts[1]==="sources")return privateJson(await readContributionSource(session,id,expected,()=>supporterQaReadDelay(session)));
+      return new Response(new Uint8Array(await readStoryImage(session,id,expected,undefined,()=>supporterQaReadDelay(session))),{headers:{...PRIVATE_HEADERS,"Content-Type":"image/png","Content-Disposition":'inline; filename="reviewed-source.png"',"Content-Security-Policy":"default-src 'none'; sandbox"}});
+    }
     if(!path){const desk=await readCommunityDesk(session);if(session.role==="organizer")for(const id of await communityContinuations(session))after(()=>runCommunityModel(id));return privateJson({desk});}
     throw new DomainError("NOT_FOUND","This community workspace view is unavailable.",404);
   }catch(error){return routeFailure(error);}

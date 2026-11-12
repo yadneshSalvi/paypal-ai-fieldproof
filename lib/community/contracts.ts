@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { WorkspaceRole } from "../contracts";
+import type { SupporterJourney } from "./supporter-contracts";
 import { TEMPLATE_IDS, type TemplateId } from "./templates";
 
 export const COMMUNITY_CONTRACT = "community-source-v1";
@@ -57,4 +58,5 @@ export interface CommunityDesk {
 }
 export interface SupporterStory {
   source: BriefSource; personal: BriefSource; translation: { status: "authored_unreviewed"; sourceHash: string }; drafts: { draft: BriefDraft; translation: TranslationView | null }[];
+  journey: SupporterJourney;
 }

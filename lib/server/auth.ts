@@ -5,9 +5,10 @@ import { DomainError } from "../domain/money";
 import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
-import { communityQaEnabled, fundingQaEnabled } from "./provider-access";
+import { communityQaEnabled, fundingQaEnabled, supporterQaEnabled } from "./provider-access";
 
 export function sessionCookieName(): string {
+  if(supporterQaEnabled())return "fieldproof_supporter_story_stage8_session";
   if(fundingQaEnabled())return "fieldproof_funding_lifecycle_qa_session";
   if (process.env.NODE_ENV === "production") return "fieldproof_session";
   if (communityQaEnabled()) return "fieldproof_community_qa_session";
@@ -25,7 +26,7 @@ export function sessionCookieName(): string {
   // intact while this explicitly isolated review process uses port 4202.
   return "fieldproof_studio_qa_session";
 }
-export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!fundingQaEnabled();
+export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!fundingQaEnabled()&&!supporterQaEnabled();
 export interface Session {
   id: string; tenantId: string; projectId: string; actorId: string;
   role: WorkspaceRole; expiresAt: string; mode: "sample" | "live_sandbox";
@@ -83,6 +84,7 @@ export function assertSameOrigin(request: Request): void {
   if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
   if (communityQaEnabled()) allowed.push("http://localhost:4512");
   if (fundingQaEnabled()) allowed.push("http://localhost:4535");
+  if (supporterQaEnabled()) allowed.push("http://localhost:4553");
   const host=request.headers.get("host");
   if (!origin || !allowed.includes(origin) || new URL(origin).host !== host) throw new DomainError("ORIGIN_DENIED", "Refresh this page before trying again.", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site") throw new DomainError("ORIGIN_DENIED", "This action must start in Fieldproof.",403);

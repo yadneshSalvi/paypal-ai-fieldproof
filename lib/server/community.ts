@@ -10,6 +10,7 @@ import { requireCurrentRole } from "./membership";
 import { lockPlanningAuthority, planningHash } from "./planning-store";
 import { openPrivate, sealPrivate } from "./private-values";
 import { communitySource, personalCommunitySource } from "./community-source";
+import { assertSupporterContext, readSupporterJourney } from "./supporter-story";
 
 export interface SnapshotRow { id:string;tenant_id:string;project_id:string;actor_id:string;role:Session["role"];membership_version:number;audience:BriefSource["audience"];content_hash:string;snapshot_hash:string;encrypted_source:string;captured_at:Date; }
 export interface DraftRow { id:string;tenant_id:string;project_id:string;actor_id:string;snapshot_id:string;source_hash:string;content_hash:string;audience:BriefSource["audience"];origin:BriefDraft["origin"];source_run_id:string|null;encrypted_content:string;created_at:Date; }
@@ -188,12 +189,14 @@ export async function communityRunViews(session:Session,tx:SqlConnection):Promis
   return rows.map(r=>({id:r.id,task:r.task,state:r.state,model:r.model,inputHash:r.input_hash,responseIdentityHash:r.response_identity_hash,outputHash:r.output_hash,resultId:r.result_id,createdAt:r.created_at.toISOString(),completedAt:r.completed_at?.toISOString()??null,code:r.code,dispatchCount:r.dispatch_count,pollCount:r.poll_count,durationMs:r.duration_ms,inputTokens:r.input_tokens,outputTokens:r.output_tokens}));
 }
 export async function readSupporterStory(session:Session):Promise<SupporterStory> {
-  return database().transaction(async tx=>{
+  const result = await database().transaction(async tx=>{
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");await requireCurrentRole(session,session.role,tx);
     const source=await communitySource(session,"supporter",tx),personal=await personalCommunitySource(session,tx);
     const previews=await query<{draft_id:string;translation_id:string|null;source_hash:string;draft_hash:string;translation_hash:string|null}>("SELECT DISTINCT ON(draft_id) draft_id,translation_id,source_hash,draft_hash,translation_hash FROM fp_community_update_previews WHERE tenant_id=$1 AND project_id=$2 ORDER BY draft_id,created_at DESC,id DESC LIMIT 20",[session.tenantId,session.projectId],tx);
     const drafts:SupporterStory["drafts"]=[];
     for(const preview of previews){if(preview.source_hash!==source.contentHash)continue;const draft=await draftView(session,await requireDraft(session,preview.draft_id,tx,true),tx,source,true);if(!draft.current||preview.draft_hash!==draft.contentHash)continue;let translation:TranslationView|null=null;if(preview.translation_id){const row=await requireTranslation(session,preview.translation_id,tx,true);translation=await translationView(session,row,draft,tx);if(!["reviewed","sample_review"].includes(translation.status)||preview.translation_hash!==translation.contentHash)translation=null;}drafts.push({draft,translation});}
-    return {source,personal,translation:{status:"authored_unreviewed",sourceHash:source.contentHash},drafts};
+    return {source,personal,translation:{status:"authored_unreviewed" as const,sourceHash:source.contentHash},drafts,journey:await readSupporterJourney(session,source,personal,tx)};
   });
+  await assertSupporterContext(session,result.journey.contextHash);
+  return result;
 }

@@ -1,0 +1,45 @@
+# A personal contribution, with its sources
+
+The existing supporter reader at `/updates` and the personal view at `/my-contribution` now share one contribution story, including template workspaces. It connects an original payment to its current purpose, its exact share of that purpose's saved budget, every later decision and the evidence currently permitted in that view.
+
+This is an accounting statement. It does not trace particular physical dollars to objects, certify a purchase or physical work, create a fluent human review, or establish a tax receipt. Sample and live sandbox records retain their distinct labels.
+
+## Reading the story
+
+The opening card shows the net amount still assigned to the selected purpose, its current state and a next step. The reader can select another original contribution or another purpose belonging to that same receipt. An explicit selection survives reload and takes priority; the default starts with a contribution that still has active support. Switching English/Spanish retains the selection and exact source binding.
+
+The drafting-paper share illustration has a textual equation. Integer cents and a reduced rational percentage remain available in the source drawer; only the displayed percentage rounds to one decimal place. A missing original purpose, conflicting same-version budget, or multiple unresolvable purpose versions leaves the percentage unavailable. A current package version never silently replaces an older agreed denominator. Historical source and review dates stay explicit; missing review information stays missing.
+
+The breakdown separates paid expenses, paid fees, reserved expenses, unresolved original-route returns, source-review holds and available support. It uses canonical current-purpose positions across Orders and invoice receipts. Paid history stays in its actual purpose when an unspent share moves. A completed return displays the zero balance without inviting a nonexistent full return. A refused, never-sent or uncertain return retains its actual state and reservation; it is not described as completed or necessarily underway.
+
+A connected timeline preserves the payment rail, economic receipt, obligation, immutable moves/renewals, withdrawn decisions, expense/fee evidence and return observations. The source drawer exposes permitted original references, original authority, fixed expiries, every saved donor decision, exact calculation sources and an exact downloadable JSON copy with its SHA-256. Reading, refreshing, reopening or changing language does not create a payment, return, review or translation.
+
+## Sources, sharing and language
+
+Reviewed image associations and existing privacy-reviewed proof derivatives use their existing permissions. Each card identifies its package version, source class, review scope, reviewer label and date when recorded. A source tied to an earlier plan stays tied to that plan. Stale or withdrawn copies retain a minimal status without redisplaying private bytes or retaining a now-unshareable digest. Never-shared evidence is absent from a donor's projection. No before/after relationship is invented.
+
+Original evidence and public derivatives are different records. The new read-only proof projection reuses existing derivative and current-review validation; it does not create or publish a derivative. Image reads validate exact bytes and repeat source/access checks after storage reads, including a source withdrawal or revoked membership during the read.
+
+The Spanish interface is an authored, unreviewed starter. Original record titles/details remain in English with that limitation stated. Existing saved translations retain their actual provenance and review status. The binding is translation → exact English draft → exact community source; a changed source withholds a stale preview. A Sample workflow review is never presented as an independent fluent human review.
+
+## Authority and interfaces
+
+`GET /api/community/supporter` returns the existing source-backed project facts and saved previews plus a `supporter-purpose-story-v1` journey. Each journey is bound to the current session, actor, role, project, membership version and original expiry. The existing `X-Fieldproof-Project` guard prevents an old tab from following a different workspace; an optional `X-Fieldproof-Story-Context` binds a repeat read to its original identity.
+
+`GET /api/community/supporter/sources/:receiptId?context=<digest>&source=<digest>` returns a permitted original receipt and its decision evidence. `GET /api/community/supporter/images/:evidenceId?context=<digest>&source=<digest>` returns a currently permitted, exact PNG. Both require the current role and both exact bindings, repeat final access/source checks, and return private no-store/no-referrer responses. Cross-donor sources are unavailable even with a valid project context.
+
+Donors receive only their own financial source records. Volunteers receive project context and no donor contributions. Organizers and Auditors receive authorized project contribution sources. Visitors see a workspace entry point or the explicitly fictional public walkthrough. This boundary also applies to the legacy `projectSnapshot` used by page hydration, JSON refresh, session/bootstrap and role changes. It filters by authoritative obligation ownership and serializes an explicit field contract, including nested blueprint geometry. Extensible storage JSON cannot smuggle private consent, destination or decision metadata into the page. Whole-project package totals remain identical across roles. Only the exact original fictional illustrations retain the legacy shared-evidence display path; an arbitrary Sample label is not a sharing grant.
+
+The client cancels stale source/image requests, discards late identity-bound responses, covers private content when a tab becomes hidden, refreshes current access when it regains focus, and reacts to workspace-change broadcasts. Dialogs have an accessible name, a deliberate initial focus, Tab/Shift-Tab wrapping, Escape, visible Close/Back controls, and return to the actual connected trigger. Responsive and reduced-motion styles are included; independent native acceptance remains a separate gate.
+
+## Verification and remaining gates
+
+The isolated source regression passed **455 tests across 68 suites**, with no failures or skips. Meaningful additions cover exact rational shares, original and conflicting denominators, both rails, current-purpose conservation, paid fee separation, mixed historical versions, withdrawn choices, full/uncertain/refused/never-sent returns, holds, role privacy, nested snapshot canaries, read-only state preservation, stale translations and source/membership changes during disclosure. Existing financial/provider tests use injected transports; actual network fetch is denied.
+
+Strict TypeScript and an independent production build passed. Production HTTP checks cover five roles on `/my-contribution`, `/updates`, `/board-pack` and `/api/snapshot`, a separate nested-canary fixture, disposable session/bootstrap and role responses with unchanged expiry, exact downloads and image hashes, copied-context denial, template pages, fixed-actor QA isolation, and byte-matched static assets. See the [source qualification record](evidence/supporter-story-source-qualification.json) for the frozen measurements and limitations.
+
+The final UI default-selection change followed the full regression and was checked by the subsequent production build/TypeScript and HTTP pass. Server/accounting behavior did not change after that regression.
+
+The isolated native-review chooser at `/supporter-qa` is unavailable in ordinary workspaces and on Vercel. It requires its exact separate local database role/name/port, localhost origin/port, disabled provider access, blank provider/model credentials and disabled actual purpose checkout. It selects only existing fixed-expiry Sample sessions and cannot renew access. An optional 15-second read delay applies only to the two explicitly configured, disposable native-race projects, immediately before final disclosure validation. Normal project reads do not wait.
+
+Native desktop/mobile/keyboard/reduced-motion and concurrent-tab acceptance, actual providers, main integration, migration and hosted deployment remain root-owned. This source unit does not close the complete product plan: original-provider qualification, supported invoice financial returns, controlled partial-spend lifecycle runs, authorized physical evidence and safety reviews, model/translation evaluation, research, accessibility/performance measurements, prescribed rehearsals, film/gallery and final release retain their separate evidence gates. Earlier milestones and retained failed attempts are not overwritten.

@@ -40,21 +40,21 @@ async function head(session: Session, packageId: string, tx: SqlConnection): Pro
 }
 function versionCheck(row: Head, version: number) { if (row.version !== version) throw new DomainError("PROOF_VERSION_CHANGED", "The publication desk changed. Refresh and review the latest version before continuing.", 409); }
 async function bump(row: Head, tx: SqlConnection) { await tx.query("UPDATE fp_proof_heads SET version=version+1,updated_at=now() WHERE project_id=$1 AND package_id=$2", [row.project_id, row.package_id]); }
-async function reviewerCurrent(row: { tenant_id: string; project_id: string; reviewed_by: string | null; reviewer_membership_version: number | null }, tx: SqlConnection) {
+async function reviewerCurrent(row: { tenant_id: string; project_id: string; reviewed_by: string | null; reviewer_membership_version: number | null }, tx: SqlConnection, lock = true) {
   if (!row.reviewed_by) return false;
-  const [member] = await query<{ version: number; state: string; roles: string[] }>("SELECT version,state,roles FROM fp_memberships WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 FOR SHARE", [row.tenant_id, row.project_id, row.reviewed_by], tx);
+  const [member] = await query<{ version: number; state: string; roles: string[] }>(`SELECT version,state,roles FROM fp_memberships WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3${lock ? " FOR SHARE" : ""}`, [row.tenant_id, row.project_id, row.reviewed_by], tx);
   return !!member && member.state === "active" && member.roles.includes("organizer") && member.version === row.reviewer_membership_version;
 }
-async function currentDerivative(row: Derivative, tx: SqlConnection, reviewed = true) {
-  if (row.state === "revoked" || (reviewed && (row.state !== "reviewed" || !await reviewerCurrent(row, tx)))) return false;
+async function currentDerivative(row: Derivative, tx: SqlConnection, reviewed = true, lock = true) {
+  if (row.state === "revoked" || (reviewed && (row.state !== "reviewed" || !await reviewerCurrent(row, tx, lock)))) return false;
   const data = imageData(row);
-  const [document] = await query<DocumentRow>("SELECT * FROM fp_documents WHERE id=$1 AND tenant_id=$2 AND project_id=$3 FOR SHARE", [row.document_id, row.tenant_id, row.project_id], tx);
+  const [document] = await query<DocumentRow>(`SELECT * FROM fp_documents WHERE id=$1 AND tenant_id=$2 AND project_id=$3${lock ? " FOR SHARE" : ""}`, [row.document_id, row.tenant_id, row.project_id], tx);
   if (!document || document.state !== "ready" || document.version !== data.documentVersion || document.sha256 !== data.documentHash) return false;
-  const control = await sourceControl(document, tx, false, true);
+  const control = await sourceControl(document, tx, false, lock);
   return control.permission === "allowed" && control.version === data.controlVersion && documentPrivate(document).pages.some(p => p.number === data.page && p.sha256 === data.sourcePageHash);
 }
-async function getDerivative(session: Pick<Session, "tenantId" | "projectId">, id: string, tx: SqlConnection) {
-  const [row] = await query<Derivative>("SELECT * FROM fp_proof_derivatives WHERE id=$1 AND tenant_id=$2 AND project_id=$3 FOR UPDATE", [id, ...scope(session)], tx);
+async function getDerivative(session: Pick<Session, "tenantId" | "projectId">, id: string, tx: SqlConnection, lock = true) {
+  const [row] = await query<Derivative>(`SELECT * FROM fp_proof_derivatives WHERE id=$1 AND tenant_id=$2 AND project_id=$3${lock ? " FOR UPDATE" : ""}`, [id, ...scope(session)], tx);
   if (!row) throw new DomainError("PROOF_IMAGE_NOT_FOUND", "This public copy is not part of your workspace.", 404);
   return row;
 }
@@ -245,20 +245,20 @@ async function readImage(row: Derivative, storage: DocumentStorage) {
   if (file.contentType !== "image/png" || safeHash(file.bytes) !== row.content_hash) throw new DomainError("PROOF_IMAGE_INTEGRITY", "This image cannot be verified.", 409);
   return file.bytes;
 }
-async function publicRecord(slug: string, revision: number | undefined, tx: SqlConnection): Promise<{ record: PublicProof; row?: Snapshot }> {
+async function publicRecord(slug: string, revision: number | undefined, tx: SqlConnection, lock = true): Promise<{ record: PublicProof; row?: Snapshot }> {
   const empty: PublicProof = { slug, state: "unavailable", currentRevision: null, snapshot: null, history: [] };
   if (!/^[a-zA-Z0-9_-]{24}$/.test(slug)) return { record: empty };
-  const [current] = await query<Head>("SELECT * FROM fp_proof_heads WHERE slug=$1 FOR SHARE", [slug], tx);
+  const [current] = await query<Head>(`SELECT * FROM fp_proof_heads WHERE slug=$1${lock ? " FOR SHARE" : ""}`, [slug], tx);
   if (!current || current.state === "private") return { record: empty };
   const withdrawn = { ...empty, state: "withdrawn" as const };
   if (current.state !== "published") return { record: withdrawn };
   const rows = await query<Snapshot>("SELECT * FROM fp_proof_snapshots WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 AND state IN ('published','superseded') ORDER BY revision DESC", [current.tenant_id, current.project_id, current.package_id], tx);
   const latest = rows.find(r => r.id === current.current_snapshot_id), row = revision === undefined ? latest : rows.find(r => r.revision === revision);
-  if (!latest || !row || planningHash(row.payload) !== row.content_hash || !await reviewerCurrent(row, tx)) return { record: withdrawn };
+  if (!latest || !row || planningHash(row.payload) !== row.content_hash || !await reviewerCurrent(row, tx, lock)) return { record: withdrawn };
   const bindings = openPrivate<Bindings>(row.encrypted_bindings, context("snapshot", row));
   for (const image of row.payload.evidence) {
-    const derivative = await getDerivative({ tenantId: row.tenant_id, projectId: row.project_id }, image.id, tx);
-    if (derivative.version !== image.reviewVersion || derivative.content_hash !== image.contentHash || !await currentDerivative(derivative, tx)) return { record: withdrawn };
+    const derivative = await getDerivative({ tenantId: row.tenant_id, projectId: row.project_id }, image.id, tx, lock);
+    if (derivative.version !== image.reviewVersion || derivative.content_hash !== image.contentHash || !await currentDerivative(derivative, tx, true, lock)) return { record: withdrawn };
   }
   const readScope: Session = { id: "public-proof-read", actorId: "public", tenantId: row.tenant_id, projectId: row.project_id, role: "auditor", mode: row.payload.mode, expiresAt: new Date().toISOString() };
   if (bindings.planHash && (await publishedPlan(readScope, tx))?.view.state !== "current") return { record: withdrawn };
@@ -268,6 +268,32 @@ async function publicRecord(slug: string, revision: number | undefined, tx: SqlC
     if (bindings.signoffIds.some(id => !currentSignoffs.some(s => s.id === id && s.current))) return { record: withdrawn };
   }
   return { row, record: { slug, state: "published", currentRevision: latest.revision, snapshot: view(row), history: rows.map(r => ({ revision: r.revision, cutoff: r.payload.cutoff, contentHash: r.content_hash })) } };
+}
+/** The personal story consumes the SAME published, privacy-reviewed projection.
+ * No private draft, original filename or unpublished derivative crosses here.
+ * Its caller supplies a repeatable-read snapshot; image delivery still uses
+ * the existing locking public read and checks current source permissions. */
+export async function supporterProofRecords(session: Session, tx: SqlConnection) {
+  await requireCurrentRole(session, session.role, tx);
+  const heads = await query<Head>("SELECT * FROM fp_proof_heads WHERE tenant_id=$1 AND project_id=$2 AND state<>'private' ORDER BY package_id", scope(session), tx);
+  const records: { packageId: string; proof: PublicProof; reviews: { id: string; reviewedAt: string | null; reviewerLabel: string | null }[] }[] = [];
+  for (const head of heads) {
+    let record:PublicProof;
+    try { record=(await publicRecord(head.slug, undefined, tx, false)).record; }
+    catch(error) {
+      // A former publication may retain a head after its source is gone. Show
+      // the unavailable edition, never a private substitute or cached image.
+      if(!(error instanceof DomainError)||!["PROOF_IMAGE_NOT_FOUND","PLAN_NOT_FOUND","PROOF_IMAGE_INTEGRITY","PLAN_INTEGRITY"].includes(error.code))throw error;
+      record={slug:head.slug,state:"withdrawn",currentRevision:null,snapshot:null,history:[]};
+    }
+    const reviews = [];
+    for (const image of record.snapshot?.payload.evidence ?? []) {
+      const [row] = await query<{ id: string; reviewed_at: Date | null; reviewed_by: string | null }>("SELECT id,reviewed_at,reviewed_by FROM fp_proof_derivatives WHERE id=$1 AND tenant_id=$2 AND project_id=$3", [image.id, ...scope(session)], tx);
+      reviews.push({ id: image.id, reviewedAt: row?.reviewed_at?.toISOString() ?? null, reviewerLabel: row?.reviewed_by ? "Project organizer · privacy review" : null });
+    }
+    records.push({ packageId: head.package_id, proof: record, reviews });
+  }
+  return records;
 }
 export async function readPublicProof(slug: string, revision?: number): Promise<PublicProof> {
   await initializeDatabase();

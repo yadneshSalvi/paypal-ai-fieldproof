@@ -21,7 +21,7 @@ export const dynamic="force-dynamic";
 export const maxDuration=60;
 type Context={params:Promise<{path:string[]}>};
 const roleSchema=z.enum(["donor","volunteer","organizer","auditor"]);
-function json(value:unknown,status=200){return NextResponse.json(value,{status,headers:{"Cache-Control":"no-store",...(status===503?{"Retry-After":"30"}:{})}});}
+function json(value:unknown,status=200){return NextResponse.json(value,{status,headers:{"Cache-Control":"private, no-store, max-age=0","Referrer-Policy":"no-referrer",...(status===503?{"Retry-After":"30"}:{})}});}
 function failure(error:unknown){
   if(error instanceof DomainError) return json({error:error.message,code:error.code},error.status);
   if(error instanceof PaymentError) return json({error:error.message,code:error.code},error.httpStatus);

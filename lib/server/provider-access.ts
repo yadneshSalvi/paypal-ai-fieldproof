@@ -2,8 +2,20 @@ import { DomainError } from "../domain/money";
 
 /** The community QA process cannot acquire a provider merely by loading a .env file. */
 export function assertProviderAccess(): void {
-  if (process.env.FIELDPROOF_PROVIDER_ACCESS === "disabled" || process.env.FIELDPROOF_COMMUNITY_QA === "true" || process.env.FIELDPROOF_FUNDING_QA === "true")
+  if (process.env.FIELDPROOF_PROVIDER_ACCESS === "disabled" || process.env.FIELDPROOF_COMMUNITY_QA === "true" || process.env.FIELDPROOF_FUNDING_QA === "true" || process.env.FIELDPROOF_SUPPORTER_QA === "true")
     throw new DomainError("PROVIDERS_DISABLED", "Provider access is disabled in this isolated workspace. Your sources and manual drafts remain available.", 503);
+}
+
+/** Separate from every earlier fixture: a local production-build read review. */
+export function supporterQaEnabled():boolean {
+  if(process.env.FIELDPROOF_SUPPORTER_QA!=="true")return false;
+  const url=new URL(process.env.DATABASE_URL??"postgresql://invalid/invalid");
+  if(process.env.VERCEL==="1"||!["127.0.0.1","localhost","[::1]"].includes(url.hostname)||url.port!=="55554"||url.pathname!=="/fp_story_stage8"||url.username!=="fp_story_stage8"||process.env.APP_URL!=="http://localhost:4553")
+    throw new DomainError("QA_STORAGE_ISOLATION","The supporter review requires its own local database and exact review origin.",503);
+  const credentials=["OPENAI_API_KEY","GEMINI_API_KEY","GOOGLE_API_KEY","BLOB_READ_WRITE_TOKEN",...Object.keys(process.env).filter(key=>/^(PAYPAL_|NEXT_PUBLIC_PAYPAL_)/.test(key)&&!["PAYPAL_ENVIRONMENT","PAYPAL_PROJECT_ISOLATED"].includes(key))];
+  if(process.env.FIELDPROOF_PROVIDER_ACCESS!=="disabled"||process.env.FIELDPROOF_PURPOSE_CHECKOUT_ENABLED==="true"||credentials.some(key=>Boolean(process.env[key])))
+    throw new DomainError("QA_PROVIDER_ISOLATION","The supporter review requires blank provider credentials and disabled external access.",503);
+  return true;
 }
 
 /** Production-build review is confined to a dedicated local database, exact

@@ -65,18 +65,21 @@ export async function createProject(tx: SqlConnection, tenantId: string, project
       await tx.query("INSERT INTO fp_economic_aliases(merchant_scope,alias,receipt_id) VALUES($1,$2,$3)",[tenantId,receipt.economicAliases[0],receipt.id]);
     }
   }
-  const evidence: EvidenceItem[] = [
-    { id:`${projectId}-receipt-maria`, title:"Maria's materials receipt", kind:"receipt", packageIds:["electronics","materials"], provenance:"sample", state:"pending_review", submittedBy:"Maria", amountMinor:8640, description:"Seven sample line items. Two packages. One uncertain description needs a person to check it.", reviewer:null, reviewedAt:null, assetPath:"/samples/maria-receipt.svg" },
-    { id:`${projectId}-quote`, title:"Six soldering stations", kind:"quote", packageIds:["electronics"], provenance:"sample", state:"pending_review", submittedBy:"Ms. Okafor", amountMinor:96000, description:"Fictional supplier quote for the sample plan. A quote is budget evidence, not a purchase.",reviewer:null,reviewedAt:null,assetPath:null },
-    { id:`${projectId}-safety`, title:"Ventilation signoff", kind:"signoff", packageIds:["safety","laser"], provenance:"sample", state:"pending_review", submittedBy:"Ms. Okafor", description:"A qualified reviewer must inspect the actual space. No physical signoff is claimed by this sample.",reviewer:null,reviewedAt:null,assetPath:null },
-  ];
-  for (const item of evidence) await tx.query("INSERT INTO fp_evidence(id,tenant_id,project_id,data) VALUES($1,$2,$3,$4::jsonb)",[item.id,tenantId,projectId,JSON.stringify(item)]);
+  for (const item of sampleEvidence(projectId)) await tx.query("INSERT INTO fp_evidence(id,tenant_id,project_id,data) VALUES($1,$2,$3,$4::jsonb)",[item.id,tenantId,projectId,JSON.stringify(item)]);
   const events = [
     {type:"plan.published",title:"An idea gets a plan",detail:"Six work packages, with clear budgets and evidence requirements."},
     {type:"pledges.threshold",title:"Eight pledges. One shared goal.",detail:"The sample Electronics Benches commitments total exactly $960."},
     {type:"collection.recovering",title:"$35 still needs attention",detail:"Seven sample payments total $925. The final obligation is awaiting recovery."},
   ];
   for (const item of events) await tx.query("INSERT INTO fp_events(id,tenant_id,project_id,type,data) VALUES($1,$2,$3,$4,$5::jsonb)",[randomUUID(),tenantId,projectId,item.type,JSON.stringify({...item,provenance:"sample"})]);
+}
+/** Public fictional illustrations, never a sharing grant for uploaded evidence. */
+export function sampleEvidence(projectId: string): EvidenceItem[] {
+  return [
+    { id:`${projectId}-receipt-maria`, title:"Maria's materials receipt", kind:"receipt", packageIds:["electronics","materials"], provenance:"sample", state:"pending_review", submittedBy:"Maria", amountMinor:8640, description:"Seven sample line items. Two packages. One uncertain description needs a person to check it.", reviewer:null, reviewedAt:null, assetPath:"/samples/maria-receipt.svg" },
+    { id:`${projectId}-quote`, title:"Six soldering stations", kind:"quote", packageIds:["electronics"], provenance:"sample", state:"pending_review", submittedBy:"Ms. Okafor", amountMinor:96000, description:"Fictional supplier quote for the sample plan. A quote is budget evidence, not a purchase.",reviewer:null,reviewedAt:null,assetPath:null },
+    { id:`${projectId}-safety`, title:"Ventilation signoff", kind:"signoff", packageIds:["safety","laser"], provenance:"sample", state:"pending_review", submittedBy:"Ms. Okafor", description:"A qualified reviewer must inspect the actual space. No physical signoff is claimed by this sample.",reviewer:null,reviewedAt:null,assetPath:null },
+  ];
 }
 export async function ensurePublicProject(): Promise<void> {
   await initializeDatabase();

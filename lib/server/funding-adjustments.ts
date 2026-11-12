@@ -45,7 +45,7 @@ export async function recordSampleFundingUse(tx:SqlConnection,scope:Scope,alloca
   const value={schemaVersion:VERSION,...scope,provenance:"sample",use:useIdentity(row),label:"Fictional Sample expense; no provider payment occurred"},digest=sha256(canonicalJson(value));
   await tx.query("INSERT INTO fp_sample_funding_use_evidence(allocation_id,tenant_id,project_id,document_digest,encrypted_data) VALUES($1,$2,$3,$4,$5)",[allocationId,scope.tenantId,scope.projectId,digest,sealPrivate(value,`sample-funding-use:${scope.tenantId}:${scope.projectId}:${allocationId}`)]);
 }
-async function allocationEvidence(session:Session,packageId:string,tx:SqlConnection):Promise<AllocationEvidence[]>{
+export async function allocationEvidence(session:Session,packageId:string,tx:SqlConnection):Promise<AllocationEvidence[]>{
   const rows=await query<UseRow>(`SELECT a.*,p.principal_paid_at,p.principal_returned_at,p.fee_state,p.actual_fee_minor,p.item_hash,p.provider_status,
     EXISTS(SELECT 1 FROM fp_allocation_revisions v WHERE v.allocation_id=a.id AND v.revision=a.revision AND v.receipt_id=a.receipt_id AND v.payable_id=a.payable_id AND v.package_id=a.package_id AND v.purpose=CASE WHEN a.kind='fee' THEN 'provider_fee' ELSE 'reviewed_expense' END AND v.amount_minor=a.amount_minor AND v.state=a.state) audit_matches
     FROM fp_receipt_allocations a LEFT JOIN fp_payables p ON p.id=a.payable_id AND p.tenant_id=a.tenant_id AND p.project_id=a.project_id
