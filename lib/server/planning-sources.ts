@@ -13,7 +13,7 @@ import { createUploadDocument, documentPreview, finalizeDocument, requireDocumen
 import { privateDocumentStorage, type DocumentStorage } from "./document-storage";
 import { lockPlanningAuthority, planningAction, sourceControl, sourcesView } from "./planning-store";
 import { appendEvent } from "./repository";
-import { communityQaEnabled, supporterQaEnabled } from "./provider-access";
+import { communityQaEnabled, supporterQaEnabled, supporterQaProfile } from "./provider-access";
 import { communityTemplate, type TemplateId } from "../community/templates";
 import { query } from "./db";
 
@@ -28,7 +28,7 @@ export function planningQaEnabled(): boolean {
 }
 function localPath(pathname: string): string {
   if (!planningQaEnabled() || !/^fieldproof\/[0-9a-f-]{36}\/[a-zA-Z0-9._/-]+$/.test(pathname) || pathname.includes("..")) throw new DomainError("DOCUMENT_PATH", "This private source location is unavailable.", 409);
-  return resolve(supporterQaEnabled() ? ".local/story-unit/documents" : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
+  return resolve(supporterQaEnabled() ? supporterQaProfile().documents : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
 }
 const localPlanningStorage: DocumentStorage = {
   async read(pathname, maxBytes = MAX_DOCUMENT_BYTES) {

@@ -18,6 +18,7 @@ export async function POST(request:Request){
     const session=await sessionForToken(actor.token);if(!session)throw new DomainError("SESSION_REQUIRED","This original fixture session expired or its access changed. The review never renews it.",401);
     if(session.mode!=="sample")throw new DomainError("QA_PROVENANCE","The review chooser permits only clearly labelled Sample actors.",403);
     await writeSessionCookie(actor.token,session.expiresAt);
+    if(request.headers.get("accept")?.includes("application/json"))return privateJson({next:"/updates"});
     return NextResponse.redirect(new URL("/updates",request.url),{status:303,headers:PRIVATE_HEADERS});
   }catch(error){return routeFailure(error);}
 }

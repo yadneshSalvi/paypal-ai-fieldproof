@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { ArrowLeft, ArrowUpRight, FolderOpen, LockKeyhole } from "lucide-react";
 import type { CommunityTemplate } from "@/lib/community/templates";
 import { workspaceFetch } from "@/lib/community/workspace-fetch";
@@ -23,7 +23,7 @@ export function TemplateDrawing({template,selected,onSelect,compact=false}:{temp
     return <g key={pkg.id} className="cm-map-zone" role={onSelect?"button":undefined} tabIndex={onSelect?0:undefined} aria-label={`${pkg.title}, proposed budget ${communityMoney(pkg.budgetMinor)}${active?", selected":""}`} aria-pressed={onSelect?active:undefined} onClick={()=>onSelect?.(pkg.id)} onKeyDown={event=>{if(onSelect&&(event.key==="Enter"||event.key===" ")){event.preventDefault();onSelect(pkg.id);}}}><rect x={px} y={py} width={pw} height={ph} rx="5" fill={active?"#f1cc7b":template.accent==="green"?"#dfe9d8":template.accent==="coral"?"#edddd2":"#dce5e8"} fillOpacity={active?1:.8} stroke={color} strokeWidth={active?3:1}/><text x={px+13} y={py+25} fontSize="16" fill={color} fontFamily="IBM Plex Mono,monospace">0{index+1}</text>{ph>105&&<g fill="none" stroke={color} strokeWidth="2" opacity=".65">{[0,1,2].map(i=>template.id==="community-garden"?<path key={i} d={`M${px+pw*.28+i*40} ${py+ph*.51+15}v-25m0 13q-17 -20 -17 -10q0 10 17 10m0 -8q17 -20 17 -10q0 12 -17 10`}/>:<g key={i}><rect x={px+pw*.21+i*45} y={py+ph*.43} width="32" height="24" rx="2"/><path d={`M${px+pw*.21+i*45+4} ${py+ph*.43+12}h24`}/></g>)}</g>}<text x={px+pw/2} y={py+ph-14} textAnchor="middle" fontSize={ph<85?14:18} fill={color} className="cm-map-label">{pkg.shortTitle}</text></g>;
   })}<text x="63" y="724" fill={color} fontSize="15">SAMPLE · NO MEASURED SCALE</text><text x="837" y="724" textAnchor="end" fill={color} fontSize="15">{template.id==="community-garden"?"Let’s grow something shared.":template.id==="mutual-aid"?"Care has a place here.":"Let’s make room."}</text></svg></div>;
 }
-export function CommunityEmpty({title,children}:{title:string;children:ReactNode}){return <div className="cm-empty"><span className="cm-empty-mark">✳</span><h2>{title}</h2><div>{children}</div></div>;}
+export function CommunityEmpty({title,children,headingRef}:{title:string;children:ReactNode;headingRef?:Ref<HTMLHeadingElement>}){return <div className="cm-empty"><span className="cm-empty-mark">✳</span><h2 ref={headingRef} tabIndex={headingRef?-1:undefined}>{title}</h2><div>{children}</div></div>;}
 export function RoleGate({role}:{role:string;target:string}){
   return <CommunityEmpty title="Choose the right view."><p>This desk needs the organizer or auditor view. Your current view is {role}.</p><Link href="/organizer" className="button secondary"><ArrowLeft size={15}/>Open the project’s role selector</Link></CommunityEmpty>;
 }
