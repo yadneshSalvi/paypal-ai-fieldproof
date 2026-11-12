@@ -5,7 +5,7 @@ import { DomainError } from "../domain/money";
 import { packagePositionTotals } from "../domain/funding-positions";
 import { assessPackageFunding } from "../domain/package-funding";
 import { database, query } from "./db";
-import { ensurePublicProject, PUBLIC_PROJECT, sampleEvidence, sampleReceipt } from "./seed";
+import { ensurePublicProject, presentedDeadline, PUBLIC_PROJECT, sampleEvidence, sampleReceipt } from "./seed";
 import type { Session } from "./auth";
 import { requireMakerspaceScenario } from "./community-workspaces";
 import { requireCurrentRole, currentViewRoles } from "./membership";
@@ -76,7 +76,7 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   // evidence is disclosed only through its separately permissioned source view.
   const illustrations=sampleEvidence(projectId).map(row=>canonicalJson(row));
   const visibleEvidence=financialScope==="project"?evidence:evidence.filter(row=>project.mode==="sample"&&illustrations.includes(canonicalJson(row)));
-  return {title:m.title,subtitle:m.subtitle,organizer:m.organizer,location:m.location,currency:m.currency,targetMinor:m.targetMinor,deadline:m.deadline,
+  return {title:m.title,subtitle:m.subtitle,organizer:m.organizer,location:m.location,currency:m.currency,targetMinor:m.targetMinor,deadline:presentedDeadline(m.deadline,project.mode),
     ...(m.templateId?{templateId:m.templateId,templateWorkspace:m.templateWorkspace}:{}),id:project.id,tenantId:project.tenant_id,slug:project.slug,mode:project.mode,version:project.version,projectionVersion:project.projection_version,packages,obligations,receipts,financialScope,
     evidence:visibleEvidence,events:eventRows.map(row=>({title:row.data.title,detail:row.data.detail,provenance:row.data.provenance,id:row.id,sequence:Number(row.sequence),type:row.type,occurredAt:row.occurred_at.toISOString()})),tourStep:project.tour_step,session:session?{role:session.role,allowedRoles:await currentViewRoles(session,tx),actorId:session.actorId,expiresAt:session.expiresAt}:null,capabilities:{checkoutConfigured:!!process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_PROJECT_ISOLATED === "true",savedWalletQualified:false,payoutQualified:false,invoiceQualified:false,studioConfigured:!!process.env.AG_STUDIO_LICENSE_KEY}};
   });

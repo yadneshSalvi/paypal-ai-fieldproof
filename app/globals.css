@@ -23,3 +23,17 @@
 @media print{@page{size:auto;margin:14mm}body{background:white;color:#142b42;font-size:10pt}.site-header,.context-bar,.workspace-nav,.site-footer,.board-heading,.tour-banner,.page-notice,.board-actions,.skip-link,dialog{display:none!important}.site-shell{max-width:none}.main-workspace{padding:0}.board-document{padding:0;box-shadow:none;border:0}.document-masthead h2{font-size:24pt}.organizer-metrics{grid-template-columns:repeat(4,1fr);break-inside:avoid}.board-document .metric{border-bottom:0;padding:15px 12px}.board-document .metric:nth-child(2){border-right:1px solid var(--border)}.document-masthead{break-inside:avoid}.table-scroll{overflow:visible}table{white-space:normal;font-size:9pt}thead{display:table-header-group}thead th{font-size:7pt}tbody th,tbody td{font-size:8pt;padding:9px}tr{break-inside:avoid}.board-document h3{break-after:avoid;font-size:15pt;margin-top:25px}.document-note{break-inside:avoid}.document-footer{font-size:6pt}a{text-decoration:none}.status-pill,.provenance,.organizer-metrics,.document-note,thead th{print-color-adjust:exact;-webkit-print-color-adjust:exact}.blueprint{background:white}.blueprint svg>rect{fill:none}}
 
 .funding-qa-banner{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 24px;padding:12px 20px;background:#244b3b;color:#fff9e8;font:11px/1.6 var(--mono);letter-spacing:.1px}.funding-qa-banner a{color:inherit;text-decoration:underline;text-underline-offset:4px;padding:4px 0;min-height:30px;display:inline-flex;align-items:center}.funding-qa-banner a:focus-visible{outline:3px solid #edbf64;outline-offset:4px}@media(max-width:600px){.funding-qa-banner{justify-content:flex-start;font-size:9px;padding:10px 16px;gap:3px 16px}}@media print{.funding-qa-banner{background:transparent;color:#183249;border-bottom:1px solid #183249}}
+
+/* Judge tour: the single sketch-to-blueprint stroke redraw (components/blueprint.tsx `reveal`). Appended; reduced motion collapses it to the final state. */
+.plan-sketch{opacity:0;pointer-events:none}.plan-sketch.shown,.plan-sketch.shown .plan-sketch,.blueprint-reveal-sketch .plan-sketch{opacity:1}
+.sketch-label{font-family:var(--heading);font-style:italic;font-size:16px;fill:#4f5d69;letter-spacing:-.3px}.sketch-note{font-family:var(--heading);font-style:italic;font-size:12px;fill:#8a7a55}
+.blueprint-reveal-sketch .plan-crisp{opacity:0;pointer-events:none}
+.blueprint-reveal-redraw .plan-sketch{animation:plan-sketch-out 1.4s ease-in both}
+.blueprint-reveal-redraw .plan-stroke{stroke-dasharray:1;stroke-dashoffset:1;animation:plan-stroke-in .65s cubic-bezier(.6,.05,.3,1) both}
+.blueprint-reveal-redraw .room-outline{animation-duration:1.1s}
+.blueprint-reveal-redraw .plan-fill{animation-name:plan-stroke-in,plan-fill-in}
+.blueprint-reveal-redraw .plan-detail{animation:plan-detail-in .45s ease-out .95s both}
+@keyframes plan-sketch-out{0%,35%{opacity:1}100%{opacity:0}}
+@keyframes plan-stroke-in{to{stroke-dashoffset:0}}
+@keyframes plan-fill-in{from{fill-opacity:0}}
+@keyframes plan-detail-in{from{opacity:0}to{opacity:1}}

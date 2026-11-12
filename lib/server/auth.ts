@@ -61,25 +61,35 @@ export async function requireSession(roles?: WorkspaceRole[]): Promise<Session> 
   if (roles && !roles.includes(session.role)) throw new DomainError("ROLE_DENIED", "This view cannot make that change.", 403);
   return session;
 }
-export async function startSession(mode: Session["mode"] = "sample"): Promise<Session> {
+/** `judge` mints the guided hero scenario: the visitor's own actor is the story's supporter. Judge visits use their own
+ * hourly allowance so ordinary workspace creation cannot crowd out the tour, and the reverse. */
+export interface SessionOptions { judge?: { version: number } }
+export const SESSION_HOURS = 12;
+/** Database half of a new workspace: no cookie is read or written, so it is usable outside a request. */
+export async function createSessionRecord(mode: Session["mode"] = "sample", options: SessionOptions = {}): Promise<{ session: Session; token: string }> {
   await initializeDatabase();
-  const { rememberWorkspaceCookie } = await import("./community-workspaces");
-  await rememberWorkspaceCookie();
   // This deployment-wide backstop bounds anonymous workspace creation even after cookie resets.
-  const bucket=`session:${new Date().toISOString().slice(0,13)}`;
+  const bucket=`${options.judge?"judge-session":"session"}:${new Date().toISOString().slice(0,13)}`;
   const claimed=await query("INSERT INTO fp_request_buckets(bucket_key,request_count) VALUES($1,1) ON CONFLICT(bucket_key) DO UPDATE SET request_count=fp_request_buckets.request_count+1 WHERE fp_request_buckets.request_count<200 RETURNING request_count",[bucket]);
   if(!claimed.length)throw new DomainError("WORKSPACE_LIMIT","New test workspaces are temporarily busy. Existing workspaces still work; please try again in the next hour.",429);
   const token = randomBytes(32).toString("base64url");
   const id = randomUUID(), tenantId = randomUUID(), projectId = randomUUID(), actorId = randomUUID();
-  const expiresAt = new Date(Date.now() + 12*60*60*1000).toISOString();
+  const expiresAt = new Date(Date.now() + SESSION_HOURS*60*60*1000).toISOString();
   await database().transaction(async tx => {
-    await createProject(tx,tenantId,projectId,`eastside-${id.slice(0,8)}`,mode);
+    await createProject(tx,tenantId,projectId,`eastside-${id.slice(0,8)}`,mode,options.judge&&mode==="sample"?{judge:options.judge,supporterActorId:actorId}:{});
     await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,'donor',$6)", [id,tokenHash(token),tenantId,projectId,actorId,expiresAt]);
     await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,$4::jsonb)", [tenantId,projectId,actorId,JSON.stringify(["donor","volunteer","organizer","auditor"])]);
   });
+  return {session:{id,tenantId,projectId,actorId,role:"donor",expiresAt,mode},token};
+}
+export async function startSession(mode: Session["mode"] = "sample", options: SessionOptions = {}): Promise<Session> {
+  await initializeDatabase();
+  const { rememberWorkspaceCookie } = await import("./community-workspaces");
+  await rememberWorkspaceCookie();
+  const {session,token}=await createSessionRecord(mode,options);
   await rememberWorkspaceCookie(token);
-  (await cookies()).set(sessionCookieName(),token,{httpOnly:true,sameSite:"lax",secure:sessionCookieSecure(),path:"/",maxAge:12*60*60});
-  return {id,tenantId,projectId,actorId,role:"donor",expiresAt,mode};
+  (await cookies()).set(sessionCookieName(),token,{httpOnly:true,sameSite:"lax",secure:sessionCookieSecure(),path:"/",maxAge:SESSION_HOURS*60*60});
+  return session;
 }
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
