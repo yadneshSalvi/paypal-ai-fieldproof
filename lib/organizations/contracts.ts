@@ -407,6 +407,7 @@ export const orgPortfolioFundingSchema = z.object({
 export type OrgPortfolioFunding = z.infer<typeof orgPortfolioFundingSchema>;
 export const orgPortfolioExpensesSchema = z.object({
   approvedExpenseMinor: minor, deliveredPrincipalMinor: minor,
+  returnedPrincipalMinor: minor, undeliveredPrincipalMinor: minor,
   paidPrincipalMinor: minor, knownPaidFeeMinor: minor, unobservedFeeCount: count,
   reservedPrincipalMinor: minor, reservedFeeMinor: minor, claimCount: count,
 }).strict();

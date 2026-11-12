@@ -49,6 +49,7 @@ describe("actual organization component rendering", () => {
     function amount(label: string) { const row = [...document.querySelectorAll("tr")].find(row => row.querySelector("th")?.textContent === label); assert.ok(row, label); return row.querySelector("td")?.textContent; }
     assert.equal(amount("Original provider gross"), "$5.00"); assert.equal(amount("Completed returns"), "$2.00"); assert.equal(amount("Current collected"), "$3.00");
     assert.equal(amount("Current unpaid commitments"), "$7.00"); assert.equal(amount("Accepted sponsor unpaid"), "$2.00");
+    assert.equal(amount("Recipient principal returned after delivery"), "$0.80"); assert.equal(amount("Undelivered principal released before payment"), "$0.60");
     assert.match(document.body.textContent ?? "", /Included in current unpaid commitments; do not add again/);
     assert.match(document.body.textContent ?? "", /1 \/ 14/); assert.match(document.body.textContent ?? "", /0 \/ 6/);
     assert.match(document.body.textContent ?? "", /0 current scoped physical signoffs · 1 reviewed illustrative images/);
