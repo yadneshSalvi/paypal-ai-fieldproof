@@ -1,0 +1,70 @@
+{
+  "qualifiedAt": "2026-11-12T17:48:57.353171+00:00",
+  "sourceCommit": "5aad51bc238213176931b78b6c07b7ce4b31932f",
+  "deploymentId": "dpl_8ZAKqNfLyUMyFdJP3NZFNoJdjin9",
+  "canonical": "https://paypal-ai-fieldproof.vercel.app",
+  "schemaVersion": 24,
+  "localQualifiedBuildId": "vPoLvrmeE0gAGVLrKq2-u",
+  "localBuildIdIsNotHostedBuildId": true,
+  "migration": {
+    "attempts": 1,
+    "originalTables": 137,
+    "originalRowsPreserved": 8878,
+    "newEmptyTables": 40,
+    "addedMarkers": [
+      22,
+      23,
+      24
+    ],
+    "originalCatalogAndSequenceStatePreserved": true
+  },
+  "heldBackup": {
+    "sha256": "7f66b49548e0c7b3984427712422354a673b252ce4123606fdd203d5787f7ac5",
+    "bytes": 1314277,
+    "tocEntries": 861,
+    "heldVersion": 12
+  },
+  "executionMode": {
+    "restored": true,
+    "held": false,
+    "version": 13,
+    "restoredAt": "2026-11-12T17:47:32.660Z"
+  },
+  "sourceUpload": {
+    "gitVerifiedFiles": 706,
+    "rawPrivateValuesScanned": 58,
+    "findings": 0
+  },
+  "qualification": {
+    "localJoinedHTTPRequests": 109,
+    "localJoinedHTTPAssertions": 989,
+    "localAssets": 30,
+    "successorFocusedControls": 11,
+    "successorOriginalProfileGETs": 3,
+    "successorOriginalProfileAssertions": 29,
+    "nativeFourDomainCommands": 4,
+    "nativeOriginalRowsUnchanged": 193,
+    "nativeAllowedOriginalUpdates": 8,
+    "nativeDeletes": 0,
+    "nativeControlAdditions": 21,
+    "separateLegacyPublicSampleAdditions": 56,
+    "nativeWireLogTruncated": true,
+    "stagedOriginalProfileGETs": 25,
+    "stagedAssertions": 350,
+    "stagedFullFinalInventoryCount": 1,
+    "stagedRowsPreserved": 8881,
+    "stagedCatalogPreserved": true,
+    "stagedNativeBrowserRepeated": false,
+    "canonicalOriginalProfileGETs": 3,
+    "canonicalOriginalDeadlinesPreserved": true
+  },
+  "limitations": [
+    "This release closes implemented lifecycle, procurement, recognition and additive operational-schema integration; it does not establish complete fulfillment of every original plan.",
+    "The controlled local native project is an unfunded fictional Sample; no new actual provider, model, email, independent human participation or physical-completion evidence was created.",
+    "The incidental56-row public Sample bootstrap is separate from the four explicit native domain commands and is not a coherent new hero.",
+    "Historical11November Sandbox captures and reimbursement remain separate from this cohort.",
+    "No new held-out evaluation run or true200-percent browser zoom qualification is claimed.",
+    "Six underlying advisories remain in the documented dependency boundary; no audit-clean or license-clearance claim.",
+    "Canonical staged qualification reused exact-source local native evidence plus protected HTTP and row/catalog preservation; no second staged browser review is claimed."
+  ]
+}
