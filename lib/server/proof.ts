@@ -299,6 +299,11 @@ export async function readPublicProof(slug: string, revision?: number): Promise<
   await initializeDatabase();
   return database().transaction(async tx => (await publicRecord(slug, revision, tx)).record);
 }
+/** Reuses the exact publication and source-permission contract within a caller's
+ * authorized database snapshot. The returned record never contains originals. */
+export async function readPublicProofWithin(slug: string, revision: number, tx: SqlConnection): Promise<PublicProof> {
+  return (await publicRecord(slug, revision, tx)).record;
+}
 export async function publicProofImage(slug: string, id: string, revision?: number, storage: DocumentStorage = planningDocumentStorage()) {
   await initializeDatabase();
   return database().transaction(async tx => {

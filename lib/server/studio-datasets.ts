@@ -79,6 +79,14 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
   if (!ROLES.includes(session.role)) throw new DomainError("ROLE_DENIED", "Choose an available project view.", 403);
   return target.transaction(async tx => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    return readStudioSnapshotWithin(session, tx);
+  });
+}
+
+/** Internal composition seam. The caller owns one repeatable-read transaction
+ * and current-role authorization; no second database snapshot is opened. */
+export async function readStudioSnapshotWithin(session: Session, tx: SqlConnection): Promise<StudioSnapshot> {
+    if (!ROLES.includes(session.role)) throw new DomainError("ROLE_DENIED", "Choose an available project view.", 403);
     const { membershipVersion } = await requireCurrentRole(session, session.role, tx);
     const [project] = await query<{ title: string; projection_version: number; mode: Session["mode"]; as_of: Date; cursor: string }>(
       `SELECT p.metadata->>'subtitle' AS title,p.projection_version,t.mode,transaction_timestamp() AS as_of,
@@ -106,7 +114,7 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
       "SELECT id,package_id,package_version,state,recovery_ends_at FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 ORDER BY collection_started_at DESC", params, tx);
     const plan = await publishedPlan(session, tx);
     const photoReviews = plan ? await alignmentViews(session, tx, true) : [];
-    const workReviews = plan ? await signoffViews(session, tx, true) : [];
+    const workReviews = plan ? await signoffViews(session, tx, true, cutoff) : [];
     const readiness = plan ? packageReadiness(plan.payload, plan.view.state === "current", photoReviews, workReviews, []) : [];
     const packageRows: PackageRow[] = packages.map(pkg => {
       const positions=funding.positions.filter(row=>row.packageId===pkg.id);
@@ -251,7 +259,6 @@ export async function readStudioSnapshot(session: Session, target: SqlDatabase =
     return { semanticVersion: STUDIO_SEMANTIC_VERSION, datasetVersions: { funding_positions: STUDIO_POSITION_VERSION }, scope, datasetHandle: "", role: session.role, mode: project.mode, projectTitle: project.title,
       projectionVersion: project.projection_version, eventCursor: Number(project.cursor), asOf, contentHash, data, geometry, ...(geometrySource ? { geometrySource } : {}),
       notices: [plan ? `Plan revision ${plan.view.revision} · ${plan.view.state} · ${plan.view.provenance === "sample" ? "fictional sample" : "reviewed source geometry"}. Physical acceptance counts only current required reviews; provider availability and expense approval remain separate.` : SOURCE_NOTICE, FUNDING_NOTICE, session.role === "donor" ? "Payment and allocation details include only your contributions." : session.role === "volunteer" ? "Original expense sources include only your claims." : session.role === "auditor" ? "The Auditor receives redacted financial facts. Private originals and payment destinations are excluded." : "Private source links recheck your current role when opened."] };
-  });
 }
 
 /** A stored dataset is an immutable, encrypted report cutoff, not a browser-selected tenant. */

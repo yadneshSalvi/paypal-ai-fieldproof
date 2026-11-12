@@ -10,6 +10,7 @@ import { FUNDING_SCHEMA } from "./funding-schema";
 import { FUNDING_LIFECYCLE_SCHEMA } from "./funding-lifecycle-schema";
 import { FUNDING_RECONCILIATION_SCHEMA } from "./funding-reconciliation-schema";
 import { PURPOSE_SCHEMA } from "./purpose-schema";
+import { BOARD_PACK_SCHEMA } from "./board-pack-schema";
 import { SUPPORTER_ACCESS_SCHEMA } from "./supporter-access-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
@@ -53,7 +54,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 19;
+const CURRENT_SCHEMA_VERSION = 20;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -112,6 +113,10 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
     AND tgname IN ('fp_supporter_invite_contract','fp_supporter_access_immutable','fp_supporter_audit_immutable','fp_supporter_command_immutable')`);
   if (!supporterGuards.rows[0]?.ready) return false;
   const version = await tx.query<{ version: number | null }>("SELECT max(version) AS version FROM fp_schema_versions");
+  const boardPacks = await tx.query<{ captures: string | null; audit: string | null; history: string | null }>("SELECT to_regclass('fp_board_packs')::text AS captures,to_regclass('fp_board_pack_audit')::text AS audit,to_regclass('fp_board_pack_history')::text AS history");
+  if (!boardPacks.rows[0]?.captures || !boardPacks.rows[0]?.audit || !boardPacks.rows[0]?.history) return false;
+  const boardGuards = await tx.query<{ ready: boolean }>("SELECT count(*)=2 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgname IN ('fp_board_pack_retained','fp_board_pack_audit_retained') AND tgrelid IN (to_regclass('fp_board_packs'),to_regclass('fp_board_pack_audit'))");
+  if (!boardGuards.rows[0]?.ready) return false;
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
 
@@ -481,6 +486,7 @@ ${FUNDING_LIFECYCLE_SCHEMA}
 ${FUNDING_RECONCILIATION_SCHEMA}
 ${PURPOSE_SCHEMA}
 ${SUPPORTER_ACCESS_SCHEMA}
+${BOARD_PACK_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -500,4 +506,5 @@ INSERT INTO fp_schema_versions(version) VALUES(15) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(17) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(18) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(19) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(20) ON CONFLICT DO NOTHING;
 `;

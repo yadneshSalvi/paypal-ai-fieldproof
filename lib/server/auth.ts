@@ -6,9 +6,11 @@ import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
 import { communityQaEnabled, fundingQaEnabled, supporterQaEnabled, supporterQaProfile } from "./provider-access";
+import { boardPackReviewEnabled } from "./board-pack-review";
 import { onboardingReviewEnabled, onboardingReviewProfile } from "./onboarding-review";
 
 export function sessionCookieName(): string {
+  if (boardPackReviewEnabled()) return "fieldproof_boardpack_stage12_session";
   if (onboardingReviewEnabled()) return onboardingReviewProfile().cookie;
   if(supporterQaEnabled())return supporterQaProfile().cookie;
   if(fundingQaEnabled())return "fieldproof_funding_lifecycle_qa_session";
@@ -28,7 +30,7 @@ export function sessionCookieName(): string {
   // intact while this explicitly isolated review process uses port 4202.
   return "fieldproof_studio_qa_session";
 }
-export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!onboardingReviewEnabled()&&!fundingQaEnabled()&&!supporterQaEnabled();
+export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!boardPackReviewEnabled()&&!onboardingReviewEnabled()&&!fundingQaEnabled()&&!supporterQaEnabled();
 export interface Session {
   id: string; tenantId: string; projectId: string; actorId: string;
   role: WorkspaceRole; expiresAt: string; mode: "sample" | "live_sandbox";
@@ -75,15 +77,16 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
 }
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
+  const boardPack = boardPackReviewEnabled();
   const onboarding = onboardingReviewEnabled();
-  const allowed = onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  const allowed = boardPack ? ["http://localhost:4578"] : onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
   // Vercel supplies the exact immutable deployment hostname. This permits
   // pre-promotion qualification without trusting sibling or caller-supplied hosts.
   const deploymentHost = process.env.VERCEL_URL;
-  if (!onboarding && process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
+  if (!boardPack && !onboarding && process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
     allowed.push(`https://${deploymentHost}`);
   // The isolated Studio review process never runs on the retired source writer's port.
-  if (!onboarding) {
+  if (!boardPack && !onboarding) {
     if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
     if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
     if (communityQaEnabled()) allowed.push("http://localhost:4512");

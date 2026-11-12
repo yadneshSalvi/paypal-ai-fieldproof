@@ -142,9 +142,9 @@ export async function revokePhotoAlignment(session: Session, id: string, raw: z.
     });
   });
 }
-async function qualificationState(session: Pick<Session, "tenantId" | "projectId">, row: QualificationRow, tx: SqlConnection, lock = false): Promise<{ valid: boolean; reason: string | null }> {
+async function qualificationState(session: Pick<Session, "tenantId" | "projectId">, row: QualificationRow, tx: SqlConnection, lock = false, at = Date.now()): Promise<{ valid: boolean; reason: string | null }> {
   if (row.state !== "verified") return { valid: false, reason: row.state === "revoked" ? "The reviewer scope was revoked." : "The reviewer scope has not been verified." };
-  if (row.valid_until.getTime() <= Date.now()) return { valid: false, reason: "The reviewer scope expired." };
+  if (row.valid_until.getTime() <= at) return { valid: false, reason: "The reviewer scope expired." };
   const data = openPrivate<QualificationData>(row.encrypted_data, evidenceContext("reviewer-qualification", row));
   const [member] = await query<{ state: string; version: number; roles: string[] }>(`SELECT state,version,roles FROM fp_memberships WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3${lock ? " FOR SHARE" : ""}`, [...scope(session), row.actor_id], tx);
   if (!member || member.state !== "active" || member.version !== row.membership_version || !member.roles.some(r => ["volunteer", "organizer"].includes(r))) return { valid: false, reason: "The reviewer's project authority changed." };
@@ -243,7 +243,7 @@ export async function recordWorkSignoff(session: Session, raw: z.infer<typeof si
     });
   });
 }
-export async function signoffViews(session: Session, tx: SqlConnection = database(), internal = false): Promise<SignoffView[]> {
+export async function signoffViews(session: Session, tx: SqlConnection = database(), internal = false, at = Date.now()): Promise<SignoffView[]> {
   const published = await publishedPlan(session, tx);
   const rows = await query<SignoffRow>("SELECT * FROM fp_work_signoffs WHERE tenant_id=$1 AND project_id=$2 ORDER BY created_at DESC,id DESC", scope(session), tx);
   const output: SignoffView[] = [], latest = new Set<string>();
@@ -258,7 +258,7 @@ export async function signoffViews(session: Session, tx: SqlConnection = databas
     if (!published || published.view.state !== "current" || published.row.id !== row.plan_id || published.row.content_hash !== data.planHash) reason = "This review refers to an earlier or stale plan.";
     else if (!qualification || qualification.version !== row.qualification_version) reason = "The reviewer scope changed.";
     else {
-      const valid = await qualificationState(session, qualification, tx);
+      const valid = await qualificationState(session, qualification, tx, false, at);
       if (!valid.valid) reason = valid.reason;
       const sourceChanges = await currentSourceCheck(session, data.sourceBindings, tx);
       if (sourceChanges.length) reason = sourceChanges[0];

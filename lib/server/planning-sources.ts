@@ -16,8 +16,10 @@ import { appendEvent } from "./repository";
 import { communityQaEnabled, supporterQaEnabled, supporterQaProfile } from "./provider-access";
 import { communityTemplate, type TemplateId } from "../community/templates";
 import { query } from "./db";
+import { boardPackReviewEnabled } from "./board-pack-review";
 
 export function planningQaEnabled(): boolean {
+  if (boardPackReviewEnabled()) return true;
   if (supporterQaEnabled()) return true;
   if (communityQaEnabled()) return true;
   if (process.env.NODE_ENV === "production" || process.env.FIELDPROOF_PLANNING_QA !== "true") return false;
@@ -28,7 +30,7 @@ export function planningQaEnabled(): boolean {
 }
 function localPath(pathname: string): string {
   if (!planningQaEnabled() || !/^fieldproof\/[0-9a-f-]{36}\/[a-zA-Z0-9._/-]+$/.test(pathname) || pathname.includes("..")) throw new DomainError("DOCUMENT_PATH", "This private source location is unavailable.", 409);
-  return resolve(supporterQaEnabled() ? supporterQaProfile().documents : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
+  return resolve(boardPackReviewEnabled() ? ".local/board-pack-unit/documents" : supporterQaEnabled() ? supporterQaProfile().documents : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
 }
 const localPlanningStorage: DocumentStorage = {
   async read(pathname, maxBytes = MAX_DOCUMENT_BYTES) {

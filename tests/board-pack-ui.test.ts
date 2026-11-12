@@ -258,7 +258,7 @@ describe("report entry and source disclosure", () => {
     assert.match(loading, /Checking your workspace role and saved report editions/);
     const error = renderToStaticMarkup(createElement(ErrorPage, { error: new Error("PRIVATE-DATABASE-ERROR"), retry: noAction }));
     assert.match(error, /Try again/);
-    assert.match(error, /href="\/community"/);
+    assert.match(error, /href="\/community\?return=\/board-pack"/);
     assert.doesNotMatch(error, /PRIVATE-DATABASE-ERROR/);
   });
 
