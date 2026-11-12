@@ -1,0 +1,80 @@
+{
+  "feature": "Private per-project Board Packs",
+  "status": "local_native_qualified_hosted_release_pending",
+  "qualifiedSource": "5296675aee6269cbadb8e261a8d09b734c8cc029",
+  "qualifiedBuild": "Y4EYumbBYInAnyr5vI2bc",
+  "qualificationDate": "2026-11-12",
+  "schemaVersion": 20,
+  "provenance": {
+    "actors": "Controlled, self-declared profiles created through ordinary project and invitation entry.",
+    "financialRecords": "Explicitly fictional Sample records; no provider settlement or independent human participation is established.",
+    "report": "One original organizer edition, captured through the ordinary UI and retained through all correction checks.",
+    "expiry": "Original session and invitation deadlines remain unchanged. A separate retained original profile was observed through natural expiry."
+  },
+  "focusedCorrection": {
+    "actualComponentAndRuntimeTests": 18,
+    "existingBoardUiTests": 16,
+    "isolationTests": 4,
+    "typeScript": "passed",
+    "productionBuild": "passed",
+    "retainedFailingControl": "Four actual DOM regressions exposed the original focus and preparation defects before correction."
+  },
+  "boundedHttp": {
+    "getRequests": 29,
+    "assertions": 75,
+    "servedAssetsChecked": 16,
+    "privateValueFindings": 0,
+    "originalRowsPreservedDuringChecks": 567,
+    "originalTableDefinitions": 117,
+    "newActorsSessionsReportsOrFinancialActions": 0
+  },
+  "nativeBrowser": {
+    "sourceDialog": "Tab and Shift+Tab containment, image-load focus, related package heading focus, and Escape restoration passed.",
+    "printing": "An unprepared browser print omitted private content. Ordinary Prepare print preview enabled actual browser-engine A4 and Letter PDF output from the same saved edition.",
+    "paperChange": "Changing paper cleared preparation; the same edition was prepared again.",
+    "a4": {
+      "pages": 26,
+      "bytes": 660856,
+      "sha256": "e525649cfe30eabeb1ee32c0d3ef939fb1ef7bb8904c3ceae5b10c02289f3918"
+    },
+    "letter": {
+      "pages": 27,
+      "bytes": 660780,
+      "sha256": "672353ca46b7db6ee40f724adb8a8e7d157382569038157270c740fe7f1e8e9f"
+    },
+    "pdfInspection": "All 53 pages were rendered and contact sheets inspected. Source references S01–S40, text, figures and the authorized illustration remained present and readable without horizontal clipping.",
+    "responsive": "390px and 360px viewports had no horizontal overflow; reduced motion was exercised.",
+    "consoleErrorsDuringCorrectedBoardNavigation": 0,
+    "donorScope": "The original donor had an empty personal edition history and disabled print/export controls. An exact scoped request for the organizer edition returned 404 BOARD_PACK_UNAVAILABLE.",
+    "sourceWithdrawal": "Ordinary source permission withdrawal withheld the original report body, image and source content while retaining the immutable edition identity.",
+    "accessWithdrawal": "Ordinary withdrawal of the original donor invitation removed private report access; its original return link displayed the withdrawn state.",
+    "naturalExpiry": "A separate original sponsor report was visible before its fixed deadline, cleared automatically after that deadline, and remained unavailable after reload. No deadline was edited or renewed."
+  },
+  "postNativePreservation": {
+    "checks": 28,
+    "beforeRows": 567,
+    "unchangedOriginalRows": 562,
+    "attributedOriginalChanges": 5,
+    "attribution": [
+      "Original source permission and version.",
+      "Original donor membership revocation and version.",
+      "Original donor session revocation timestamp.",
+      "Original joined invitation revocation and version.",
+      "Project projection advance for the two withdrawal events."
+    ],
+    "newAuditAndRequestRecords": 11,
+    "deletedOriginalRows": 0,
+    "unchanged": "Original report body/hash/cutoff, capture audit, all financial rows, original credential identities, roles and fixed deadlines, and all other actors.",
+    "newActorsSessionsReportsOrFinancialActions": 0,
+    "sourceDependencyBuildAndProfileFreezes": "Original and corrected runtimes both preserved."
+  },
+  "limits": [
+    "True 200% browser zoom was not observed.",
+    "A duplicate image activation while loading was not exercised natively; controlled component tests cover its guard.",
+    "The Letter PDF has an orphaned table header at the bottom of page 2. Its rows continue and no content is missing.",
+    "Previously authorized printed or downloaded copies cannot be recalled after access changes.",
+    "The earlier focus failure and system-print-sheet tooling limitation remain retained in private evidence.",
+    "Organization portfolios, scheduled delivery, wider accessibility and performance qualification, and the final demonstration are separate work.",
+    "This local qualification does not claim hosted deployment or actual provider, model, email, physical-work or independent participant outcomes."
+  ]
+}
