@@ -6,7 +6,7 @@ import { guardedApi } from "@/lib/server/maintenance";
 import { PRIVATE_HEADERS, privateJson, requestJson, routeFailure } from "@/lib/server/http";
 import { DomainError } from "@/lib/domain/money";
 import { switchWorkspaceSchema } from "@/lib/community/contracts";
-import { createCommunityWorkspace, readWorkspaceLibrary, rememberWorkspaceCookie, switchCommunityWorkspace, workspaceLibraryCookieName } from "@/lib/server/community-workspaces";
+import { assertWorkspaceLibraryContext, createCommunityWorkspace, readWorkspaceLibrary, rememberWorkspaceCookie, switchCommunityWorkspace, workspaceLibraryCookieName } from "@/lib/server/community-workspaces";
 import { captureCommunitySnapshot, previewCommunityUpdate, readCommunityDesk, readSupporterStory, reviewCommunityTranslation, saveCommunityBackTranslation, saveCommunityDraft, saveCommunityTranslation } from "@/lib/server/community";
 import { communityContinuations, resumeCommunityRun, runCommunityModel, startCommunityRun } from "@/lib/server/community-model";
 import { assertSupporterContext, readContributionSource, readStoryImage } from "@/lib/server/supporter-story";
@@ -40,6 +40,15 @@ async function GETImplementation(request:Request,context:Context){
 async function POSTImplementation(request:Request,context:Context){
   try{
     assertSameOrigin(request);const parts=(await context.params).communityPath??[],path=parts.join("/"),body=await requestJson(request,128*1024);
+    if(path.startsWith("workspaces/")){
+      const jar=await cookies(),libraryToken=jar.get(workspaceLibraryCookieName())?.value??null,activeToken=jar.get(sessionCookieName())?.value??null;
+      await assertWorkspaceLibraryContext(libraryToken,activeToken,request.headers.get("X-Fieldproof-Library-Context"),path==="workspaces/clear-ended");
+      if(path==="workspaces/clear-ended"){
+        z.object({acknowledged:z.literal(true)}).strict().parse(body);
+        jar.delete(sessionCookieName());
+        return privateJson({library:await readWorkspaceLibrary(libraryToken,null)});
+      }
+    }
     if(path==="workspaces/remember"){z.object({}).strict().parse(body);await rememberWorkspaceCookie();return privateJson({library:await library()});}
     if(path==="workspaces/create"||path==="workspaces/switch"){
       const jar=await cookies(),libraryToken=jar.get(workspaceLibraryCookieName())?.value,activeToken=jar.get(sessionCookieName())?.value??null;

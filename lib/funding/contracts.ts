@@ -58,7 +58,7 @@ export interface FundingCaseView {
   history: { id: string; kind: string; detail: string; createdAt: string }[];
 }
 export interface FundingDesk {
-  schemaVersion: typeof FUNDING_LIFECYCLE_VERSION; projectId: string; projectTitle: string; role: WorkspaceRole; mode: "sample" | "live_sandbox";
+  schemaVersion: typeof FUNDING_LIFECYCLE_VERSION; projectId: string; projectTitle: string; role: WorkspaceRole; allowedRoles?: WorkspaceRole[]; mode: "sample" | "live_sandbox";
   observedAt: string; checkoutEnabled: boolean;
   packages: { id: string; version: number; title: string; purpose: string; budgetMinor: number; eligibleMinor: number; availableMinor: number; state: string; hasRound: boolean }[];
   policies: { id: string; digest: string; packageId: string; packageVersion: number; title: string; purpose: string; budgetMinor: number; remainingMinor: number; pledgedMinor: number; kind: FundingPolicyContract["kind"]; state: string; expiresAt: string }[];

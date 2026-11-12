@@ -4,6 +4,9 @@ export function onboardingReviewProfile() {
   const profile = process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE ?? "native-stage11";
   if (profile === "native-stage11") return { origin: "http://localhost:4563", cookie: "fieldproof_supporter_onboarding_session" } as const;
   if (profile === "contrast-stage11b") return { origin: "http://localhost:4573", cookie: "fieldproof_supporter_onboarding_contrast_session" } as const;
+  // Root-owned correction deliberately continues the exact existing local
+  // browser library. Localhost cookies span ports; no session is renewed.
+  if (profile === "role-stage11c") return { origin: "http://localhost:4581", cookie: "fieldproof_supporter_onboarding_contrast_session" } as const;
   throw new DomainError("ONBOARDING_REVIEW_ISOLATION", "That isolated onboarding review profile is unavailable.", 503);
 }
 

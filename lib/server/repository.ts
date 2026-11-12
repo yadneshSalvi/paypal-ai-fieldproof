@@ -8,7 +8,7 @@ import { database, query } from "./db";
 import { ensurePublicProject, PUBLIC_PROJECT, sampleEvidence, sampleReceipt } from "./seed";
 import type { Session } from "./auth";
 import { requireMakerspaceScenario } from "./community-workspaces";
-import { requireCurrentRole } from "./membership";
+import { requireCurrentRole, currentViewRoles } from "./membership";
 import { lockFundingScope, readFundingProjection } from "./funding-positions";
 import { projectClaimLock } from "./claims";
 import { readFundingPromises } from "./funding-promises";
@@ -78,7 +78,7 @@ export async function projectSnapshot(session: Session | null = null): Promise<P
   const visibleEvidence=financialScope==="project"?evidence:evidence.filter(row=>project.mode==="sample"&&illustrations.includes(canonicalJson(row)));
   return {title:m.title,subtitle:m.subtitle,organizer:m.organizer,location:m.location,currency:m.currency,targetMinor:m.targetMinor,deadline:m.deadline,
     ...(m.templateId?{templateId:m.templateId,templateWorkspace:m.templateWorkspace}:{}),id:project.id,tenantId:project.tenant_id,slug:project.slug,mode:project.mode,version:project.version,projectionVersion:project.projection_version,packages,obligations,receipts,financialScope,
-    evidence:visibleEvidence,events:eventRows.map(row=>({title:row.data.title,detail:row.data.detail,provenance:row.data.provenance,id:row.id,sequence:Number(row.sequence),type:row.type,occurredAt:row.occurred_at.toISOString()})),tourStep:project.tour_step,session:session?{role:session.role,actorId:session.actorId,expiresAt:session.expiresAt}:null,capabilities:{checkoutConfigured:!!process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_PROJECT_ISOLATED === "true",savedWalletQualified:false,payoutQualified:false,invoiceQualified:false,studioConfigured:!!process.env.AG_STUDIO_LICENSE_KEY}};
+    evidence:visibleEvidence,events:eventRows.map(row=>({title:row.data.title,detail:row.data.detail,provenance:row.data.provenance,id:row.id,sequence:Number(row.sequence),type:row.type,occurredAt:row.occurred_at.toISOString()})),tourStep:project.tour_step,session:session?{role:session.role,allowedRoles:await currentViewRoles(session,tx),actorId:session.actorId,expiresAt:session.expiresAt}:null,capabilities:{checkoutConfigured:!!process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_PROJECT_ISOLATED === "true",savedWalletQualified:false,payoutQualified:false,invoiceQualified:false,studioConfigured:!!process.env.AG_STUDIO_LICENSE_KEY}};
   });
   if(session) await requireCurrentRole(session,session.role);
   return snapshot;

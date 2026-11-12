@@ -43,6 +43,17 @@ describe("local native onboarding runtime confinement", () => {
     assert.doesNotThrow(() => assertSameOrigin(request("https://paypal-ai-fieldproof.vercel.app")));
     assert.throws(() => assertSameOrigin(request("http://localhost:4563")), { code: "ORIGIN_DENIED" });
   });
+  it("isolates the role correction on its assigned origin and original database", () => {
+    process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE = "role-stage11c";
+    process.env.APP_URL = "http://localhost:4581";
+    assert.equal(onboardingReviewEnabled(), true);
+    assert.equal(sessionCookieName(), "fieldproof_supporter_onboarding_contrast_session");
+    assert.equal(sessionCookieSecure(), false);
+    assert.doesNotThrow(() => assertSameOrigin(request("http://localhost:4581")));
+    for (const origin of ["http://localhost:4563", "http://localhost:4573", "http://localhost:4578"])
+      assert.throws(() => assertSameOrigin(request(origin)), { code: "ORIGIN_DENIED" });
+    assert.throws(assertProviderAccess, { code: "PROVIDERS_DISABLED" });
+  });
   it("isolates the corrected origin and cookies while preserving the original database and deadlines", () => {
     const originalDatabase = process.env.DATABASE_URL;
     process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE = "contrast-stage11b";

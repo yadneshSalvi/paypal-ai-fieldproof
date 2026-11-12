@@ -131,7 +131,7 @@ export interface ProjectSnapshot {
   evidence: EvidenceItem[];
   events: ProjectEvent[];
   tourStep: number;
-  session: { role: WorkspaceRole; actorId: string; expiresAt: string } | null;
+  session: { role: WorkspaceRole; allowedRoles?: WorkspaceRole[]; actorId: string; expiresAt: string } | null;
   capabilities: { checkoutConfigured: boolean; savedWalletQualified: boolean; payoutQualified: boolean; invoiceQualified: boolean; studioConfigured: boolean };
 }
 

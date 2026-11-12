@@ -15,3 +15,10 @@ export async function requireCurrentRole(session: Session, role: WorkspaceRole, 
   if (!rows.length) throw new DomainError("ROLE_DENIED", "Your current session no longer allows this action.", 403);
   return { membershipVersion: (await requireMembership(session.tenantId, session.projectId, session.actorId, role, tx)).version };
 }
+
+/** View capabilities for the current actor, never a role selected by the browser. */
+export async function currentViewRoles(session: Session, tx: SqlConnection = database()): Promise<WorkspaceRole[]> {
+  await requireCurrentRole(session, session.role, tx);
+  const [row] = await query<{ roles: unknown }>("SELECT roles FROM fp_memberships WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 AND state='active'", [session.tenantId, session.projectId, session.actorId], tx);
+  return (["donor", "volunteer", "organizer", "auditor"] as WorkspaceRole[]).filter(role => Array.isArray(row?.roles) && row.roles.includes(role));
+}

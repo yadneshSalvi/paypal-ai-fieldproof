@@ -1,0 +1,11 @@
+# Supporter views and saved-profile recovery
+
+A supporter invitation grants donor membership. The project and funding responses now include `allowedRoles` from the actor's current active membership. Their view controls render that list; old response shapes narrow to the active role. This metadata is a UI capability hint, never authority. The existing membership checks still deny a forged organizer or auditor role. If a role change is denied, the funding desk reads the current authorized desk before deciding whether access actually ended.
+
+The saved-workspace library has a separate cookie-context digest. A page can reach that library after the former project cookie expires or is revoked, without reusing the old page's `X-Fieldproof-Project` binding. Library mutation requests send `X-Fieldproof-Library-Context`; the server compares the exact library and active-credential hashes. A changed cookie or library requires a fresh list. Ordinary project API context guards remain unchanged.
+
+When a cookie is present but its session is no longer authorized, the library offers **Clear ended workspace**. Creation and switching refuse that credential until the user explicitly clears it. The clear route accepts only an ended credential and an acknowledged, current context; it cannot clear an active profile. Opening a saved profile then restores its original token, actor, role and fixed expiry. It never creates replacement membership or extends a deadline. A revoked or expired target remains unavailable.
+
+Available supporter profiles show their self-declared names inside the private library that already holds their session capabilities. Other entries receive a role and short profile reference. Names are labelled self-declared, and are excluded after an entry's authority ends. The library does not disclose a name to another browser library or verify a person, email address or PayPal identity.
+
+The controlled qualification covers donor-only and full-role views; rejected role changes; ended-current/valid-target recovery; stale context and unacknowledged clear rejection; active-profile clear denial; foreign-library privacy; and exact session/expiry preservation. Synthetic actors and HTTP clients do not represent independent human participation. Final browser verification belongs to the exact frozen candidate.

@@ -8,9 +8,10 @@ export type CommunityLocale = "en" | "es";
 export type BriefAudience = "treasurer" | "supporter";
 export interface WorkspaceEntry {
   sessionId: string; projectId: string; title: string; subtitle: string; templateId: TemplateId;
+  profileLabel?: string; identityProvenance?: "self_declared" | "workspace_session";
   mode: "sample" | "live_sandbox"; role: WorkspaceRole; expiresAt: string; current: boolean; available: boolean;
 }
-export interface WorkspaceLibrary { ready: boolean; currentProjectId: string | null; entries: WorkspaceEntry[]; }
+export interface WorkspaceLibrary { context?: { hash: string; state: "none" | "active" | "ended" }; ready: boolean; currentProjectId: string | null; entries: WorkspaceEntry[]; }
 export const createWorkspaceSchema = z.object({ intentId: z.uuid(), templateId: z.enum(TEMPLATE_IDS), title: z.string().trim().min(3).max(100), expectedProjectId: z.string().min(1).max(100).nullable(), acknowledged: z.literal(true) }).strict();
 export const switchWorkspaceSchema = z.object({ sessionId: z.uuid(), expectedProjectId: z.string().min(1).max(100).nullable() }).strict();
 

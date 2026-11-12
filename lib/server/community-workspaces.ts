@@ -13,6 +13,10 @@ import { requireCurrentRole } from "./membership";
 
 interface LibraryRow { id: string; expires_at: Date; }
 interface SessionRow { id: string; tenant_id: string; project_id: string; actor_id: string; role: WorkspaceRole; expires_at: Date; mode: Session["mode"]; token_hash: string; }
+const libraryContext = (libraryToken: string | null, activeToken: string | null, active: boolean) => ({
+  hash: sha256(canonicalJson({ contract: "workspace-library-context-v1", library: libraryToken ? tokenHash(libraryToken) : null, credential: activeToken ? tokenHash(activeToken) : null, active })),
+  state: activeToken ? active ? "active" as const : "ended" as const : "none" as const,
+});
 const sessionView = (row: SessionRow): Session => ({ id: row.id, tenantId: row.tenant_id, projectId: row.project_id, actorId: row.actor_id, role: row.role, expiresAt: row.expires_at.toISOString(), mode: row.mode });
 const entryContext = (libraryId: string, sessionId: string) => `workspace-library:${libraryId}:${sessionId}`;
 export const workspaceLibraryCookieName = () => `${sessionCookieName()}_library`;
@@ -75,16 +79,22 @@ export async function readWorkspaceLibrary(libraryToken: string | null, activeTo
   return database().transaction(async tx => {
     if (!cleanup) await tx.query("SET TRANSACTION READ ONLY");
     const library = await libraryFor(libraryToken, tx, cleanup), current = await authorizedToken(activeToken, tx);
-    if (!library) return { ready: false, currentProjectId: current?.project_id ?? null, entries: [] };
+    if (!library) return { context: libraryContext(libraryToken, activeToken, !!current), ready: false, currentProjectId: current?.project_id ?? null, entries: [] };
     if (cleanup) await clearEnded(library, tx);
     const rows = await query<SessionRow & { metadata: { title: string; subtitle: string; templateId?: TemplateId }; available: boolean }>(`SELECT s.*,t.mode,p.metadata,
       (e.ended_at IS NULL AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND EXISTS(
         SELECT 1 FROM fp_memberships m WHERE m.tenant_id=s.tenant_id AND m.project_id=s.project_id AND m.actor_id=s.actor_id AND m.state='active' AND m.roles ? s.role)) AS available
       FROM fp_workspace_library_entries e JOIN fp_sessions s ON s.id=e.session_id JOIN fp_projects p ON p.id=e.project_id JOIN fp_tenants t ON t.id=e.tenant_id
       WHERE e.library_id=$1 ORDER BY e.saved_at DESC,s.id`, [library.id], tx);
-    const entries: WorkspaceEntry[] = rows.map(row => ({ sessionId: row.id, projectId: row.project_id, title: row.metadata.title, subtitle: row.metadata.subtitle,
+    const profiles = await query<{ session_id: string; id: string; tenant_id: string; project_id: string; encrypted_identity: string }>(`SELECT a.session_id,a.id,a.tenant_id,a.project_id,a.encrypted_identity FROM fp_supporter_access a
+      JOIN fp_workspace_library_entries e ON e.session_id=a.session_id WHERE e.library_id=$1 AND e.ended_at IS NULL`, [library.id], tx);
+    const profileLabels = new Map(profiles.filter(profile => rows.some(row => row.id === profile.session_id && row.available)).map(profile => {
+      const identity = openPrivate<{ displayName: string }>(profile.encrypted_identity, `supporter-access:${profile.tenant_id}:${profile.project_id}:${profile.id}:identity`);
+      return [profile.session_id, identity.displayName] as const;
+    }));
+    const entries: WorkspaceEntry[] = rows.map(row => ({ profileLabel: profileLabels.get(row.id) ?? `${row.role[0].toUpperCase()}${row.role.slice(1)} profile · ${row.id.slice(-6)}`, identityProvenance: profileLabels.has(row.id) ? "self_declared" : "workspace_session", sessionId: row.id, projectId: row.project_id, title: row.metadata.title, subtitle: row.metadata.subtitle,
       templateId: row.metadata.templateId ?? "makerspace", mode: row.mode, role: row.role, expiresAt: row.expires_at.toISOString(), current: current?.id === row.id, available: row.available }));
-    return { ready: true, currentProjectId: current?.project_id ?? null, entries };
+    return { context: libraryContext(libraryToken, activeToken, !!current), ready: true, currentProjectId: current?.project_id ?? null, entries };
   });
 }
 export async function createCommunityWorkspace(libraryToken: string, activeToken: string | null, raw: unknown): Promise<{ session: Session; token: string }> {
@@ -94,6 +104,7 @@ export async function createCommunityWorkspace(libraryToken: string, activeToken
     if (!library) throw new DomainError("WORKSPACE_LIBRARY_REQUIRED", "Open saved workspaces before creating a new project.", 409);
     await clearEnded(library, tx);
     const current = await authorizedToken(activeToken, tx, true);
+    if (activeToken && !current) throw new DomainError("WORKSPACE_CLEAR_ENDED_REQUIRED", "Clear the ended workspace before creating another project.", 409);
     if ((current?.project_id ?? null) !== input.expectedProjectId) throw new DomainError("WORKSPACE_CONTEXT_CHANGED", "Another tab changed the active workspace. Refresh saved workspaces before creating a project.", 409);
     if (activeToken && await authorizedToken(activeToken, tx)) await saveToken(library, activeToken, tx);
     const [prior] = await query<{ input_hash: string; session_id: string }>("SELECT input_hash,session_id FROM fp_workspace_creation_intents WHERE library_id=$1 AND intent_id=$2", [library.id, input.intentId], tx);
@@ -142,6 +153,7 @@ export async function switchCommunityWorkspace(libraryToken: string, activeToken
     const library = await libraryFor(libraryToken, tx);
     if (!library) throw new DomainError("WORKSPACE_LIBRARY_REQUIRED", "This saved-workspace list has expired. Your project records remain saved.", 403);
     const current = await authorizedToken(activeToken, tx, true);
+    if (activeToken && !current) throw new DomainError("WORKSPACE_CLEAR_ENDED_REQUIRED", "Clear the ended workspace from this browser before opening another saved profile. This does not renew or remove any project records.", 409);
     if ((current?.project_id ?? null) !== expectedProjectId) throw new DomainError("WORKSPACE_CONTEXT_CHANGED", "Another tab changed the active workspace. Refresh the list before switching.", 409);
     const target = await savedSession(library, sessionId, tx);
     await requireCurrentRole(target.session, target.session.role, tx);
@@ -162,4 +174,16 @@ export async function requireMakerspaceScenario(session: Session, tx: SqlConnect
   const [row] = await query<{ metadata: { templateId?: string; templateWorkspace?: boolean } }>("SELECT metadata FROM fp_projects WHERE id=$1 AND tenant_id=$2", [session.projectId, session.tenantId], tx);
   if (!row || (row.metadata.templateId && row.metadata.templateId !== "makerspace") || row.metadata.templateWorkspace)
     throw new DomainError("MAKERSPACE_SCENARIO_ONLY", "This action belongs to the separate Eastside demonstration. Use this project's planning, source review and supporter update journeys.", 409);
+}
+
+/** Separate stale-tab guard for the saved-capability library. An ended active
+ * credential cannot confer authority, but can be explicitly removed. */
+export async function assertWorkspaceLibraryContext(libraryToken: string | null, activeToken: string | null, expected: string | null, clearEnded = false): Promise<void> {
+  await initializeDatabase();
+  await database().transaction(async tx => {
+    const current = await authorizedToken(activeToken, tx, true);
+    const context = libraryContext(libraryToken, activeToken, !!current);
+    if (!expected || expected !== context.hash) throw new DomainError("WORKSPACE_LIBRARY_CONTEXT_CHANGED", "The active profile or saved-workspace list changed. Refresh this list before continuing.", 409);
+    if (clearEnded && context.state !== "ended") throw new DomainError("WORKSPACE_CLEAR_ENDED_REQUIRED", "Only an ended workspace can be cleared here. Refresh the current saved-workspace list.", 409);
+  });
 }
