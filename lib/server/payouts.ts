@@ -17,6 +17,7 @@ import { canonicalExpenseReadiness, planPayoutFunding, type PlannedAllocation, t
 import { lockFundingScope } from "./funding-positions";
 import { openPrivate, sealPrivate } from "./private-values";
 import { appendEvent } from "./repository";
+import { assertProjectPolicyReview, bindProjectPolicyArtifacts, enforceProjectFundDecision, recordProjectPolicyReview } from "./project-policy";
 
 interface RecipientRow { id: string; tenant_id: string; actor_id: string; encrypted_destination: string; masked_label: string; verification_method: string; account_verified: boolean; version: number; verified_at: Date }
 interface PayoutSnapshot {
@@ -102,9 +103,11 @@ export async function preparePayoutReview(session: Session, claimId: string, raw
         throw new DomainError("PAYOUT_REVIEW_CONFLICT", "Renew only the same unresolved repayment and its exact original lines.", 409);
     }
     const value = await snapshot(tx, session, claim, data, input.lineIds, input.payableId ?? null), id = randomUUID(), digest = payoutReviewDigest(value);
+    const policyRules = value.payableId ? [] : await enforceProjectFundDecision(tx, session, { consumer: "payable_approval", packages: value.funding.packages.map(pkg => ({ packageId: pkg.packageId, expenseMinor: pkg.principalMinor, feeMinor: pkg.feeAllowanceMinor })) });
     const [row] = await query<ReviewRow>(`INSERT INTO fp_payable_reviews(id,tenant_id,project_id,actor_id,claim_id,claim_version,digest,encrypted_data,expires_at)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [id, session.tenantId, session.projectId, session.actorId, claim.id, claim.version,
       digest, sealPrivate(value, reviewContext({ id, tenant_id: session.tenantId, project_id: session.projectId })), new Date(Date.now() + PAYOUT_APPROVAL_MS)], tx);
+    if (!value.payableId) await recordProjectPolicyReview(tx, session, id, digest, policyRules);
     return reviewView(row, value, data.title);
   });
 }
@@ -136,6 +139,8 @@ export async function approvePayout(session: Session, claimId: string, raw: z.in
     const shown = openPrivate<PayoutSnapshot>(review.encrypted_data, reviewContext(review));
     const claim = await requireClaim(session, claimId, tx, true), data = claimPrivate(claim);
     const value = await snapshot(tx, session, claim, data, shown.funding.lines.map(line => line.id), shown.payableId);
+    const policyRules = shown.payableId ? [] : await enforceProjectFundDecision(tx, session, { consumer: "payable_approval", packages: value.funding.packages.map(pkg => ({ packageId: pkg.packageId, expenseMinor: pkg.principalMinor, feeMinor: pkg.feeAllowanceMinor })) });
+    if (!shown.payableId) await assertProjectPolicyReview(tx, session, review.id, review.digest, policyRules);
     if (payoutReviewDigest(shown) !== review.digest || payoutReviewDigest(value) !== review.digest || input.amountMinor !== value.funding.amountMinor)
       throw new DomainError("PAYOUT_REVIEW_CHANGED", "A source, recipient, package, allocation or authority changed. Review the updated payment before approving it.", 409);
     if (value.sourceClass === "sample_document" && !input.sampleAcknowledged) throw new DomainError("SAMPLE_ACK_REQUIRED", "This source is fictional. Acknowledge the repayment as a sandbox test.", 422);
@@ -162,6 +167,7 @@ export async function approvePayout(session: Session, claimId: string, raw: z.in
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`, [id, session.tenantId, session.projectId, payoutMerchantScope(), claim.id, claim.version,
       session.actorId, session.id, value.membershipVersion, input.intentId, recipient.id, recipient.version, recipient.masked_label, value.funding.amountMinor,
       value.funding.feeAllowanceMinor, approval.id, requestHash, sealPrivate(privateData, context({ id, tenant_id: session.tenantId, project_id: session.projectId }))]);
+    await bindProjectPolicyArtifacts(tx, policyRules, "payable_approval", id, requestHash, session);
     for (const line of value.funding.lines) await tx.query("INSERT INTO fp_payable_lines(payable_id,claim_id,claim_line_id,amount_minor,package_id) VALUES($1,$2,$3,$4,$5)", [id, claim.id, line.id, line.amountMinor, line.packageId]);
     await tx.query("INSERT INTO fp_payable_approval_intents(tenant_id,project_id,actor_id,intent_id,payable_id,review_id,input_hash) VALUES($1,$2,$3,$4,$5,$6,$7)", [session.tenantId, session.projectId, session.actorId, input.intentId, id, review.id, sha256(canonicalJson(input))]);
     for (const allocation of value.funding.allocations) {

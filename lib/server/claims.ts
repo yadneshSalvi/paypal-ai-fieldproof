@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { SqlConnection } from "@fracture/paypal-core";
+import { canonicalJson, sha256, type SqlConnection } from "@fracture/paypal-core";
 import { z } from "zod";
+import { bindProjectPolicyArtifacts, enforceProjectFundDecision } from "./project-policy";
 import { claimLineAttentionReason, draftClaimSchema, reviewClaimSchema, validateClaimReview, type ClaimPrivateData, type ClaimState, type ClaimView } from "../domain/claims";
 import { DomainError } from "../domain/money";
 import type { Session } from "./auth";
@@ -163,6 +164,7 @@ export async function reviewClaim(session: Session, id: string, raw: z.infer<typ
     if ((row.currency !== "USD" || data.extraction?.currency && data.extraction.currency !== "USD") && !input.currencyCorrectionNote)
       throw new DomainError("CLAIM_CURRENCY_REVIEW", "This source is not recorded as USD. Foreign-currency conversion is unavailable. Only correct a misread currency after checking that the printed source is actually USD, with an explicit reason.", 422);
     const approved = validateClaimReview(data, input);
+    const policyRules = await enforceProjectFundDecision(tx, session, { consumer: "expense_review", packages: input.lines.filter(line => line.packageId && line.approvedMinor > 0).map(line => ({ packageId: line.packageId!, expenseMinor: line.approvedMinor })) });
     for (const decision of input.duplicateResolutions) {
       if (decision.documentId === source.id) throw new DomainError("DUPLICATE_SELF", "Compare the receipt with a different source.", 422);
       const other = await requireDocument(session, decision.documentId, tx);
@@ -205,6 +207,7 @@ export async function reviewClaim(session: Session, id: string, raw: z.infer<typ
     const [updated] = await query<ClaimRow>("UPDATE fp_claims SET version=$2,state=$3,currency='USD',approved_minor=$4,encrypted_data=$5,reviewed_by=$6,reviewed_at=$7,updated_at=now() WHERE id=$1 RETURNING *", [id, version, state, approved, sealPrivate(next, claimContext({ ...row, version })), session.actorId, reviewedAt], tx);
     await tx.query("UPDATE fp_approval_records SET revoked_at=now() WHERE tenant_id=$1 AND resource_id=$2 AND revoked_at IS NULL", [session.tenantId, id]);
     await recordRevision(tx, updated, session);
+    await bindProjectPolicyArtifacts(tx, policyRules, "expense_review", `${id}:v${version}`, sha256(canonicalJson(next)), session);
     await appendEvent(tx, session, "claim.reviewed", approved > 0 ? "An expense review is recorded" : "An expense needs another look", `${input.lines.filter(line => line.decision === "approved").length} lines approved; ${input.lines.filter(line => line.decision === "hold").length} held. A separate exact payment approval is still required.`);
   });
   return claimView(session, id);

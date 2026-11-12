@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { canonicalJson, sha256, type SqlConnection } from "@fracture/paypal-core";
 import { z } from "zod";
+import { bindProjectPolicyArtifacts, enforceProjectFundDecision } from "./project-policy";
 import type { FundingState } from "../contracts";
 import { apportionMinorUnits } from "../domain/cancellation-apportionment";
 import { assertCurrentFundingLots, projectFundingLots } from "../domain/funding-lots";
@@ -204,11 +205,13 @@ export async function createFundingPolicy(session:Session,raw:z.infer<typeof fun
     if(["cancelled","compensating"].includes(pkg.data.fundingState))throw new DomainError("DESTINATION_CLOSED","Choose a current open purpose. A cancelled purpose stays cancelled.");
     if((await query("SELECT id FROM fp_collection_rounds WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 AND package_version=$4",[session.tenantId,session.projectId,pkg.id,pkg.version],tx)).length)
       throw new DomainError("DESTINATION_ROUND_EXISTS","This purpose already has a funding round. Review that original policy instead of replacing its deadline.");
+    const policyRules=await enforceProjectFundDecision(tx,session,{consumer:"funding_policy",packages:[{packageId:pkg.id}],fundingKind:input.kind});
     const id=randomUUID(),roundId=randomUUID(),createdAt=new Date(),expiresAt=new Date(createdAt.getTime()+48*60*60_000);
     const value:FundingPolicyContract={schemaVersion:FUNDING_LIFECYCLE_VERSION,id,...scopeOf(session),packageId:pkg.id,packageVersion:pkg.version,title:pkg.data.title,purpose:pkg.data.description,budgetMinor:Number(pkg.budget_minor),currency:"USD",roundId,kind:input.kind,expiresAt:expiresAt.toISOString(),createdBy:session.actorId,membershipVersion:member.membershipVersion,createdAt:createdAt.toISOString()};
     const digest=sha256(canonicalJson(value));
     await tx.query("INSERT INTO fp_collection_rounds(id,tenant_id,project_id,package_id,package_version,target_minor,collection_started_at,recovery_ends_at,policy_hash,state,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'allocation_open',$10::jsonb)",[roundId,session.tenantId,session.projectId,pkg.id,pkg.version,Number(pkg.budget_minor),createdAt,expiresAt,digest,JSON.stringify({kind:"donor_allocation",policyId:id,createdBy:session.actorId})]);
     await tx.query("INSERT INTO fp_funding_policies(id,tenant_id,project_id,package_id,package_version,round_id,kind,digest,encrypted_data,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",[id,session.tenantId,session.projectId,pkg.id,pkg.version,roundId,input.kind,digest,sealPrivate(value,policyContext(session,id)),expiresAt]);
+    await bindProjectPolicyArtifacts(tx,policyRules,"funding_policy",id,digest,session);
     const {refreshPurposeFunding}=await import("./purpose-pledges");await refreshPurposeFunding(tx,scopeOf(session),id);
     await appendEvent(tx,session,"funding.policy_opened","A new purpose is ready for donor decisions","This separate versioned purpose has its own target and 48-hour acceptance window. Pledges and other packages' funded states do not count as collected support.");
     await saveAction(tx,session,input.intentId,"funding_policy",input,{id});return{id};

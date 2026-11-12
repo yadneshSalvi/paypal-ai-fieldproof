@@ -23,7 +23,7 @@ const config: NextConfig = {
       { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
       { key: "X-Frame-Options", value: "DENY" },
     ] }, { source: "/proof/:slug", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }, { key: "Referrer-Policy", value: "no-referrer" }] },
-      ...["/api/community/:path*", "/api/snapshot", "/api/session/:path*", "/api/pledges", "/api/tour", "/updates", "/my-contribution", "/supporter-qa", "/api/supporter-qa", "/supporters", "/join", "/api/supporters/:path*"].map(source=>({source,headers:[{key:"Cache-Control",value:"private, no-store, max-age=0"},{key:"Referrer-Policy",value:"no-referrer"}]}))];
+      ...["/api/community/:path*", "/api/snapshot", "/api/session/:path*", "/api/pledges", "/api/tour", "/updates", "/my-contribution", "/supporter-qa", "/api/supporter-qa", "/supporters", "/join", "/api/supporters/:path*", "/organizations/:path*", "/api/organizations/:path*"].map(source=>({source,headers:[{key:"Cache-Control",value:"private, no-store, max-age=0"},{key:"Referrer-Policy",value:"no-referrer"}]}))];
   },
 };
 export default config;

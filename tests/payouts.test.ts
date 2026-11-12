@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { PostgresDatabase, canonicalJson, sha256, type CommerceRestResult, type CreatePayout, type PayoutBatchObservation, type PayoutItemObservation } from "@fracture/paypal-core";
 import { database, initializeDatabase, query } from "../lib/server/db";
 import type { Session } from "../lib/server/auth";
+import { tokenHash } from "../lib/server/auth";
 import { createProject, sampleReceipt } from "../lib/server/seed";
 import { importSampleReceipt } from "../lib/server/documents";
 import type { DocumentStorage } from "../lib/server/document-storage";
@@ -17,6 +18,7 @@ import { openPrivate } from "../lib/server/private-values";
 import { geminiOutputShape } from "../lib/domain/ai-schema";
 import { extractedReceiptSchema } from "../lib/domain/evidence";
 import { z } from "zod";
+import { fundDefinition, organizationAdopt, organizationLink, organizationOwner, organizationPublished } from "./helpers/organization-workflow";
 
 const schema = `fp_payout_test_${randomUUID().replaceAll("-", "")}`, originalUrl = process.env.DATABASE_URL!, admin = new PostgresDatabase(originalUrl);
 before(async () => {
@@ -55,10 +57,11 @@ async function fundedFixture(session: Session, invoice = false, amount = 96000) 
   return { roundId, receipt };
 }
 async function fixture(options: { invoice?: boolean; funded?: number; secondPackage?: string } = {}) {
+  const token = randomUUID() + randomUUID();
   const session: Session = { id: randomUUID(), tenantId: randomUUID(), projectId: randomUUID(), actorId: randomUUID(), role: "volunteer", mode: "live_sandbox", expiresAt: new Date(Date.now() + 600_000).toISOString() };
   await database().transaction(async tx => {
     await createProject(tx, session.tenantId, session.projectId, `payout-fixture-${randomUUID()}`, "live_sandbox");
-    await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)", [session.id, randomUUID(), session.tenantId, session.projectId, session.actorId, session.role, session.expiresAt]);
+    await tx.query("INSERT INTO fp_sessions(id,token_hash,tenant_id,project_id,actor_id,role,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)", [session.id, tokenHash(token), session.tenantId, session.projectId, session.actorId, session.role, session.expiresAt]);
     await tx.query("INSERT INTO fp_memberships(tenant_id,project_id,actor_id,roles) VALUES($1,$2,$3,$4::jsonb)", [session.tenantId, session.projectId, session.actorId, JSON.stringify(["volunteer", "organizer", "donor", "auditor"])]);
     await tx.query("INSERT INTO fp_recipient_accounts(id,tenant_id,actor_id,encrypted_destination,masked_label,verification_method,account_verified,verified_at) VALUES($1,$2,$3,$4,'PayPal •••0001','paypal_identity',true,now())", [randomUUID(), session.tenantId, session.actorId, sealDestination("FIXTUREPAYER0001", session.tenantId, session.actorId)]);
   });
@@ -104,13 +107,29 @@ async function fixture(options: { invoice?: boolean; funded?: number; secondPack
   const deps: PayoutDependencies = { gateway, balance: { async read() { calls.push("balance"); if (beforeBalance) await beforeBalance(); return { outcome: "observed", evidence: { ...balance, observedAt: new Date().toISOString() } }; } } };
   const select = (lineIds = ["line-1", "line-2"], payableId?: string) => preparePayoutReview(session, claim.id, { expectedVersion: claim.version, lineIds, ...(payableId ? { payableId } : {}) });
   const approve = async (lineIds?: string[]) => { const review = await select(lineIds); return approvePayout(session, claim.id, { reviewId: review.id, reviewDigest: review.digest, intentId: randomUUID(), amountMinor: review.amountMinor, currency: "USD", recipientAndAmountChecked: true, feeAllowanceAcknowledged: true, sampleAcknowledged: true }); };
-  return { session, claim, document, ...funding, deps, calls, creates, batches, select, approve, effects: () => actualEffects,
+  return { token, session, claim, document, ...funding, deps, calls, creates, batches, select, approve, effects: () => actualEffects,
     status: (value: string) => { status = value; }, batchStatus: (value: string) => { batchStatus = value; }, fee: (value: number | null) => { fee = value; },
     lose: () => { loseNext = true; }, refuse: () => { refuseNext = true; }, mismatch: () => { readMismatch = true; }, badBatch: () => { badBatch = true; }, readUnavailable: () => { readUnavailable = true; },
     setBalance: (value: BalanceEvidence) => { balance = value; }, beforeBalance: (value: () => Promise<void>) => { beforeBalance = value; } };
 }
 
 describe("reviewed Payouts — isolated PostgreSQL and fixture gateways, no live requests", () => {
+  it("pins actual new payout governance reviews while retaining original approved requests under later rules", async () => {
+    const f = await fixture(), owner = await organizationOwner(f.token), linkId = await organizationLink(owner.request), before = await f.select();
+    const input = (review: typeof before) => ({ reviewId: review.id, reviewDigest: review.digest, intentId: randomUUID(), amountMinor: review.amountMinor, currency: "USD" as const, recipientAndAmountChecked: true as const, feeAllowanceAcknowledged: true as const, sampleAcknowledged: true });
+    const originalSessions = await query("SELECT id,expires_at FROM fp_sessions WHERE project_id=$1 ORDER BY id", [f.session.projectId]);
+    const rules = await organizationAdopt(owner.request, linkId, await organizationPublished(owner.request, fundDefinition({ maximumExpenseMinor: 5000 })), { mappings: [{ policyPackageKey: "shared-purpose", targetPackageIds: ["electronics"] }] });
+    await assert.rejects(approvePayout(f.session, f.claim.id, input(before)), { code: "ORG_POLICY_REVIEW_REQUIRED" });
+    assert.equal((await query("SELECT id FROM fp_payables WHERE project_id=$1", [f.session.projectId])).length, 0);
+    const current = await f.select(), p = await approvePayout(f.session, f.claim.id, input(current));
+    const [original] = await query<{ request_hash: string }>("SELECT request_hash FROM fp_payables WHERE id=$1", [p.id]);
+    assert.equal((await query<{ artifact_hash: string }>("SELECT artifact_hash FROM fp_project_policy_artifacts WHERE adoption_id=$1 AND consumer='payable_approval' AND artifact_id=$2", [rules.result.receipt.resourceId, p.id]))[0].artifact_hash, original.request_hash);
+    await organizationAdopt(owner.request, linkId, await organizationPublished(owner.request, fundDefinition({ maximumExpenseMinor: 1, maximumFeeAllowanceMinor: 0 })), { mappings: [{ policyPackageKey: "shared-purpose", targetPackageIds: ["electronics"] }] });
+    const renewal = await f.select(["line-1", "line-2"], p.id), renewed = await approvePayout(f.session, f.claim.id, input(renewal));
+    assert.equal(renewed.id, p.id); assert.equal((await query<{ request_hash: string }>("SELECT request_hash FROM fp_payables WHERE id=$1", [p.id]))[0].request_hash, original.request_hash);
+    assert.deepEqual(await query("SELECT id,expires_at FROM fp_sessions WHERE project_id=$1 ORDER BY id", [f.session.projectId]), originalSessions);
+    assert.equal(f.effects(), 0); assert.equal(f.calls.length, 0);
+  });
   it("requires funded original sources and a current verified claimant account", async () => {
     const f = await fixture({ funded: 92500 });
     await assert.rejects(f.select(), { code: "PACKAGE_NOT_FUNDED" });

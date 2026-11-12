@@ -16,6 +16,7 @@ import { sealPrivate } from "./private-values";
 import { ownedPledge, outstandingPurposePledges, pledgeContext, pledgeContract, type PledgeRow, type PurposeScope } from "./purpose-store";
 import { appendEvent } from "./repository";
 import { sampleReceipt } from "./seed";
+import { bindProjectPolicyArtifacts, enforceProjectFundDecision, pinnedProjectPolicyRules } from "./project-policy";
 
 const identity=z.string().min(1).max(160),digest=z.string().regex(/^[a-f0-9]{64}$/);
 export const purposePledgeSchema=z.object({intentId:z.string().uuid(),policyId:identity,policyDigest:digest,amountMinor:z.number().int().min(1).max(100_000_000),acknowledged:z.literal(true)}).strict();
@@ -37,6 +38,10 @@ export async function insertPurposePledge(tx:SqlConnection,session:Session,polic
     [obligationId,session.tenantId,session.projectId,policy.packageId,input.donorActorId,input.amountMinor,JSON.stringify({eligible:true,provenance:session.mode,donorLabel:input.kind==="donor"?"A supporter":input.kind==="grant"?"Accepted grant":"Earned matching pledge",purposePledgeId:id})]);
   await tx.query(`INSERT INTO fp_purpose_pledges(id,tenant_id,project_id,policy_id,round_id,obligation_id,package_id,package_version,donor_actor_id,membership_version,kind,sponsor_acceptance_id,sponsor_event_id,amount_minor,expires_at,digest,encrypted_data)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,[id,session.tenantId,session.projectId,policy.id,policy.roundId,obligationId,policy.packageId,policy.packageVersion,input.donorActorId,input.membershipVersion,input.kind,value.sponsorAcceptanceId,value.sponsorEventId,input.amountMinor,value.expiresAt,hash,sealPrivate(value,pledgeContext(session,id))]);
+  const policyRules=input.sponsorAcceptanceId
+    ? (await pinnedProjectPolicyRules(tx,session,"sponsor_offer",`accept:${input.sponsorAcceptanceId}`)).filter(rule=>rule.document.compiled.packageIds.includes(policy.packageId))
+    : await enforceProjectFundDecision(tx,session,{consumer:"purpose_pledge",packages:[{packageId:policy.packageId}]});
+  await bindProjectPolicyArtifacts(tx,policyRules,"purpose_pledge",id,hash,session);
   return id;
 }
 export async function createPurposePledge(session:Session,raw:z.infer<typeof purposePledgeSchema>):Promise<{id:string}>{

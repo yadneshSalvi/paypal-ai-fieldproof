@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { SqlConnection } from "@fracture/paypal-core";
 import { z } from "zod";
+import { bindProjectPolicyArtifacts, enforceProjectEvidenceDecision } from "./project-policy";
 import { alignmentInputSchema, alignmentReviewSchema, alignmentRevokeSchema, qualificationInputSchema, qualificationReviewSchema, signoffInputSchema,
   type AlignmentView, type CompetencyScope, type PackageReadiness, type PlanSourceBinding, type QualificationView, type SignoffView } from "../planning/contracts";
 import { pointInPolygon, solveAffine } from "../planning/geometry";
@@ -43,6 +44,7 @@ export async function savePhotoAlignment(session: Session, raw: z.infer<typeof a
       if (!zone || input.anchors.some(a => !pointInPolygon(a.plan, zone.polygon))) throw new DomainError("ANCHOR_OUTSIDE_PACKAGE", "Place the three plan anchors inside the selected package zone.", 422);
       const [source] = await sourceBindings(session, [input.documentId], tx, true);
       if (source.purpose !== "photo") throw new DomainError("PHOTO_SOURCE_REQUIRED", "Choose a validated photograph or labelled sample illustration.", 422);
+      const policyRules = await enforceProjectEvidenceDecision(tx, session, input.packageId, [source], input.imageSharing);
       if (!source.pages.some(p => p.number === input.sourcePage) || !validImageRegion(input.displayCrop) || input.redactions.some(r => !validImageRegion(r))) throw new DomainError("IMAGE_REGION_INVALID", "Keep the crop and masks on one validated source page.", 422);
       if (input.anchors.some(a => a.photo.x < input.displayCrop.x || a.photo.x > input.displayCrop.x + input.displayCrop.width || a.photo.y < input.displayCrop.y || a.photo.y > input.displayCrop.y + input.displayCrop.height)) throw new DomainError("ANCHOR_OUTSIDE_CROP", "Keep all three chosen image landmarks inside the displayed crop.", 422);
       if (input.anchors.some(a => input.redactions.some(r => a.photo.x >= r.x && a.photo.x <= r.x + r.width && a.photo.y >= r.y && a.photo.y <= r.y + r.height))) throw new DomainError("ANCHOR_REDACTED", "Choose visible landmarks outside the redaction masks so the reviewed rendition retains all three anchors.", 422);
@@ -55,6 +57,7 @@ export async function savePhotoAlignment(session: Session, raw: z.infer<typeof a
       await tx.query(`INSERT INTO fp_photo_alignments(id,tenant_id,project_id,plan_id,package_id,document_id,author_id,revision,content_hash,encrypted_data)
         VALUES($1,$2,$3,$4,$5,$6,$7,(SELECT COALESCE(max(revision),0)+1 FROM fp_photo_alignments WHERE project_id=$3 AND package_id=$5),$8,$9)`,
         [id, ...scope(session), input.planId, input.packageId, input.documentId, session.actorId, hash, sealPrivate(data, evidenceContext("photo-alignment", { id, tenant_id: session.tenantId, project_id: session.projectId }))]);
+      await bindProjectPolicyArtifacts(tx, policyRules, "image_review", `proposal:${id}`, hash, session, "materialized", ["This image association still requires its separate review."]);
       await appendEvent(tx, session, "planning.alignment_proposed", "Three landmarks connect an image to the plan", "The affine overlay is a draft association. A separate review is still needed; it does not certify installation or safety.");
       return { id };
     });
@@ -74,10 +77,12 @@ export async function reviewPhotoAlignment(session: Session, id: string, raw: z.
       if (data.imageSharing === "project_members" && !input.sharedImageConfirmed) throw new DomainError("SHARED_IMAGE_REVIEW_REQUIRED", "Check the exact cropped and masked image before sharing it with project members.", 422);
       await currentPublished(session, row.plan_id, data.planHash, tx);
       if ((await currentSourceCheck(session, [data.source], tx, true)).length) throw new DomainError("SOURCE_CHANGED", "The photo or its permission changed. Create a new alignment.", 409);
+      const policyRules = await enforceProjectEvidenceDecision(tx, session, row.package_id, [data.source], data.imageSharing);
       solveAffine(data.anchors);
       // A later reviewed association replaces the earlier one; draft experiments do not.
       await tx.query("UPDATE fp_photo_alignments SET state='revoked' WHERE tenant_id=$1 AND project_id=$2 AND package_id=$3 AND state='reviewed'", [...scope(session), row.package_id]);
       await tx.query("UPDATE fp_photo_alignments SET state='reviewed',reviewed_by=$2,reviewed_at=now() WHERE id=$1", [id, session.actorId]);
+      await bindProjectPolicyArtifacts(tx, policyRules, "image_review", id, row.content_hash, session);
       await appendEvent(tx, session, "planning.alignment_reviewed", "An image association was reviewed", "A person confirmed the three chosen landmarks. The interpolation residual is not a measure of real-world accuracy, location, completion, or safety.");
       return { id };
     });
@@ -228,6 +233,7 @@ export async function recordWorkSignoff(session: Session, raw: z.infer<typeof si
       if (Date.parse(input.observedAt) > Date.now() + 5 * 60_000) throw new DomainError("SIGNOFF_FUTURE", "The inspection time cannot be in the future.", 422);
       for (const id of input.documentIds) await assertPlanningSourceOwner(session, id, tx);
       const sources = await sourceBindings(session, input.documentIds, tx, true);
+      const policyRules = await enforceProjectEvidenceDecision(tx, session, input.packageId, sources);
       if (!sources.some(s => s.purpose === "signoff") || sources.some(s => !["signoff", "photo"].includes(s.purpose))) throw new DomainError("SIGNOFF_SOURCE_REQUIRED", "Include the inspection's source document. A photo alone cannot establish a qualified review.", 422);
       if (qualification.provenance !== "sample" && !sources.some(s => s.purpose === "signoff" && s.documentId !== qualification.document_id)) throw new DomainError("INSPECTION_DOCUMENT_REQUIRED", "Include a separate inspection record. Reviewer credentials alone cannot prove that this package's work was inspected.", 422);
       const sample = qualification.provenance === "sample" || plan.payload.sources.some(s => s.provenance === "sample_document") || sources.some(s => s.provenance === "sample_document");
@@ -238,6 +244,7 @@ export async function recordWorkSignoff(session: Session, raw: z.infer<typeof si
       await tx.query(`INSERT INTO fp_work_signoffs(id,tenant_id,project_id,plan_id,package_id,requirement_id,qualification_id,qualification_version,actor_id,decision,content_hash,encrypted_data)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, [id, ...scope(session), input.planId, input.packageId, input.requirementId, input.qualificationId, input.qualificationVersion,
         session.actorId, input.decision, planningHash(data), sealPrivate(data, evidenceContext("work-signoff", { id, tenant_id: session.tenantId, project_id: session.projectId }))]);
+      await bindProjectPolicyArtifacts(tx, policyRules, "physical_signoff", id, planningHash(data), session);
       await appendEvent(tx, session, "planning.work_review_recorded", sample ? "A sample physical-review exercise was recorded" : "A scoped physical review was recorded", "The exact plan, source versions, reviewer competence and limitations are retained. Other requirements and funding remain separate.");
       return { id };
     });

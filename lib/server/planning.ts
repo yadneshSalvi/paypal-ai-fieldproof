@@ -7,6 +7,7 @@ import { assessPackageFunding } from "../domain/package-funding";
 import type { FundingState } from "../contracts";
 import { publishPlanSchema, reviewPlanSchema, savePlanSchema, type PlanningWorkspace, type ProposedPlan } from "../planning/contracts";
 import { validatePlan } from "../planning/geometry";
+import { bindProjectPolicyArtifacts, enforceProjectPolicyPlan } from "./project-policy";
 import { solveScenario, type FundingPool } from "../planning/solver";
 import type { Session } from "./auth";
 import { database, query } from "./db";
@@ -100,11 +101,13 @@ export async function reviewPlan(session: Session, raw: z.infer<typeof reviewPla
         if (!validation.publishable) throw new DomainError("PLAN_REVIEW_INCOMPLETE", "Resolve the geometry, source links, and package reviews before approving this version.", 422);
         assertBudgetUnchanged(data.plan, packages);
       }
+      const policyRules = input.decision === "approved" ? await enforceProjectPolicyPlan(tx, session, data) : [];
       const id = randomUUID();
       const [prior] = await query<{ id: string }>("SELECT id FROM fp_plan_reviews WHERE plan_id=$1", [row.id], tx);
       if (prior) throw new DomainError("PLAN_REVIEW_RECORDED", "This revision already has a review. Save a new revision to make another decision.", 409);
       await tx.query("INSERT INTO fp_plan_reviews(id,plan_id,tenant_id,project_id,actor_id,membership_version,decision,content_hash,encrypted_data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
         [id, row.id, session.tenantId, session.projectId, session.actorId, membershipVersion, input.decision, row.content_hash, sealPrivate({ note: input.note }, planReviewContext({ id, tenant_id: session.tenantId, project_id: session.projectId }))]);
+      await bindProjectPolicyArtifacts(tx, policyRules, "plan_review", id, row.content_hash, session);
       await tx.query("UPDATE fp_planning_heads SET version=version+1,updated_at=now() WHERE project_id=$1 AND tenant_id=$2", [session.projectId, session.tenantId]);
       await appendEvent(tx, session, "planning.plan_reviewed", input.decision === "approved" ? "The source plan passed its review" : "The plan needs another pass", `Revision ${row.revision} has a recorded organizer decision. This reviews the plan; it does not certify installed work.`);
       return { reviewId: id, headVersion: head.version + 1 };
@@ -131,9 +134,11 @@ export async function publishReviewedPlan(session: Session, raw: z.infer<typeof 
       if ((await currentSourceCheck(session, data.sources, tx, true)).length || planningHash(packages) !== row.package_hash) throw new DomainError("PLAN_CONTEXT_CHANGED", "A source or package changed after review. A new revision is required.", 409);
       if (!validatePlan(data.plan, data.sources, packages.map(p => p.packageId), true).publishable) throw new DomainError("PLAN_REVIEW_INCOMPLETE", "The reviewed plan no longer passes its deterministic checks.", 422);
       assertBudgetUnchanged(data.plan, packages);
+      const policyRules = await enforceProjectPolicyPlan(tx, session, data);
       const id = randomUUID();
       await tx.query("UPDATE fp_plan_publications SET state='superseded' WHERE tenant_id=$1 AND project_id=$2 AND state='active'", [session.tenantId, session.projectId]);
       await tx.query("INSERT INTO fp_plan_publications(id,tenant_id,project_id,plan_id,review_id,actor_id,content_hash) VALUES($1,$2,$3,$4,$5,$6,$7)", [id, session.tenantId, session.projectId, row.id, review.id, session.actorId, row.content_hash]);
+      await bindProjectPolicyArtifacts(tx, policyRules, "plan_publication", id, row.content_hash, session);
       await tx.query("UPDATE fp_planning_heads SET publication_id=$3,version=version+1,updated_at=now() WHERE project_id=$1 AND tenant_id=$2", [session.projectId, session.tenantId, id]);
       await appendEvent(tx, session, "planning.plan_published", "The workspace has a reviewed shared plan", `Plan revision ${row.revision} is current for this project's members. Originals remain private. Public Proof Page publication is a separate redaction review.`);
       return { publicationId: id, headVersion: head.version + 1 };

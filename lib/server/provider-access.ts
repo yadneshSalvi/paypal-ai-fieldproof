@@ -9,7 +9,7 @@ export function supporterQaProfile() {
 
 /** The community QA process cannot acquire a provider merely by loading a .env file. */
 export function assertProviderAccess(): void {
-  if (process.env.FIELDPROOF_PROVIDER_ACCESS === "disabled" || process.env.FIELDPROOF_ONBOARDING_REVIEW === "true" || process.env.FIELDPROOF_COMMUNITY_QA === "true" || process.env.FIELDPROOF_FUNDING_QA === "true" || process.env.FIELDPROOF_SUPPORTER_QA === "true")
+  if (process.env.FIELDPROOF_PROVIDER_ACCESS === "disabled" || process.env.FIELDPROOF_GOVERNANCE_REVIEW === "true" || process.env.FIELDPROOF_ONBOARDING_REVIEW === "true" || process.env.FIELDPROOF_COMMUNITY_QA === "true" || process.env.FIELDPROOF_FUNDING_QA === "true" || process.env.FIELDPROOF_SUPPORTER_QA === "true")
     throw new DomainError("PROVIDERS_DISABLED", "Provider access is disabled in this isolated workspace. Your sources and manual drafts remain available.", 503);
 }
 
