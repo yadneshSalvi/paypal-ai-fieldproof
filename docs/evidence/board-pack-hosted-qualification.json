@@ -1,0 +1,63 @@
+{
+  "feature": "Private per-project Board Packs",
+  "status": "released_with_bounded_hosted_qualification",
+  "qualificationDate": "2026-11-12",
+  "deployedSource": "1258662cf0287962e9edd0e11f759780fdd682b5",
+  "deploymentId": "dpl_42Ea1oYP1XX9qcmFiHhCJXqDYVoL",
+  "canonicalUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "schemaVersion": 20,
+  "migration": {
+    "fromVersion": 19,
+    "toVersion": 20,
+    "verifiedHeldBackup": true,
+    "originalTablesPreserved": 115,
+    "originalRowsPreserved": 7492,
+    "newTables": 2,
+    "newTableRowsAtMigration": 0,
+    "originalValuesDefinitionsIndexesConstraintsAndGuards": "unchanged",
+    "oldRowBackfills": 0,
+    "completedAt": "2026-11-12T10:37:48.571Z"
+  },
+  "protectedStaging": {
+    "transport": "Official vercel curl with existing deployment protection authentication; application requests remained GET-only.",
+    "getRequests": 26,
+    "assertions": 100,
+    "servedAssetsChecked": 16,
+    "privateValueFindings": 0,
+    "originalSchema20RowsPreserved": 7493,
+    "catalogPreserved": true,
+    "profiles": "The three retained original organizer, sponsor/donor, and saved-workspace organizer profiles.",
+    "applicationCookieWrites": 0,
+    "newActorsSessionsInvitationsReportsOrFinancialActions": 0,
+    "completedAt": "2026-11-12T10:57:28.958Z",
+    "retainedInitialFailure": "The direct reader stopped at Vercel deployment-protection SSO before any application response. The protected GET transport then completed; deployment protection remained enabled."
+  },
+  "nativeStaging": {
+    "anonymousEntry": "passed",
+    "originalProfiles": 3,
+    "rolesProjectsEmptyHistoriesAndFixedDeadlines": "preserved",
+    "desktopVisualInspection": "passed",
+    "cssViewport390HorizontalOverflow": false,
+    "consoleWarningsOrErrorsDuringBoardNavigation": 0,
+    "captureClicked": false,
+    "executionHold": "The backend enforced the execution hold. The capture control remained enabled in the UI.",
+    "mobileLimit": "The screenshot tool scaled the full viewport. Hosted mobile geometry and accessibility structure were checked; the richer local responsive and print qualification is recorded separately."
+  },
+  "production": {
+    "canonicalAliasAndProductionTarget": "verified against the exact deployment",
+    "originalExecutionModeRestored": true,
+    "executionControlHeld": false,
+    "executionControlVersion": 9,
+    "restoredAt": "2026-11-12T10:58:08.752Z",
+    "canonicalContinuityGetRequests": 2,
+    "canonicalContinuityAt": "2026-11-12T10:58:33.390Z",
+    "originalOrganizerRoleProjectDeadlineAndEmptyHistory": "passed"
+  },
+  "provenanceAndLimits": [
+    "This hosted release uses only retained, self-declared controlled profiles. It does not establish independent human participation.",
+    "No provider, model, email, new contribution, report capture or deadline renewal occurred during these hosted checks.",
+    "The rich original Sample report, source and access withdrawal, natural expiry, and actual A4/Letter browser PDF checks remain separately documented local native evidence.",
+    "True 200% browser zoom, wider accessibility and performance qualification, organization portfolios and the final demonstration remain separate work.",
+    "Private credentials, actor identifiers, session cookies, capability links, raw database snapshots and browser evidence remain outside public source."
+  ]
+}
