@@ -6,9 +6,30 @@ Fieldproof connects a community project plan to conditional commitments, confirm
 
 The Eastside makerspace is a fictional sample project. Its Electronics Benches package has an exact $960 target and eight sample obligations. The walkthrough illustrates seven capture receipts totalling $925 and one $35 invoice-payment receipt. Sample records are never presented as real PayPal payments or physical work.
 
+## For judges: one click, no signup
+
+Open **[/judge](https://paypal-ai-fieldproof.vercel.app/judge)**. "Start the 60-second tour" creates your own private Sample workspace (no account) and plays three beats: a rough sketch redrawn as a budgeted blueprint; eight pledges collected, one declined and recovered by a PayPal invoice with a QR code ($925 Orders captures + $35 invoice payment = $960); and a volunteer's receipt read, checked for a duplicate, approved and repaid. The end card shows the tour time measured in your browser (54 s in a local Chromium run of `scripts/judge-tour-measure.py`). "Start over" gives you a fresh scenario; nothing is shared between visitors. Every date in a judge workspace is relative to the moment it is created, so the tour reads the same on any day.
+
+**What is real, and what is Sample.** Everything in the tour is fictional Sample data, labelled `Sample` on screen: no PayPal call is made and no money moves. The decline and the invoice recovery in the tour are a modeled Sample outcome; that path is implemented and fixture-tested but has not been observed against PayPal. What has been observed in the PayPal sandbox is recorded under `docs/evidence/`: Vault consent and eight merchant-initiated Orders captures totalling $960, a buyer-present checkout, a partial refund, a $66 payout to a Log In with PayPal-verified recipient, verified webhooks and a balance read. A `Live sandbox` label appears only for payments you approve yourself with your own PayPal sandbox buyer account (instructions on `/judge`).
+
+### How AI uses PayPal
+
+No model ever calls a PayPal write. Models read, draft and explain; fixed code and a named person's approval are the only way money moves.
+
+| Step | AI does | PayPal does | Guard / person |
+|---|---|---|---|
+| Plan | Reads a sketch and supplier quotes into zones, budgets and proof requirements (OpenAI) | Nothing yet; each approved package budget later becomes the exact order amount | Deterministic geometry and arithmetic validation; organizer reviews before publishing |
+| Collect | Nothing | Payment Method Tokens (Vault) consent, then one Orders capture per pledge when the goal is reached | Exact consent digest; each supporter approves in PayPal |
+| Recover | Nothing; a decline is never retried by a model | One Invoicing invoice with QR for the same obligation inside a fixed 48-hour window | One active channel per obligation; settlement must be provider-verified |
+| Repay | Reads a receipt into lines, proposes packages, flags unclear lines and possible duplicates (OpenAI / Gemini) | Payouts to the volunteer's Log In with PayPal-verified account | Code checks totals; organizer approves the exact amount; balance preflight |
+| Return | Nothing; shares are computed | Refund of the original capture when a package is cancelled | Supporter chooses refund or another purpose |
+| Explain | AG Studio Steward and Auditor agents answer questions and build reports | Read-only PayPal Agent Toolkit calls (`get_order`, `get_invoice`) on the tenant's own resources | Auditor is read-only; the server refuses any payment request from it |
+
+Model roles: receipt reading and layout/plan extraction use `OPENAI_MODEL` / `OPENAI_LAYOUT_MODEL`; updates and translation use `OPENAI_COMMUNITY_MODEL`; a second receipt reader uses `GEMINI_MODEL`. Model ids are configuration, not hard-coded. No comparative benchmark has been run.
+
 ## Current implementation checkpoint
 
-This repository is an active build, not a finished submission. The current checkpoint includes:
+The current checkpoint includes:
 
 - A responsive interactive blueprint and project, package, progress, proof-preview, donor, expense, organizer, sandbox checkout and printable Board Pack views.
 - Isolated durable PostgreSQL workspaces, expiring server sessions, explicit roles, current payment approvals, immutable operation identities, version checks, audit events and receipt projections.
@@ -41,7 +62,7 @@ This repository is an active build, not a finished submission. The current check
 - A purpose funding desk at `/funding`: general buyer-present pledges, separately accepted capped matches and grants, original-route cancellation returns, explicit new-purpose and next-cycle choices, and expense funding from audited versioned credit lots. Evidence-backed recovery panels support unanimous donor approval of source-specific remaining shares and independent outside-return reconciliation, preserving paid history, prior exclusions and original decision deadlines. See [the funding lifecycle and recovery guide](docs/funding-lifecycle.md). Actual provider checkout stays disabled until separately qualified.
 - A private personal contribution story at `/updates` and `/my-contribution`, including template workspaces: exact versioned budget shares, current-purpose funding, a source-linked timeline, permitted reviewed imagery, source/translation status and an original-receipt/decision drawer. Donor ownership applies to page hydration, refresh and role responses as well as dedicated source reads. See [the supporter story guide](docs/supporter-story.md). Native acceptance and actual-provider/release gates remain separate.
 
-The full build still includes held-out geometry/model and multilingual evaluations, independent physical review, actual recovery-invoice settlement and wider payment/refund/repayment scenarios, real Studio provider reads and dependency hardening, scheduled drafts and lifecycle notifications, independent public-name recognition and procurement, broader accessibility/performance review, research or disclosed absence, recordings and final controlled release. Each existing native or provider receipt establishes only its stated scenario. Source implementation and passing fixtures do not establish an unobserved provider, browser or human outcome.
+Scheduled private drafts and the lifecycle inbox, independent public-name recognition, and procurement are implemented (see [lifecycle drafts](docs/lifecycle-drafts.md), [recognition](docs/recognition.md) and [procurement](docs/procurement.md)). Still not done or not observed: a held-out model evaluation, independent physical review, an actual declined collection followed by recovery-invoice settlement (the recovery path is implemented and fixture-tested; in the one real sandbox round all eight Orders captures succeeded), invoice-payment refunds, wider payout states, external notification delivery (previews only), a full accessibility/performance matrix, fluent-human Spanish review, and user research. Each native or provider receipt establishes only its stated scenario. Source implementation and passing fixtures do not establish an unobserved provider, browser or human outcome.
 
 ## Run locally
 
@@ -125,7 +146,7 @@ For the controlled collection qualification, keep the existing participant works
 
 PayPal Invoice status and bookkeeping refund endpoints do not prove money movement. Payout submission does not prove successful repayment. A saved wallet is not reserved funds. AI proposals have no financial authority. The Auditor cannot dispatch financial commands.
 
-Direct OpenAI and Gemini calls and private Vercel Blob storage are qualified for the receipt workflow, with run versions, source/output hashes and measured latency recorded. AG Studio 3.1.0 is integrated with native custom widgets, live data, full history and the retained composition harness. Its actual Sample browser/model journey is recorded separately from the official `@paypal/agent-toolkit@1.11.0` owned-resource provider gate. The Toolkit graph currently has 12 inherited npm advisories (11 high, one moderate); its closed read boundary does not make that audit clean. Dependency hardening and requalification remain required before release. Real physical evidence and real user research require authorized sources and participants. Clearly disclosed Sample alternatives are used where those do not exist.
+Direct OpenAI and Gemini calls and private Vercel Blob storage are qualified for the receipt workflow, with run versions, source/output hashes and measured latency recorded. AG Studio 3.1.0 is integrated with native custom widgets, live data, full history and the retained composition harness. Its actual Sample browser/model journey is recorded separately from the official `@paypal/agent-toolkit@1.11.0` owned-resource provider gate. As of 13 November 2026 `npm audit` reports 10 affected packages (9 high, 1 moderate; `@paypal/agent-toolkit`, `@langchain/core`, `ai`, `@ai-sdk/*`, `openai`, `jsondiffpatch`, `uuid`, `zod`), all inherited through the Toolkit and model SDK graph; the tree is not audit-clean. Dependency hardening and requalification remain required before release. Real physical evidence and real user research require authorized sources and participants. Clearly disclosed Sample alternatives are used where those do not exist.
 
 The receipt pipeline validates files before model use, retains private originals and immutable model output, checks currency/arithmetic/source regions, and requires an organizer decision for every line. Payouts can use only reviewed, currently funded package allocations; a balance read is bounded to a 60-second fetch age and a disclosed three-hour provider reporting age. Batch acceptance is not item success. Unknown creation retains its reservations and exact original request identity. These gates have local fixture coverage; the separately observed original $66 sandbox reimbursement does not qualify every failure, refund or cancellation path.
 
