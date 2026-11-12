@@ -33,10 +33,10 @@ export function useOrganizationApi(callbacks: ApiCallbacks) {
     if (recovery === "identity") { boundary.invalidate("organization"); latest.current.organizationChanged(); }
     if (recovery === "project") { boundary.invalidate("project"); latest.current.projectChanged(); }
   }
-  async function read<T>(path: string, schema: z.ZodType<T>, options: RequestContext & { body?: unknown } = {}): Promise<T | null> {
+  async function read<T>(path: string, schema: z.ZodType<T>, options: RequestContext & { body?: unknown; recoverAuthority?: false } = {}): Promise<T | null> {
     const ticket = boundary.start(domainFor(options));
     try { const value = await orgRequest(path, schema, options.body, { scope: options.scope, projectScope: options.projectScope, signal: ticket.signal }); return ticket.current() ? value : null; }
-    catch (caught) { if (!ticket.current()) return null; authorityChanged(caught); throw caught; }
+    catch (caught) { if (!ticket.current()) return null; if (options.recoverAuthority !== false) authorityChanged(caught); throw caught; }
     finally { ticket.finish(); }
   }
   async function execute<T>(attempt: OrgPendingAttempt, schema: z.ZodType<T>): Promise<T | null> {

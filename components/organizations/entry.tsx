@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { announceOrganizationChange } from "@/lib/organizations/client-boundary";
+import { announceOrganizationChange, orgRecoveryForError } from "@/lib/organizations/client-boundary";
 import { ORG_ENTRY_STORAGE, orgEntryForLocation, readOrgEntryDraft, type OrgEntryDraft } from "@/lib/organizations/entry-draft";
 import * as C from "@/lib/organizations/contracts";
 import { OrgAck, OrgField, OrgFormError, OrgNotice, OrgPrivateLink, OrgRequestStatus, OrganizationShell, orgDate, orgErrorText, submitOrgForm, useOrganizationApi, useOrgDeadline } from "./shared";
@@ -37,8 +37,17 @@ export function OrganizationRecipient() {
   }, []);
   useEffect(() => {
     if (!loaded || !draft) return;
-    let active = true; setError(null); setBusy(true);
-    void api.read("entry/review", entryResponse, { domain: "entry", body: { kind: draft.kind, token: draft.token, intentId: draft.intentId } }).then(result => { if (active && result) setView(result.entry); }, caught => { if (active) setError(caught); }).finally(() => { if (active) setBusy(false); });
+    let active = true; setView(null); setError(null); setBusy(true);
+    // A direct recipient has not necessarily opened the organization desk.
+    // Await its non-authorizing browser cookie before reviewing the fragment.
+    // Entry failures settle here: the shared identity callback would otherwise
+    // increment this effect's generation and repeat the same failed POST.
+    void (async () => {
+      const context = await api.read("context", C.orgBootstrapSchema, { domain: "entry", recoverAuthority: false });
+      if (!active || !context) return;
+      const result = await api.read("entry/review", entryResponse, { domain: "entry", recoverAuthority: false, body: { kind: draft.kind, token: draft.token, intentId: draft.intentId } });
+      if (active && result) setView(result.entry);
+    })().catch(caught => { if (active) setError(caught); }).finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
   }, [loaded, draft?.kind, draft?.token, draft?.intentId, generation]);
   useOrgDeadline(view?.expiresAt, () => { api.boundary.invalidate("entry"); setView(null); setWelcome(null); setGeneration(value => value + 1); });
@@ -49,9 +58,14 @@ export function OrganizationRecipient() {
       const body = original.kind === "invite" ? original.acceptance ?? C.orgEntryAcceptSchema.parse({ token: original.token, intentId: original.intentId, expectedScope: view.scope, displayName: name, contractVersion: C.ORG_GOVERNANCE_VERSION, acknowledged: ack }) : original.restoration ?? C.orgEntryRestoreSchema.parse({ token: original.token, intentId: original.intentId, expectedScope: view.scope, acknowledged: ack });
       const next = original.kind === "invite" ? { ...original, acceptance: body as C.OrgEntryAcceptInput } : { ...original, restoration: body as C.OrgEntryRestoreInput };
       store(next); api.boundary.invalidate("entry"); setBusy(true);
-      const result = await api.read(original.kind === "invite" ? "entry/accept" : "entry/restore", C.orgWelcomeResponseSchema, { scope: body.expectedScope, domain: "entry", body });
+      const result = await api.read(original.kind === "invite" ? "entry/accept" : "entry/restore", C.orgWelcomeResponseSchema, { scope: body.expectedScope, domain: "entry", recoverAuthority: false, body });
       if (result && draftRef.current?.token === original.token && draftRef.current.kind === original.kind) { setWelcome(result); try { sessionStorage.removeItem(ORG_ENTRY_STORAGE); } catch { /* The confirmed capability remains only in this mounted view. */ } announceOrganizationChange(); }
-    } catch (caught) { if (operation.current === activeOperation) setError(caught); }
+    } catch (caught) {
+      if (operation.current === activeOperation) {
+        setError(caught);
+        if (orgRecoveryForError(caught) === "identity") { api.boundary.invalidate("entry"); setView(null); setWelcome(null); setAck(false); setLeaveAck(false); }
+      }
+    }
     finally { if (operation.current === activeOperation) setBusy(false); }
   }
   async function leave() {

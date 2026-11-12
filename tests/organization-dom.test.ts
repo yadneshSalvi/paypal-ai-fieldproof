@@ -64,6 +64,89 @@ beforeEach(() => {
 });
 
 describe("real organization recipient lifecycle DOM", () => {
+  it("bootstraps a direct invitation before any review and retains the original per-tab intent after cookie isolation", async () => {
+    const context = deferred<Response>(), token = "q".repeat(64), intentId = orgUiId(98);
+    sessionStorage.setItem(ORG_ENTRY_STORAGE, JSON.stringify({ version: 1, kind: "invite", token, intentId }));
+    history.replaceState(null, "", "/organizations/join");
+    let browserReady = false; const original = responseFor;
+    responseFor = async call => {
+      if (call.path === "/api/organizations/context") return context.promise;
+      if (call.path === "/api/organizations/entry/review" && !browserReady) return Response.json({ error: "Synthetic missing browser context", code: "ORG_RATE_LIMIT" }, { status: 429 });
+      return original(call);
+    };
+    await mount(createElement(OrganizationRecipient));
+    await until(() => calls.some(call => call.path === "/api/organizations/context"), "Direct entry must initialize its browser context.");
+    assert.equal(calls.filter(call => call.path.endsWith("/entry/review")).length, 0, "A link review cannot race the context cookie response.");
+    await act(async () => { browserReady = true; context.resolve(Response.json(orgUiBootstrap())); });
+    await until(() => !!document.querySelector('form input:not([type])'), "The same retained invitation should become reviewable.");
+    const review = calls.filter(call => call.path.endsWith("/entry/review"));
+    assert.equal(review.length, 1); assert.deepEqual(review[0].body, { kind: "invite", token, intentId });
+    assert.deepEqual(calls.map(call => [call.method, call.path]), [["GET", "/api/organizations/context"], ["POST", "/api/organizations/entry/review"]]);
+    assert.equal(calls.some(call => call.path.endsWith("/entry/accept")), false);
+  });
+  it("stops an identity-error review at one request and requires an explicit same-link retry", async () => {
+    history.replaceState(null, "", "/organizations/join#invite=" + "q".repeat(64));
+    const original = responseFor; let reviews = 0;
+    responseFor = async call => {
+      if (call.path === "/api/organizations/entry/review") {
+        reviews++;
+        // Bound the negative control too: the former automatic retry loop must
+        // fail the assertion without producing an unbounded synthetic run.
+        return Response.json({ error: reviews <= 3 ? "Synthetic browser context changed; check this link again." : "Synthetic runaway review guard", code: reviews <= 3 ? "ORG_BROWSER_CONTEXT_CHANGED" : "ORG_RATE_LIMIT" }, { status: reviews <= 3 ? 409 : 429 });
+      }
+      return original(call);
+    };
+    await mount(createElement(OrganizationRecipient));
+    await until(() => !!document.querySelector('[role="alert"]') && !document.querySelector('[aria-busy="true"]'), "Identity failure must settle into visible recovery.");
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    assert.equal(reviews, 1, "One failed review must not automatically trigger another request.");
+    assert.equal(calls.filter(call => call.path.endsWith("/context")).length, 1);
+    assert.match(document.body.textContent ?? "", /Synthetic browser context changed/);
+    const retained = sessionStorage.getItem(ORG_ENTRY_STORAGE);
+    await click(button("Check link again"));
+    await until(() => reviews === 2 && !document.querySelector('[aria-busy="true"]'), "Only an explicit retry may check the same link again.");
+    assert.equal(calls.filter(call => call.path.endsWith("/context")).length, 2);
+    assert.equal(sessionStorage.getItem(ORG_ENTRY_STORAGE), retained);
+    const originalReview = { kind: "invite", token: "q".repeat(64), intentId: JSON.parse(retained!).intentId };
+    assert.deepEqual(calls.filter(call => call.path.endsWith("/entry/review")).map(call => call.body), [originalReview, originalReview]);
+    assert.equal(calls.some(call => call.path.endsWith("/entry/accept")), false);
+  });
+  it("does not dispatch a link review after a failed browser bootstrap or automatically retry it", async () => {
+    history.replaceState(null, "", "/organizations/join#access=" + "r".repeat(64));
+    let attempts = 0;
+    responseFor = async call => {
+      assert.equal(call.path, "/api/organizations/context", "A failed bootstrap must prevent every entry POST.");
+      attempts++;
+      return Response.json({ error: "Synthetic bootstrap unavailable", code: attempts <= 3 ? "ORG_BROWSER_CONTEXT_CHANGED" : "ORG_RATE_LIMIT" }, { status: 409 });
+    };
+    await mount(createElement(OrganizationRecipient));
+    await until(() => !!document.querySelector('[role="alert"]') && !document.querySelector('[aria-busy="true"]'), "Bootstrap failure must become a bounded manual state.");
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    assert.equal(attempts, 1); assert.match(document.body.textContent ?? "", /Synthetic bootstrap unavailable/);
+    assert.equal(calls.every(call => call.method === "GET"), true); assert.equal(button("Check link again").disabled, false);
+  });
+  it("keeps an original saved acceptance and clears the view after its browser identity is rejected without rebinding or retrying", async () => {
+    const token = "q".repeat(64), intentId = orgUiId(98), acceptance = C.orgEntryAcceptSchema.parse({ token, intentId, expectedScope: ORG_UI_SCOPE, displayName: "Synthetic original recipient", contractVersion: C.ORG_GOVERNANCE_VERSION, acknowledged: true });
+    const saved = JSON.stringify({ version: 1, kind: "invite", token, intentId, acceptance }); sessionStorage.setItem(ORG_ENTRY_STORAGE, saved);
+    history.replaceState(null, "", "/organizations/join");
+    const original = responseFor;
+    responseFor = async call => {
+      if (call.path === "/api/organizations/entry/review") return Response.json({ entry: { ...readyEntry(), scope: "e".repeat(64) } });
+      if (call.path === "/api/organizations/entry/accept") return Response.json({ error: "Synthetic original browser is required for this saved acceptance.", code: "ORG_BROWSER_CONTEXT_CHANGED" }, { status: 409 });
+      return original(call);
+    };
+    await mount(createElement(OrganizationRecipient)); await until(() => !!document.querySelector('form input:not([type])'), "Saved acceptance should retain its original values.");
+    assert.equal(document.querySelector<HTMLInputElement>('form input:not([type])')?.disabled, true);
+    await click(button("Check the original request"));
+    await until(() => !!document.querySelector('[role="alert"]') && !document.querySelector('[aria-busy="true"]'), "An identity rejection must stop and explain original-context recovery.");
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    const accepted = calls.filter(call => call.path.endsWith("/entry/accept"));
+    assert.equal(accepted.length, 1); assert.deepEqual(accepted[0].body, acceptance); assert.equal(accepted[0].headers.get(C.ORG_SCOPE_HEADER), ORG_UI_SCOPE);
+    assert.equal(calls.filter(call => call.path.endsWith("/entry/review")).length, 1);
+    assert.deepEqual(JSON.parse(sessionStorage.getItem(ORG_ENTRY_STORAGE)!), JSON.parse(saved)); assert.equal(document.querySelector("form"), null);
+    assert.doesNotMatch(document.body.textContent ?? "", /Synthetic civic group|Your private return key/);
+    assert.match(document.body.textContent ?? "", /original browser is required/);
+  });
   it("recovers the original acceptance after a lost response wrote the cookie and the next review has a new scope", async () => {
     const token = "q".repeat(64); history.replaceState(null, "", `/organizations/join#invite=${token}`);
     let accepted = false, posts = 0; const original = responseFor;
@@ -84,7 +167,8 @@ describe("real organization recipient lifecycle DOM", () => {
   });
   it("does not let an old hash review overwrite a different same-document invitation or preserve its name/acknowledgment", async () => {
     const old = deferred<Response>(), firstToken = "q".repeat(64), secondToken = "r".repeat(64); history.replaceState(null, "", `/organizations/join#invite=${firstToken}`);
-    responseFor = async call => call.body?.token === firstToken ? old.promise : Response.json({ entry: { ...readyEntry(), organization: { name: "Synthetic second organization", identityProvenance: "self_declared" } } });
+    const original = responseFor;
+    responseFor = async call => call.path === "/api/organizations/context" ? original(call) : call.body?.token === firstToken ? old.promise : Response.json({ entry: { ...readyEntry(), organization: { name: "Synthetic second organization", identityProvenance: "self_declared" } } });
     await mount(createElement(OrganizationRecipient)); await until(() => calls.some(call => call.body?.token === firstToken), "First review should be pending.");
     await act(async () => { history.replaceState(null, "", `/organizations/join#invite=${secondToken}`); window.dispatchEvent(new dom.window.HashChangeEvent("hashchange")); });
     await until(() => document.body.textContent?.includes("Synthetic second organization") ?? false, "New link should own the visible entry view.");
