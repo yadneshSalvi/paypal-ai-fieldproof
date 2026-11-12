@@ -66,7 +66,7 @@ Scheduled private drafts and the lifecycle inbox, independent public-name recogn
 
 ## Run locally
 
-Use Node **22.22.3 or later** and npm. Provide a dedicated PostgreSQL database that this app may create tables in. No in-memory persistence fallback is used.
+Use Node **22.x** (22.22.3 or newer) and npm. `npm ci`, `npm run typecheck` and `npm run build` need no environment values. Running the app needs `DATABASE_URL` (a dedicated PostgreSQL database whose role may create tables; the tests also create temporary schemas) and an `AUTH_SECRET` of at least 32 characters; PayPal, OpenAI, Gemini, Blob and AG Studio values are needed only for their features. Some test suites (`lifecycle-personal-*`, `lifecycle-scheduled-*`, four `organization-*` suites, `recognition-recovery` and the `workspace-transfer-v2*` operator suites) need their own private runners and fail under plain `npm test`. No in-memory persistence fallback is used.
 
 ```sh
 npm ci
@@ -155,3 +155,5 @@ The receipt pipeline validates files before model use, retains private originals
 `app/` contains routes and page states; `components/` the product UI; `lib/domain/` pure money/recovery rules; `lib/server/` PostgreSQL, sessions, provider authority, receipt ingestion and identity; `lib/contracts.ts` the shared DTOs; `tests/` meaningful invariants; `public/samples/` clearly labelled fictional source documents. Private planning files and environment values are ignored by Git. This README and the checked-in source are sufficient to run the checkpoint without those planning files.
 
 MIT licensed. See [LICENSE](LICENSE).
+
+Third-party components keep their own terms: `ag-studio` / `ag-studio-react` are commercial AG Grid software used here under an evaluation licence key supplied at runtime and are not covered by this repository's MIT licence; the `paypal` SDK (APIMatic context-plugin build) and the APIMatic skills under `.agents/` are MIT; the IBM Plex outlines under `public/asset-fonts/` are under the SIL Open Font License; `vendor/fracture-paypal-core-*.tgz` is the author's own MIT package.
