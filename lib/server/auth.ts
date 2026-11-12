@@ -6,10 +6,10 @@ import { database, initializeDatabase, query } from "./db";
 import { createProject } from "./seed";
 import { requireMembership } from "./membership";
 import { communityQaEnabled, fundingQaEnabled, supporterQaEnabled, supporterQaProfile } from "./provider-access";
-import { onboardingReviewEnabled } from "./onboarding-review";
+import { onboardingReviewEnabled, onboardingReviewProfile } from "./onboarding-review";
 
 export function sessionCookieName(): string {
-  if (onboardingReviewEnabled()) return "fieldproof_supporter_onboarding_session";
+  if (onboardingReviewEnabled()) return onboardingReviewProfile().cookie;
   if(supporterQaEnabled())return supporterQaProfile().cookie;
   if(fundingQaEnabled())return "fieldproof_funding_lifecycle_qa_session";
   if (process.env.NODE_ENV === "production") return "fieldproof_session";
@@ -76,7 +76,7 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   const onboarding = onboardingReviewEnabled();
-  const allowed = onboarding ? ["http://localhost:4563"] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  const allowed = onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
   // Vercel supplies the exact immutable deployment hostname. This permits
   // pre-promotion qualification without trusting sibling or caller-supplied hosts.
   const deploymentHost = process.env.VERCEL_URL;

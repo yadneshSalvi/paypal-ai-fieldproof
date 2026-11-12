@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "unit": "Supporter onboarding contrast correction",
+  "preservedParentCommit": "fb787da8bacd23b694557822b62ec8dc9607627c",
+  "preservedParentBuild": "cnB3bgXMHAOmcxEAT6HIx",
+  "correctedProductionBuild": "HLGIXdH3B4IGBeNUs6A_l",
+  "schemaVersion": 19,
+  "changes": [
+    "Darker secondary text, loading text and form boundaries on their actual authored backgrounds.",
+    "Explicit opaque placeholder color instead of a browser-dependent placeholder default.",
+    "A narrowly enumerated corrected local review origin and distinct cookie, preserving the original review profile and production defaults."
+  ],
+  "verification": {
+    "fullRegression": { "tests": 508, "suites": 77, "passed": 508, "failed": 0, "skipped": 0, "durationMs": 150918.99075 },
+    "finalFocusedContrastTests": 3,
+    "typeScript": "passed in the final production build",
+    "productionBuild": "passed",
+    "retainedFixtureHttpChecks": { "passed": 16, "failed": 0, "businessRowsUnchanged": true },
+    "staticAssetsMatchedOverHttp": 130,
+    "privacy": { "filesScanned": 1170, "privateValues": 112, "buildTraces": 41, "findings": 0 },
+    "authoredContrast": {
+      "minimumNormalTextRatio": 4.513012834602431,
+      "placeholderRatio": 5.608150,
+      "inputBoundaryRatio": 3.6280,
+      "privateLinkBoundaryRatio": 3.6214,
+      "loadingGradientMinimumRatio": 4.8141,
+      "method": "WCAG relative luminance calculations using actual stylesheet declarations; independently reviewed. Browser computed styles and pixels remain a native gate."
+    }
+  },
+  "preservation": {
+    "databaseAndOriginalFixtureReused": true,
+    "originalNativeFixtureSha256": "d6dff78fe898106e9e3059e10a20775575fee878fcf4b061c9f57b3f5f3724b1",
+    "newActorsOrInvitationsForCorrection": 0,
+    "renewedExpiries": 0,
+    "providerOrModelCalls": 0,
+    "financialHistoryChanges": 0,
+    "frozenParentSourceAndBuildPreserved": true
+  },
+  "nativeBrowserReview": "pending root review; no visual, keyboard, screen-reader or device result is inferred from source and HTTP tests",
+  "fullProductReleaseComplete": false
+}

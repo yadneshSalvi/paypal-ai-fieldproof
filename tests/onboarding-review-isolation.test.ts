@@ -8,6 +8,7 @@ import { onboardingReviewEnabled } from "../lib/server/onboarding-review";
 let saved: NodeJS.ProcessEnv;
 beforeEach(() => {
   saved = { ...process.env };
+  delete process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE;
   for (const key of Object.keys(process.env)) if (/^(PAYPAL_|NEXT_PUBLIC_PAYPAL_)/.test(key) || /FIELDPROOF_.*QA/.test(key)) delete process.env[key];
   Object.assign(process.env, { NODE_ENV: "production", VERCEL: "0", FIELDPROOF_ONBOARDING_REVIEW: "true", FIELDPROOF_PROVIDER_ACCESS: "disabled", FIELDPROOF_PURPOSE_CHECKOUT_ENABLED: "false", APP_URL: "http://localhost:4563", DATABASE_URL: "postgresql://fp_onboarding_app:synthetic@127.0.0.1:55563/fp_onboarding_stage11", OPENAI_API_KEY: "", GEMINI_API_KEY: "", GOOGLE_API_KEY: "", BLOB_READ_WRITE_TOKEN: "" });
 });
@@ -41,5 +42,19 @@ describe("local native onboarding runtime confinement", () => {
     assert.equal(onboardingReviewEnabled(), false); assert.equal(sessionCookieName(), "fieldproof_session"); assert.equal(sessionCookieSecure(), true);
     assert.doesNotThrow(() => assertSameOrigin(request("https://paypal-ai-fieldproof.vercel.app")));
     assert.throws(() => assertSameOrigin(request("http://localhost:4563")), { code: "ORIGIN_DENIED" });
+  });
+  it("isolates the corrected origin and cookies while preserving the original database and deadlines", () => {
+    const originalDatabase = process.env.DATABASE_URL;
+    process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE = "contrast-stage11b";
+    assert.throws(onboardingReviewEnabled, { code: "ONBOARDING_REVIEW_ISOLATION" });
+    process.env.APP_URL = "http://localhost:4573";
+    assert.equal(onboardingReviewEnabled(), true); assert.equal(process.env.DATABASE_URL, originalDatabase);
+    assert.equal(sessionCookieName(), "fieldproof_supporter_onboarding_contrast_session");
+    assert.equal(workspaceLibraryCookieName(), "fieldproof_supporter_onboarding_contrast_session_library");
+    assert.equal(sessionCookieSecure(), false); assert.throws(assertProviderAccess, { code: "PROVIDERS_DISABLED" });
+    assert.doesNotThrow(() => assertSameOrigin(request("http://localhost:4573")));
+    assert.throws(() => assertSameOrigin(request("http://localhost:4563")), { code: "ORIGIN_DENIED" });
+    assert.throws(() => assertSameOrigin(request("http://localhost:4573", "localhost:4563")), { code: "ORIGIN_DENIED" });
+    process.env.FIELDPROOF_ONBOARDING_REVIEW_PROFILE = "arbitrary"; assert.throws(onboardingReviewEnabled, { code: "ONBOARDING_REVIEW_ISOLATION" });
   });
 });
