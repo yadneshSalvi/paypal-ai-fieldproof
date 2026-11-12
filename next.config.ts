@@ -1,4 +1,26 @@
 import type { NextConfig } from "next";
+import { createHash } from "node:crypto";
+import { readFileSync, realpathSync, statSync } from "node:fs";
+import { resolve, sep } from "node:path";
+import toolkitTrace from "./config/toolkit-runtime-trace.json";
+
+// Native Toolkit dispatch uses a private CommonJS factory. Next cannot infer
+// its requires, so retain the qualified complete closure for this route only.
+const root = realpathSync(process.cwd());
+const digest = (filename: string) => createHash("sha256").update(readFileSync(resolve(root, filename))).digest("hex");
+if (toolkitTrace.format !== "fieldproof.toolkit-native-trace/v1" || digest("package-lock.json") !== toolkitTrace.packageLockSha256
+  || digest(toolkitTrace.toolkit.entry) !== toolkitTrace.toolkit.entrySha256
+  || new Set(toolkitTrace.files).size !== toolkitTrace.files.length || !toolkitTrace.files.includes(toolkitTrace.toolkit.entry)) {
+  throw new Error("The qualified Toolkit dependency trace changed. Regenerate and qualify its exact locked closure before building.");
+}
+const toolkitFiles = toolkitTrace.files.map(filename => {
+  if (!filename.startsWith("node_modules/") || filename.includes("\\") || filename.split("/").some(part => part === ".." || !part)
+    || /[*?\[\]{}!]/.test(filename) || !statSync(resolve(root, filename)).isFile()
+    || !realpathSync(resolve(root, filename)).startsWith(root + sep + "node_modules" + sep)) {
+    throw new Error("The Toolkit dependency trace must contain only exact installed package files.");
+  }
+  return `./${filename}`;
+});
 
 const config: NextConfig = {
   // This repository can be checked out below a larger workspace with other
@@ -15,6 +37,7 @@ const config: NextConfig = {
   serverExternalPackages: ["@fracture/paypal-core", "paypal", "pg", "pdfjs-dist", "@napi-rs/canvas", "sharp"],
   outputFileTracingIncludes: {
     "/api/*": ["./public/samples/outlined/*.svg", "./public/proof-stamps/*.svg"],
+    "/api/studio/**": toolkitFiles,
   },
   async headers() {
     return [{ source: "/(.*)", headers: [
