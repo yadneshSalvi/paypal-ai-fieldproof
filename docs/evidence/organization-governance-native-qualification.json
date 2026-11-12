@@ -1,0 +1,105 @@
+{
+  "feature": "Independent organization governance and scoped aggregate portfolios",
+  "status": "local_native_qualified_hosted_release_pending",
+  "qualificationDate": "2026-11-12",
+  "qualifiedSource": "098574259d58c3d0ad7fe86faae170cc6ddaae32",
+  "qualifiedBuild": "rXHq1GdzPc2Mp_pk9XWjs",
+  "schemaVersion": 21,
+  "provenance": {
+    "actors": "Controlled ordinary independent browser entries with self-declared names. No independent human participation is established.",
+    "projects": "Two explicitly Sample projects with no provider collection or repayment.",
+    "identity": "Possession of an original private capability; no legal entity, person, email or PayPal ownership is verified.",
+    "deadlines": "Original project, organization, invitation, membership, session, access and report scopes remain fixed."
+  },
+  "sourceQualification": {
+    "authorityAndWorkflowControls": 20,
+    "actualApprovedPayoutConstructorControl": 1,
+    "uiAndAggregateControls": 82,
+    "positiveSourceDependencyControls": 8,
+    "finalInvitationFocusedTests": 42,
+    "finalInvitationSuites": 7,
+    "negativeControls": "Four actual DOM controls failed against the earlier source and passed against the corrected source.",
+    "typeScript": "passed",
+    "productionBuild": "passed"
+  },
+  "ordinaryHttp": {
+    "requests": 116,
+    "assertions": 65,
+    "servedAssets": 18,
+    "privateValuesChecked": 36,
+    "privateFindings": 0,
+    "providerModelEmailActions": 0
+  },
+  "boundedBootstrapHttp": {
+    "requests": 21,
+    "assertions": 14,
+    "servedAssets": 16,
+    "privateValuesChecked": 30,
+    "privateFindings": 0,
+    "originalRowsPreserved": 281,
+    "newDomainRows": 0,
+    "newAdmissionRows": 2
+  },
+  "nativeBrowser": {
+    "priorQualifiedSurfaces": "Owner aggregate disclosure and rules; current and withdrawn editions; exact scoped CSV; auditor own membership and published policies; ended coordinator; aggregate-only owner and project-only organizer boundaries.",
+    "print": "The original edition produced five A4 pages and six Letter pages. Unprepared printing withheld private content; changing paper invalidated readiness. Content remained readable without clipping.",
+    "keyboard": "Tabs and withdrawal dialog Escape/focus restoration passed.",
+    "responsive": "390px and 360px viewports had no horizontal document overflow.",
+    "correctedIndependentEntry": "Exactly one context GET followed by one review POST settled the original invitation. More than eight seconds idle produced no additional review.",
+    "acceptance": "One ordinary acceptance of the original unused coordinator invitation; reload retained its original credential.",
+    "return": "The original return link restored the same original session token and displayed deadline.",
+    "withdrawal": "The original owner withdrew the joined invitation once. The original recipient session then lost private access; deliberate ended-access clearing made its original return show withdrawn without recipient details.",
+    "correctedNetwork": {
+      "events": 338,
+      "requestResponsePairs": 169,
+      "posts": 8,
+      "truncated": false
+    },
+    "correctedConsoleEntries": 0,
+    "cleanup": "All 42 original browser cookies, including sourcePort metadata, were restored exactly; viewport reset."
+  },
+  "postNativePreservation": {
+    "originalTables": 137,
+    "beforeRows": 283,
+    "afterRows": 307,
+    "additions": 24,
+    "originalUpdatedRows": 1,
+    "originalDeletedRows": 0,
+    "catalogUnchanged": true,
+    "offlineAttributionChecks": 46,
+    "databaseInventories": 1,
+    "changes": "One original invitation advanced from invited v1 through joined to revoked v3. One recipient access/member/session, four command receipts, three audits, two browser libraries/entries and exact admission records account for all additions.",
+    "restorationCreatedAuthorityRows": 0,
+    "exactOriginalServerDeadlineRetained": true,
+    "allOtherOriginalRowsAndDeadlinesUnchanged": true,
+    "intermediateCookieMetadata": "Restored browser expiry metadata differed by 50.009ms. The authoritative server invitation/access/member/session deadline was exactly unchanged; intermediate literal cookie equality is not claimed."
+  },
+  "migrationRehearsal": {
+    "schemaBefore": 20,
+    "schemaAfter": 21,
+    "originalTables": 117,
+    "originalRowsPreserved": 23,
+    "newEmptyTables": 20,
+    "newFunctions": 5,
+    "enabledGuards": 25,
+    "oldRowBackfills": 0,
+    "exactSqlSha256": "af21df1e006090850de189d560649209e8e0c589b12aa7775a00867c3f6686ab",
+    "holdRequired": true,
+    "originalModeRestored": true,
+    "productionExecuted": false
+  },
+  "retainedFailures": [
+    "Earlier direct invitation entry repeatedly returned409 after clearing browser cookies. Its1032-event network buffer was truncated; no complete-network claim is made. The corrected source awaits the context bootstrap and settles identity errors without automatic retries.",
+    "Earlier native cookie values, expiries and access attributes matched, but one browser sourcePort metadata value differed after restoration through a successor origin. The corrected native cleanup matched all42 original cookies exactly.",
+    "The first owned-schema migration harness incorrectly expected contiguous version markers. The accepted schema20 omits marker16; the original refusal occurred before DDL or control changes, and its exact additive successor passed.",
+    "Earlier HTTP harness omissions and expectations, plus a product referrer-header correction, remain in private evidence; they are not erased by the passing final qualification."
+  ],
+  "limits": [
+    "Hosted schema21 migration, staging, native compatibility and canonical promotion are separate pending release gates.",
+    "True200% browser zoom, screen-reader review, computed contrast and reduced-motion override were not qualified by this native segment.",
+    "The A4 table header at the bottom of page3 and the Letter lineage footer alone on page6 are retained print-polish opportunities; no content was missing.",
+    "No provider, model, email, actual purchase, physical-work certification or independent participant outcome is claimed.",
+    "Lifecycle drafts/inbox and procurement remain separate unfinished workstreams; organization governance does not grant private project or payment authority.",
+    "Private credentials, identities, invitation fragments, cookies, raw snapshots and network evidence remain outside public source."
+  ]
+}

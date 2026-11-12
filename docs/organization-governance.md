@@ -33,3 +33,9 @@ The CSV includes the same complete scoped edition, original cutoff/hash/filters,
 Schema 21 adds twenty organization/governance table families and their immutable/versioned/scope guards. No old financial row, identity, original session or deadline requires conversion. Existing installations require a reviewed additive schema20-to21 migration before deploying code that requires schema21; the initializer is for a new development database.
 
 Controlled tests use disposable schemas and explicitly synthetic actors. They cover independent acceptance, concurrent inviter changes, last-owner protection, same-intent recovery, actual policy consumers, canonical empty-package restrictions, project-only replacement, aggregate disclosure boundaries and source withdrawal. A separate payment-constructor control uses unusable fixture configuration and blocked external networking; it makes no provider request. Browser, hosted release, independent human review and physical-work evidence remain separate qualification gates.
+
+## Observed local acceptance
+
+The [native qualification record](evidence/organization-governance-native-qualification.json) separates the complete controlled local workflow from hosted release. The final invitation correction was observed with one bootstrap read, one link review, ordinary independent acceptance, same-session return and owner withdrawal. One retained database inventory and offline command/network bindings account for every change; original deadlines and all unrelated records remain unchanged.
+
+The same original scoped portfolio produced readable A4 and Letter PDFs and exact CSV, including withheld content after disclosure ended. The earlier invitation loop, truncated network buffer, cookie metadata difference and print-polish limits remain recorded. These controlled checks establish no verified person, actual purchase or physical-work outcome. Production schema21 migration and deployment are still pending.
