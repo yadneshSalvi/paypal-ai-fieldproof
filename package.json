@@ -35,7 +35,14 @@
   "version": "0.1.0",
   "private": true,
   "overrides": {
-    "@vercel/cli-config": "0.3.8"
+    "@vercel/cli-config": "0.3.8",
+    "@paypal/agent-toolkit@1.11.0": {
+      "@langchain/core": "0.3.80",
+      "mathjs": "15.2.0"
+    },
+    "@langchain/core@0.3.80": {
+      "langsmith": "0.6.0"
+    }
   },
   "type": "module",
   "engines": {
