@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-import { PayPalAgentToolkit } from "@paypal/agent-toolkit/openai";
 import { canonicalJson, sha256 } from "@fracture/paypal-core";
 import { z } from "zod";
 import type { SettlementReceipt } from "../contracts";
@@ -11,6 +9,7 @@ import { requireCurrentRole } from "./membership";
 import { providerConfiguration } from "./payments";
 import { studioOwnedReadInput } from "../studio/server-tools";
 import { requireStudioDataset } from "./studio-datasets";
+import { readNativeToolkit } from "./studio-toolkit-transport";
 
 export const ownedToolkitReadSchema = studioOwnedReadInput;
 export function toolkitLoggingEnabled(setting = process.env.DEBUG ?? ""): boolean {
@@ -31,23 +30,12 @@ export const actualToolkitReader: ToolkitReader = {
     if (!/^[A-Z0-9-]{8,60}$/.test(providerId)) throw new DomainError("TOOLKIT_RESOURCE_INVALID", "The stored provider identity is invalid.", 409);
     // A short-lived read client avoids the package's non-expiring cached access token. The
     // SDK transport is deliberately separate from all application financial-write adapters.
-    const toolkit = new PayPalAgentToolkit({ clientId: config.clientId, clientSecret: config.clientSecret,
-      configuration: { actions: { orders: { get: true }, invoices: { get: true } }, context: { sandbox: true, debug: false } } });
-    const parameters = tool === "get_order" ? { id: providerId } : { invoice_id: providerId };
-    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const response = await Promise.race([
-        toolkit.handleToolCall({ id: randomUUID(), type: "function", function: { name: tool, arguments: JSON.stringify(parameters) } }),
-        new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new DomainError("TOOLKIT_READ_UNAVAILABLE", "The exact PayPal read did not finish. No financial record was changed.", 502)), 25000); }),
-      ]);
-      if (typeof response.content !== "string" || response.content.length > 1_500_000) throw new Error("Unexpected Toolkit read response.");
-      const value: unknown = JSON.parse(response.content);
-      if (!value || typeof value !== "object" || "error" in value || !("id" in value) || value.id !== providerId) throw new DomainError("TOOLKIT_READ_UNAVAILABLE", "PayPal could not return the exact owned resource. No financial record was changed.", 502);
-      return value;
+      return await readNativeToolkit({ tool, providerId, clientId: config.clientId, clientSecret: config.clientSecret });
     } catch (error) {
       if (error instanceof DomainError) throw error;
       throw new DomainError("TOOLKIT_READ_UNAVAILABLE", "PayPal could not complete this read. No financial record was changed.", 502);
-    } finally { if (timeout) clearTimeout(timeout); }
+    }
   },
 };
 
