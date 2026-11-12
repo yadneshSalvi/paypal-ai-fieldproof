@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "unit": "Shared-project supporter onboarding, production release and UTC correction",
+  "evidenceState": "qualified_at_the_recorded_native_and_hosted_scope",
+  "onboardingSource": "196c7930f12db3c03dd3fab2a69a09578ff42c82",
+  "correctedSource": "0ea3ce1ed8fa52613f860085d97bb52655a4b32e",
+  "correctedLocalBuild": "oZUiAExLNfUiZJ0qU7lzG",
+  "authentication": {
+    "method": "possession-based one-use invitation with a separate fixed-lifetime recipient return capability",
+    "role": "donor",
+    "invitationPurposes": [
+      "donor",
+      "sponsor"
+    ],
+    "scope": "one issuing tenant and project",
+    "identityProvenance": "self_declared",
+    "verifiedHumanEmailOrPayPalOwnership": false,
+    "currentInviterMembershipRequired": true,
+    "expiryStartsAtIssuance": true,
+    "restorationCreatesSession": false,
+    "restorationExtendsExpiry": false,
+    "revocationPreservesFinancialHistory": true
+  },
+  "migration": {
+    "executor": "root operator",
+    "backupVerifiedBeforeWrites": true,
+    "executionHeldAndDrained": true,
+    "schema13to18": {
+      "from": 13,
+      "to": 18,
+      "sqlSha": "556d25715221dc130c4c32471818c48a0659b933cd3d21aa880485189d821867",
+      "originalTables": 93,
+      "originalRows": 6551,
+      "originalValuesUnchanged": true,
+      "markersAdded": [
+        14,
+        15,
+        17,
+        18
+      ],
+      "newNullableRefundFields": 3,
+      "existingRefundValuesBackfilled": 0,
+      "enabledTriggers": 20,
+      "guardFunctions": 4,
+      "newEmptyTables": 18
+    },
+    "schema18to19": {
+      "oldTables": 111,
+      "oldRows": 6555,
+      "onlyMarkerAdded": 19,
+      "sqlHash": "df184a142e6501fedd6e1e907a2474225f68258b25e15ca5dd859ce3f25aa829",
+      "newTables": 4
+    },
+    "executionModeRestored": true,
+    "restoredControlVersion": 7,
+    "broaderDriftAutomaticallyAccepted": false
+  },
+  "hostedFlow": {
+    "passed": true,
+    "controlledSyntheticActors": 4,
+    "newSampleProjects": 2,
+    "originalSessionsAndDeadlinesRetained": true,
+    "unpaidSponsorPromiseMinor": 100,
+    "httpSteps": 72,
+    "publicAssets": 18,
+    "privateValuesChecked": 16,
+    "providerCalls": 0,
+    "modelCalls": 0,
+    "emailSends": 0,
+    "independentHumanClaim": false,
+    "auditAt": "2026-11-12T07:07:20.015Z"
+  },
+  "originalNativeReview": {
+    "observedBy": "root in native browser",
+    "passed": [
+      "organizer invitation Joined and Withdrawn states",
+      "sponsor has only Donor on funding and project views",
+      "100-cent unpaid sponsor promise and zero collection",
+      "ended-donor and original-organizer saved profiles",
+      "Continue opens the retained original workspace without expiry change",
+      "revoked return and unused withdrawn invitation rejected",
+      "360px and390px no document overflow"
+    ],
+    "retainedFailure": "One React418 text hydration error during the saved-workspace review. It was not dismissed because rendered controls worked.",
+    "postReviewPreservationAudit": "passed; original sessions, grants, invitations and financial values unchanged",
+    "nativeContinueSemantics": "Current-profile Continue navigates normally and creates no switch event; the initial one-event expectation failure is retained."
+  },
+  "utcCorrection": {
+    "cause": "Saved-workspace dates used the runtime timezone, producing different server and browser text.",
+    "behavior": "The shared date formatter explicitly uses UTC and displays a UTC suffix.",
+    "changedFiles": [
+      "components/community/shared.tsx",
+      "tests/community-date-hydration.test.ts"
+    ],
+    "redControl": {
+      "timezoneCasesFailedBeforeFix": 3,
+      "allEndedControlPassed": true
+    },
+    "greenControl": {
+      "passed": 4,
+      "timezones": [
+        "UTC",
+        "Asia/Kolkata",
+        "America/Los_Angeles"
+      ],
+      "actualComponentsRendered": true
+    },
+    "typeScript": "passed",
+    "productionBuild": "passed",
+    "baseFullRegression": {
+      "source": "196c7930f12db3c03dd3fab2a69a09578ff42c82",
+      "tests": 512,
+      "suites": 78,
+      "passed": 512,
+      "skipped": 0
+    },
+    "completeBaseSuiteRerunForTwoFileCorrection": false,
+    "stagedReadOnlyHttp": {
+      "passed": true,
+      "getRequests": 27,
+      "staticAssets": 21,
+      "onlyOriginalSessions": true,
+      "newActors": 0,
+      "newInvitations": 0,
+      "repeatedFullOnboardingFlow": false,
+      "privateCapabilityFindings": 0,
+      "serverSecretFindings": 0
+    },
+    "stagedAuthorityAudit": {
+      "passed": true,
+      "originalSessions": 4,
+      "originalAcceptances": 2,
+      "originalInvitations": 3,
+      "originalDeadlinesRetained": true,
+      "samplePromiseMinor": 100,
+      "collectedMinor": 0,
+      "schemaChanged": false,
+      "executionControlChanged": false
+    },
+    "rootNativeReview": {
+      "passed": true,
+      "completedAt": "2026-11-12T08:04:24.474Z",
+      "browserTimezone": "Asia/Calcutta",
+      "initialUtcDeadlineCorrect": true,
+      "reloadUtcDeadlineCorrect": true,
+      "endedDonorStillUnavailable": true,
+      "originalOrganizerContinuesToFunding": true,
+      "mobileWidthsWithoutDocumentOverflow": [
+        360,
+        390
+      ],
+      "react418ObservedAfterNavigation": false,
+      "otherErrorsObservedAfterNavigation": false,
+      "retainedEarlierConsoleEntry": {
+        "timestamp": "2026-11-12T08:02:45.088Z",
+        "message": "Cannot use 'in' operator to search for 'animation' in undefined",
+        "attribution": "Unattributed; root observed this before the original-cookie snapshot and application navigation. It remains in the console evidence."
+      },
+      "originalBrowserCookiesRestored": true,
+      "viewportReset": true,
+      "tabClosed": true,
+      "screenReaderOrFullAccessibilityQualification": false
+    },
+    "canonicalPromotion": {
+      "executor": "root operator",
+      "deploymentId": "dpl_CusSiDCKFdXM565PbCf6PKWp3BfX",
+      "productionTarget": "production",
+      "readyState": "READY",
+      "aliasVerified": true
+    },
+    "postNativePreservation": {
+      "passed": true,
+      "completedAt": "2026-11-12T08:08:51.225Z",
+      "exactAuthorityLibraryAndSponsorshipTables": 14,
+      "originalSessions": 4,
+      "originalAcceptances": 2,
+      "originalInvitations": 3,
+      "newOrDeletedRows": 0,
+      "allOriginalValuesUnchanged": true,
+      "exactOriginalExecutionControlRetained": true,
+      "schemaVersion": 19,
+      "httpRequests": 0,
+      "fullSmokeJournalBytesUnchanged": true
+    },
+    "canonicalContinuity": {
+      "passed": true,
+      "completedAt": "2026-11-12T08:13:23.127Z",
+      "getRequests": 4,
+      "existingSavedProfileOnly": true,
+      "originalSessionAndExpiryRetained": true,
+      "endedDonorStillUnavailable": true,
+      "explicitUtcSsr": true,
+      "originalOrganizerFunding": true,
+      "oneServedAssetMatchesStagedBytes": true,
+      "privateValueFindings": 0,
+      "newActors": 0
+    }
+  },
+  "retainedReconciliation": {
+    "schema13OriginalBaselineRefusalRetained": true,
+    "knownCronAndControlDeltaExplicitlyReconciled": true,
+    "completedWebhookPairsPinned": 6,
+    "allowedTerminalRowChanges": "Only the exact reviewed retry7-to-review8 jobs and queued-to-dead-letter events, with original ownership and payload evidence unchanged.",
+    "preexistingReconciliationTimestampLimitation": "Original table hashes identified drift; earlier full per-field timestamps were unavailable, so command timestamp direction was compared with the verified backup and that limitation remains explicit.",
+    "noBroadHashExemption": true
+  },
+  "releaseInput": {
+    "exactGitFiles": 449,
+    "actualUploadedFiles": 411,
+    "secretFindings": 0,
+    "primaryUnrelatedGeneratedBytesAndMtimesPreserved": true
+  },
+  "limits": {
+    "independentHumanParticipants": 0,
+    "actualProviderOrModelCallsInThisQualification": 0,
+    "externalMessagesSent": 0,
+    "newPhysicalOrPaymentEvidence": false,
+    "fullAccessibilityOrScreenReaderCertification": false,
+    "fullFieldproofComplete": false,
+    "boardPackReleaseIncluded": false
+  },
+  "recordedAt": "2026-11-12T08:15:47.626676+00:00",
+  "canonicalDeployment": "dpl_CusSiDCKFdXM565PbCf6PKWp3BfX",
+  "canonicalUrl": "https://paypal-ai-fieldproof.vercel.app",
+  "evidenceDigests": {
+    "observations.private.json": "5343ab26f7355ce9efcede9550e8e8ab260fb40f24546f385e6facdeb6e59ec3",
+    "post-native-authority-audit-v1.private.json": "4c5c808682c5b3c7697627b852bbf7d2aead6e851fe8f20cf63f6525b412d769",
+    "canonical-continuity-v1.private.json": "a20880d61d047d2335ea65a54c32b079ddf8c65cc2af7635871fe4788bcea182",
+    "narrow-hosted-utc.private.json": "e1af9743961418f08ec0ea1885f4f5e05c0d02a9fec17c55c7d9503c2de9e569",
+    "release-source-manifest.private.json": "36e77505266f1a24d5d867f3449e8ba091baeb6245cf11dee4e680c107ead793"
+  }
+}
