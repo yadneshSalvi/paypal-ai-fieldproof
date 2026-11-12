@@ -128,7 +128,11 @@ describe("private personal lifecycle persistence and original authority", () => 
     await assert.rejects(lifecycleSetInboxState(f.request, item.id, { ...read, action: "archive" }), code("LIFECYCLE_INTENT_CHANGED"));
     await assert.rejects(lifecycleSetInboxState(f.request, item.id, { ...read, intentId: randomUUID() }), code("LIFECYCLE_VERSION_CHANGED"));
     const archived = await lifecycleSetInboxState(f.request, item.id, { ...read, intentId: randomUUID(), expectedVersion: 2, action: "archive" }); assert.equal(archived.receipt.resourceVersion, 3);
+    const activePage = (await lifecycleInbox(f.request)).inbox, archivedPage = (await lifecycleInbox(f.request, { state: "archived" })).inbox;
+    assert.equal(activePage.filter, null); assert.equal(activePage.items.length, 0); assert.equal(activePage.nextCursor, null); assert.deepEqual(activePage.counts, { unread: 0, read: 0, archived: 1 });
+    assert.deepEqual(archivedPage.items.map(row => row.id), [item.id]); assert.equal(archivedPage.items[0].readState, "archived");
     const restored = await lifecycleSetInboxState(f.request, item.id, { ...read, intentId: randomUUID(), expectedVersion: 3, action: "unarchive" }); assert.equal(restored.receipt.resourceVersion, 4); assert.equal((await items(f))[0].readState, "read");
+    assert.equal((await lifecycleInbox(f.request, { state: "archived" })).inbox.items.length, 0);
     const [events] = await query<{ count: string }>("SELECT count(*) count FROM fp_lifecycle_inbox_events WHERE inbox_id=$1", [item.id]); assert.equal(events.count, "3");
     const row = (await originalRows(f))[0]; assert.equal(row.encrypted_data, original.encrypted_data); assert.equal(row.source_hash, original.source_hash); assert.equal(row.snapshot_hash, original.snapshot_hash); assert.equal(row.content_hash, original.content_hash); assert.deepEqual(row.captured_at, original.captured_at);
   });

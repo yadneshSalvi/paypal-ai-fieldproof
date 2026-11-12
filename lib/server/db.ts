@@ -14,6 +14,8 @@ import { BOARD_PACK_SCHEMA } from "./board-pack-schema";
 import { SUPPORTER_ACCESS_SCHEMA } from "./supporter-access-schema";
 import { ORGANIZATION_SCHEMA, ORGANIZATION_TABLES } from "./organization-schema";
 import { LIFECYCLE_SCHEMA, LIFECYCLE_TABLES } from "./lifecycle-schema";
+import { PROCUREMENT_SCHEMA, PROCUREMENT_TABLES, PROCUREMENT_GUARDS } from "./procurement-schema";
+import { RECOGNITION_SCHEMA } from "./recognition-schema";
 
 const state = globalThis as typeof globalThis & { fieldproofDb?: PostgresDatabase; fieldproofReady?: Promise<void> };
 export function database(): PostgresDatabase {
@@ -56,7 +58,7 @@ export async function initializeDatabaseAt(target: PostgresDatabase): Promise<vo
   }
 }
 
-const CURRENT_SCHEMA_VERSION = 22;
+const CURRENT_SCHEMA_VERSION = 24;
 async function schemaReady(tx: SqlConnection): Promise<boolean> {
   const existing = await tx.query<Record<string, string | null>>(
     "SELECT to_regclass('fp_schema_versions')::text AS app,to_regclass('paycore_operations')::text AS operations,to_regclass('paycore_attempts')::text AS attempts,to_regclass('paycore_resource_locks')::text AS locks,to_regclass('paycore_webhook_events')::text AS events,to_regclass('paycore_webhook_deliveries')::text AS deliveries,to_regclass('paycore_provider_identity')::text AS identity,to_regclass('fp_studio_snapshots')::text AS studio_snapshots,to_regclass('fp_studio_reports')::text AS studio_reports,to_regclass('fp_studio_layout_events')::text AS studio_layout,to_regclass('fp_studio_agent_runs')::text AS studio_runs,to_regclass('fp_studio_tool_receipts')::text AS studio_receipts,to_regclass('fp_studio_chat_threads')::text AS studio_chats,to_regclass('fp_studio_one_delegate')::text AS studio_delegate");
@@ -127,6 +129,21 @@ async function schemaReady(tx: SqlConnection): Promise<boolean> {
   if(!privateLifecycle.rows[0]?.ready)return false;
   const privateLifecycleGuards=await tx.query<{ready:boolean}>("SELECT count(*)=19 ready FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid=ANY(SELECT to_regclass(name) FROM unnest($1::text[]) name)",[[...LIFECYCLE_TABLES]]);
   if(!privateLifecycleGuards.rows[0]?.ready)return false;
+  const procurement=await tx.query<{ready:boolean}>("SELECT bool_and(to_regclass(name) IS NOT NULL) ready FROM unnest($1::text[]) name",[[...PROCUREMENT_TABLES]]);
+  if(!procurement.rows[0]?.ready)return false;
+  const procurementGuards=await tx.query<{ready:boolean}>(`SELECT bool_and(EXISTS(SELECT 1 FROM pg_trigger t
+    WHERE t.tgrelid=to_regclass(g->>'table') AND t.tgname=g->>'name' AND NOT t.tgisinternal AND t.tgenabled='O')) ready
+    FROM jsonb_array_elements($1::jsonb) g`,[JSON.stringify(PROCUREMENT_GUARDS)]);
+  if(!procurementGuards.rows[0]?.ready)return false;
+  const recognition=await tx.query<{ready:boolean}>("SELECT bool_and(to_regclass(name) IS NOT NULL) ready FROM unnest($1::text[]) name",[["fp_recognition_heads","fp_recognition_consents","fp_recognition_commands","fp_recognition_audit"]]);
+  if(!recognition.rows[0]?.ready)return false;
+  const recognitionGuards=await tx.query<{ready:boolean}>(`SELECT count(*)=7 AND EXISTS(SELECT 1 FROM pg_constraint
+    WHERE conrelid='fp_recognition_heads'::regclass AND confrelid='fp_recognition_consents'::regclass
+      AND conname='fp_recognition_current_consent_scope' AND condeferrable AND convalidated) ready
+    FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O'
+      AND tgrelid=ANY(ARRAY['fp_recognition_heads'::regclass,'fp_recognition_consents'::regclass,'fp_recognition_commands'::regclass,'fp_recognition_audit'::regclass])
+      AND tgname IN ('fp_recognition_consents_immutable','fp_recognition_commands_immutable','fp_recognition_audit_immutable','fp_recognition_head_guard','fp_recognition_consent_lineage','fp_recognition_current_version','fp_recognition_command_lineage')`);
+  if(!recognitionGuards.rows[0]?.ready)return false;
   return Number(version.rows[0]?.version ?? 0) >= CURRENT_SCHEMA_VERSION;
 }
 
@@ -499,6 +516,8 @@ ${SUPPORTER_ACCESS_SCHEMA}
 ${BOARD_PACK_SCHEMA}
 ${ORGANIZATION_SCHEMA}
 ${LIFECYCLE_SCHEMA}
+${PROCUREMENT_SCHEMA}
+${RECOGNITION_SCHEMA}
 CREATE TABLE IF NOT EXISTS fp_schema_versions (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
 INSERT INTO fp_schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING;
@@ -521,4 +540,6 @@ INSERT INTO fp_schema_versions(version) VALUES(19) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(20) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(21) ON CONFLICT DO NOTHING;
 INSERT INTO fp_schema_versions(version) VALUES(22) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(23) ON CONFLICT DO NOTHING;
+INSERT INTO fp_schema_versions(version) VALUES(24) ON CONFLICT DO NOTHING;
 `;

@@ -17,7 +17,7 @@ export const lcOrganizationDeadline = (context: C.LifecycleContext) => {
   const profile = context.organization.profile; return profile ? new Date(Math.min(Date.parse(profile.membershipExpiresAt), Date.parse(profile.sessionExpiresAt))).toISOString() : null;
 };
 export function LifecycleShell({ children }: { children: ReactNode }) {
-  return <div className="lc-shell"><a className="lc-skip" href="#lifecycle-content">Skip to lifecycle</a><header className="lc-header"><a className="wordmark" href="/">fieldproof<span className="brand-dot">.</span></a><span className="lc-header-note">A useful record.<br/>At the right moment.</span><nav aria-label="Lifecycle navigation"><a href="/community?return=/lifecycle"><ArrowLeft size={15}/>Saved project workspaces</a><a href="/organizations">Organizations<ArrowUpRight size={14}/></a></nav></header><main className="lc-main" id="lifecycle-content" tabIndex={-1}>{children}</main><footer className="lc-footer"><Bell size={19}/><span>Clear updates, kept private.</span><span>Fieldproof · community project journal</span></footer></div>;
+  return <div className="lc-shell"><a className="lc-skip" href="#lifecycle-content">Skip to lifecycle</a><header className="lc-header"><a className="wordmark" href="/">fieldproof<span className="brand-dot">.</span></a><span className="lc-header-note">A useful record.<br/>At the right moment.</span><nav aria-label="Lifecycle navigation"><a href="/community?return=/lifecycle"><ArrowLeft size={15}/>Saved project workspaces</a><a href="/recognition">Public name choices</a><a href="/organizations">Organizations<ArrowUpRight size={14}/></a></nav></header><main className="lc-main" id="lifecycle-content" tabIndex={-1}>{children}</main><footer className="lc-footer"><Bell size={19}/><span>Clear updates, kept private.</span><span>Fieldproof · community project journal</span></footer></div>;
 }
 export function Notice({ title, children, error = false }: { title: string; children?: ReactNode; error?: boolean }) { return <section className={`lc-notice${error ? " is-error" : ""}`} role={error ? "alert" : "status"}><strong>{title}</strong>{children ? <div>{children}</div> : null}</section>; }
 export function Reasons({ values }: { values: readonly string[] }) { return values.length ? <ul className="lc-reasons">{values.map((value, index) => <li key={`${index}:${value}`}>{value}</li>)}</ul> : null; }
@@ -37,6 +37,9 @@ export function LifecycleDialog({ title, children, close, focusKey }: { title: s
   const dialog = useRef<HTMLDialogElement>(null), heading = useRef<HTMLHeadingElement>(null), id = useId(), closeRef = useRef(close); closeRef.current = close;
   useLayoutEffect(() => {
     const node = dialog.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null; if (!node) return;
+    // Successful decisions refresh the record list while this modal stays open.
+    // Keep the record's stable opener identity, not only its replaced DOM node.
+    const openerId = opener?.id;
     let last: HTMLElement | null = heading.current, recovering = false;
     const visible = (element: HTMLElement) => {
       if (!element.isConnected || element.matches(":disabled,input[type=hidden]") || element.closest("[hidden],[inert]")) return false;
@@ -53,7 +56,15 @@ export function LifecycleDialog({ title, children, close, focusKey }: { title: s
     };
     const focus = (event: FocusEvent) => { if (!node.open || recovering) return; if (event.target instanceof HTMLElement && node.contains(event.target)) { last = event.target; return; } recovering = true; (last && visible(last) ? last : heading.current)?.focus({ preventScroll: true }); recovering = false; };
     document.addEventListener("keydown", key, true); document.addEventListener("focusin", focus, true); node.showModal(); heading.current?.focus({ preventScroll: true });
-    return () => { document.removeEventListener("keydown", key, true); document.removeEventListener("focusin", focus, true); const returnFocus = document.activeElement === document.body || node.contains(document.activeElement); node.close(); if (opener?.isConnected && returnFocus) opener.focus({ preventScroll: true }); };
+    return () => {
+      document.removeEventListener("keydown", key, true); document.removeEventListener("focusin", focus, true);
+      const returnFocus = document.activeElement === document.body || node.contains(document.activeElement);
+      node.close();
+      if (!returnFocus) return;
+      const currentOpener = opener?.isConnected ? opener : openerId ? document.getElementById(openerId) : null;
+      const target = currentOpener && visible(currentOpener) ? currentOpener : document.querySelector<HTMLElement>('.lc-tabs [role="tab"][aria-selected="true"]') ?? document.getElementById("lifecycle-content");
+      if (target && visible(target)) target.focus({ preventScroll: true });
+    };
   }, []);
   useLayoutEffect(() => { heading.current?.focus({ preventScroll: true }); }, [focusKey]);
   return <dialog ref={dialog} className="lc-dialog" aria-modal="true" aria-labelledby={id} onCancel={event => { event.preventDefault(); closeRef.current(); }}><div className="lc-dialog-body"><header><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2><button className="lc-icon-button" type="button" aria-label="Close review" onClick={close}><X size={23}/></button></header>{children}</div></dialog>;

@@ -10,8 +10,10 @@ import { boardPackReviewEnabled } from "./board-pack-review";
 import { onboardingReviewEnabled, onboardingReviewProfile } from "./onboarding-review";
 import { organizationReviewEnabled } from "./organization-review";
 import { lifecycleReviewEnabled } from "./lifecycle-review";
+import { completionReviewEnabled } from "./completion-review";
 
 export function sessionCookieName(): string {
+  if (completionReviewEnabled()) return "fieldproof_completion_stage14_project_session";
   if (lifecycleReviewEnabled()) return "fieldproof_lifecycle_stage14_project_session";
   if (organizationReviewEnabled()) return "fieldproof_governance_stage13_project_session";
   if (boardPackReviewEnabled()) return "fieldproof_boardpack_stage12_session";
@@ -34,7 +36,7 @@ export function sessionCookieName(): string {
   // intact while this explicitly isolated review process uses port 4202.
   return "fieldproof_studio_qa_session";
 }
-export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!lifecycleReviewEnabled()&&!organizationReviewEnabled()&&!boardPackReviewEnabled()&&!onboardingReviewEnabled()&&!fundingQaEnabled()&&!supporterQaEnabled();
+export const sessionCookieSecure=()=>process.env.NODE_ENV==="production"&&!completionReviewEnabled()&&!lifecycleReviewEnabled()&&!organizationReviewEnabled()&&!boardPackReviewEnabled()&&!onboardingReviewEnabled()&&!fundingQaEnabled()&&!supporterQaEnabled();
 export interface Session {
   id: string; tenantId: string; projectId: string; actorId: string;
   role: WorkspaceRole; expiresAt: string; mode: "sample" | "live_sandbox";
@@ -81,18 +83,19 @@ export async function startSession(mode: Session["mode"] = "sample"): Promise<Se
 }
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
+  const completion = completionReviewEnabled();
   const lifecycle = lifecycleReviewEnabled();
   const organization = organizationReviewEnabled();
   const boardPack = boardPackReviewEnabled();
   const onboarding = onboardingReviewEnabled();
-  const allowed = lifecycle ? ["http://localhost:4620"] : organization ? ["http://localhost:4612"] : boardPack ? ["http://localhost:4595"] : onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
+  const allowed = completion ? ["http://localhost:4624"] : lifecycle ? ["http://localhost:4620"] : organization ? ["http://localhost:4612"] : boardPack ? ["http://localhost:4595"] : onboarding ? [onboardingReviewProfile().origin] : ["http://localhost:4102","https://paypal-ai-fieldproof.vercel.app"];
   // Vercel supplies the exact immutable deployment hostname. This permits
   // pre-promotion qualification without trusting sibling or caller-supplied hosts.
   const deploymentHost = process.env.VERCEL_URL;
-  if (!lifecycle && !organization && !boardPack && !onboarding && process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
+  if (!completion && !lifecycle && !organization && !boardPack && !onboarding && process.env.VERCEL === "1" && deploymentHost && /^[a-z0-9][a-z0-9-]*\.vercel\.app$/.test(deploymentHost))
     allowed.push(`https://${deploymentHost}`);
   // The isolated Studio review process never runs on the retired source writer's port.
-  if (!lifecycle && !organization && !boardPack && !onboarding) {
+  if (!completion && !lifecycle && !organization && !boardPack && !onboarding) {
     if (process.env.NODE_ENV !== "production") allowed.push("http://localhost:4202");
     if (process.env.NODE_ENV !== "production" && process.env.FIELDPROOF_PLANNING_QA === "true") allowed.push("http://localhost:4502");
     if (communityQaEnabled()) allowed.push("http://localhost:4512");

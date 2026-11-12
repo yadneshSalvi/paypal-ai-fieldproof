@@ -8,6 +8,16 @@ export function lifecycleDate(value: string, locale: LifecycleLocale = "en"): st
   if (!Number.isFinite(Date.parse(value))) return locale === "es" ? "Fecha no disponible" : "Date unavailable";
   return `${new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(value))} UTC`;
 }
+/** A redacted cutoff means permission is unavailable, not that capture failed. */
+export function lifecycleCaptureText(row: C.LifecycleOccurrence): string {
+  if (row.capturedAt) return lifecycleDate(row.capturedAt);
+  if (row.state === "skipped_paused") return "No source was captured";
+  if (row.status === "withdrawn" || row.status === "unavailable") {
+    const recorded = row.state === "ready" || row.attempts.some(attempt => attempt.stage === "capture" && attempt.outcome === "succeeded");
+    return recorded ? "Captured source is withheld; its original cutoff is not disclosed." : "Source capture details are withheld under the current permission.";
+  }
+  return "No successful source capture is recorded";
+}
 export function lifecycleValueText(raw: C.LifecycleValue, locale: LifecycleLocale = "en"): string {
   const value = C.lifecycleValueSchema.parse(raw), language = locale === "es" ? "es-US" : "en-US";
   if (value.kind === "money") {

@@ -19,8 +19,10 @@ import { query } from "./db";
 import { boardPackReviewEnabled } from "./board-pack-review";
 import { organizationReviewEnabled } from "./organization-review";
 import { lifecycleReviewEnabled } from "./lifecycle-review";
+import { completionReviewEnabled } from "./completion-review";
 
 export function planningQaEnabled(): boolean {
+  if (completionReviewEnabled()) return true;
   if (lifecycleReviewEnabled()) return true;
   if (organizationReviewEnabled()) return true;
   if (boardPackReviewEnabled()) return true;
@@ -34,7 +36,7 @@ export function planningQaEnabled(): boolean {
 }
 function localPath(pathname: string): string {
   if (!planningQaEnabled() || !/^fieldproof\/[0-9a-f-]{36}\/[a-zA-Z0-9._/-]+$/.test(pathname) || pathname.includes("..")) throw new DomainError("DOCUMENT_PATH", "This private source location is unavailable.", 409);
-  return resolve(lifecycleReviewEnabled() ? ".local/lifecycle-unit/documents" : organizationReviewEnabled() ? ".local/governance-unit/documents" : boardPackReviewEnabled() ? ".local/board-pack-unit/documents" : supporterQaEnabled() ? supporterQaProfile().documents : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
+  return resolve(completionReviewEnabled() ? ".local/completion-unit/documents" : lifecycleReviewEnabled() ? ".local/lifecycle-unit/documents" : organizationReviewEnabled() ? ".local/governance-unit/documents" : boardPackReviewEnabled() ? ".local/board-pack-unit/documents" : supporterQaEnabled() ? supporterQaProfile().documents : communityQaEnabled() ? ".local/community-qa/documents" : ".local/planning-qa/documents", pathname);
 }
 const localPlanningStorage: DocumentStorage = {
   async read(pathname, maxBytes = MAX_DOCUMENT_BYTES) {

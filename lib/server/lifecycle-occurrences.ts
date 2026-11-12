@@ -40,7 +40,7 @@ async function occurrenceView(tx:OrgTx,request:LifecycleRequest,identity:OrgIden
     }
   }
   if(occurrence.state==="blocked_source"){status="withdrawn";reasons.push("This original occurrence was blocked by its source permission. A later disclosure cannot silently revive it.");}
-  if(['blocked_authority','expired','cancelled'].includes(occurrence.state)&&!capture)reasons.push("No successful private capture is recorded for this original terminal slot.");
+  if(['blocked_authority','expired','cancelled'].includes(occurrence.state)&&!occurrence.captured_at)reasons.push("No successful private capture is recorded for this original terminal slot.");
   const production=status==="current"||status==="historical"?(await checkLifecycleDelegation(tx,head,definition,"produce")).permission:null;
   const attempts=await attemptPage(tx,identity,occurrence);
   const final=await checkLifecycleCaller(tx,request,identity,head,definition,privateDetail),finalAt=await orgNow(tx);

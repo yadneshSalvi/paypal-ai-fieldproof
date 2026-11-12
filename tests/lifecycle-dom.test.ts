@@ -229,3 +229,58 @@ describe("actual lifecycle keyboard focus and request recovery DOM", () => {
     await mount(createElement(LifecycleWorkspace, { initialContext: context })); const inboxTab = button("My lifecycle inbox"); await act(async () => inboxTab.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }))); assert.equal(document.activeElement, button("Scheduled drafts")); assert.equal(button("Scheduled drafts").getAttribute("aria-selected"), "true"); await until(() => text().includes("Your saved definitions"), "Keyboard-selected panel should load."); assert.match(text(), /UTC/); assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1); assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), "lifecycle-tab-schedules");
   });
 });
+
+describe("native lifecycle review corrections", () => {
+  it("returns to the replacement occurrence opener after a saved aggregate review refreshes its card", async () => {
+    occurrence = lifecycleOccurrenceDetail("organization_aggregate"); const original = respond;
+    respond = async call => {
+      if (call.path.endsWith("/review")) { occurrence = { ...occurrence, occurrence: { ...occurrence.occurrence, version: occurrence.occurrence.version + 1, review: "reviewed_private" } }; return receipt(call, "occurrence_review", occurrence.occurrence.id); }
+      return original(call);
+    };
+    await mount(createElement(LifecycleWorkspace, { initialContext: context })); await historyView();
+    await until(() => !!document.querySelector(".lc-occurrence-item"), "Original aggregate card should load.");
+    const opener = button("Inspect original occurrence"); await click(opener); await until(() => !!document.querySelector(".lc-cited-draft"), "Original aggregate body should load.");
+    await click(button("Review exact private draft")); await fill(document.querySelector<HTMLTextAreaElement>("dialog textarea")!, "Controlled native correction review"); await click(input("I checked the exact cited source")); await click(input("This is a private review only")); await click(button("Save exact-draft private review"));
+    await until(() => !opener.isConnected && !!document.getElementById(opener.id) && text().includes("Original request confirmed"), "Saved review should replace the opener card while preserving the modal.");
+    const replacement = document.getElementById(opener.id); assert.ok(replacement); assert.notEqual(replacement, opener);
+    await act(async () => document.querySelector("dialog h2")!.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
+    assert.equal(document.querySelector("dialog"), null); assert.equal(document.activeElement, replacement); assert.equal(calls.filter(call => call.path.endsWith("/review")).length, 1);
+  });
+  it("returns to the current view tab when the original record has left the filtered list", async () => {
+    function Harness() {
+      const [open, setOpen] = useState(false), [present, setPresent] = useState(true);
+      return createElement("div", null, createElement("div", { className: "lc-tabs" }, createElement("button", { role: "tab", "aria-selected": true }, "Current lifecycle view")), present ? createElement("button", { id: "controlled-record-opener", onClick: () => setOpen(true) }, "Open original record") : null, open ? createElement(LifecycleDialog, { title: "Original retained detail", close: () => setOpen(false), children: createElement("button", { onClick: () => setPresent(false) }, "Remove from current list") }) : null);
+    }
+    await mount(createElement(Harness)); await click(button("Open original record")); await click(button("Remove from current list"));
+    await act(async () => document.querySelector("dialog h2")!.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
+    assert.equal(document.activeElement, button("Current lifecycle view"));
+  });
+  it("describes a permission-withheld original capture without claiming no capture occurred", async () => {
+    const original = lifecycleOccurrenceDetail("organization_aggregate"); occurrence = { ...original, content: null, sources: [], occurrence: { ...original.occurrence, status: "withdrawn", title: null, targetLabel: null, provenance: [], capturedAt: null, snapshotHash: null, contentHash: null, canRead: false, canReview: false, canRetry: false } };
+    await mount(createElement(LifecycleWorkspace, { initialContext: context })); await historyView(); await until(() => !!document.querySelector(".lc-occurrence-item"), "Original withheld occurrence metadata remains."); await click(button("Inspect original occurrence"));
+    await until(() => document.querySelector("dialog")?.textContent?.includes("Captured source is withheld") ?? false, "Permission loss must not erase the fact of the retained capture.");
+    assert.doesNotMatch(document.querySelector("dialog")!.textContent ?? "", /No source was captured/); assert.equal(document.querySelector(".lc-cited-draft"), null); assert.match(document.querySelector(".lc-attempts")?.textContent ?? "", /succeeded/);
+  });
+  it("explains the personal role boundary for an active organizer without implying its profile is missing", async () => {
+    context = lifecycleContext("organizer"); context.project.canReadInbox = false; context.project.canChangePreferences = false;
+    await mount(createElement(LifecycleWorkspace, { initialContext: context })); await until(() => text().includes("Personal updates belong to donors and volunteers"), "Organizer explanation should appear.");
+    assert.match(text(), /Your current project profile is active/); assert.doesNotMatch(text(), /Open your own project profile/); assert.equal(calls.some(call => new URL(call.path, "http://localhost:4592").pathname === "/api/lifecycle/inbox"), false);
+  });
+  it("refreshes the active filter after archive and the archived filter after restore", async () => {
+    context = lifecycleContext("donor"); const original = respond; let row = { ...personal.item };
+    respond = async call => {
+      const url = new URL(call.path, "http://localhost:4592");
+      if (call.path.endsWith("/state")) { row = { ...row, version: row.version + 1, readState: call.body?.action === "archive" ? "archived" : "unread", canArchive: call.body?.action !== "archive", canRestore: call.body?.action === "archive" }; return receipt(call, "inbox_state", row.id); }
+      if (url.pathname === "/api/lifecycle/inbox") {
+        const filter = url.searchParams.get("state") as C.LifecycleInbox["filter"], matches = filter ? row.readState === filter : row.readState !== "archived";
+        return Response.json({ inbox: { ...inbox, filter, items: matches ? [row] : [], counts: { unread: row.readState === "unread" ? 1 : 0, read: 0, archived: row.readState === "archived" ? 1 : 0 } } });
+      }
+      return original(call);
+    };
+    await mount(createElement(LifecycleWorkspace, { initialContext: context })); await until(() => !!document.querySelector(".lc-inbox-item"), "Original active item should load."); await click(button("Archive", document.querySelector(".lc-inbox-item")!));
+    await until(() => !document.querySelector(".lc-inbox-item") && text().includes("1 archived"), "Archived record must leave the still-selected active filter.");
+    const filter = document.querySelector<HTMLSelectElement>('.lc-list-toolbar select')!; assert.equal(filter.value, "all"); await select(filter, "archived"); await until(() => !!document.querySelector(".lc-inbox-item.is-archived"), "Archived record is available only in its requested filter.");
+    await click(button("Move out of archive", document.querySelector(".lc-inbox-item")!)); await until(() => !document.querySelector(".lc-inbox-item") && text().includes("1 unread"), "Restored record must leave the archived filter."); assert.equal(filter.value, "archived"); await select(filter, "all"); await until(() => !!document.querySelector(".lc-inbox-item.is-unread"), "Restored original item returns to active records.");
+    assert.deepEqual(calls.filter(call => call.path.endsWith("/state")).map(call => call.body?.action), ["archive", "unarchive"]);
+  });
+});

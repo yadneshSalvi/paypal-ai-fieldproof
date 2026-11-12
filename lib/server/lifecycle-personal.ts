@@ -115,7 +115,7 @@ export async function lifecycleInbox(request: LifecycleRequest, raw: { state?: C
   return personalTransaction(async tx => {
     const authority = await personalAuthority(tx, request), preferences = await preferenceFor(tx, authority), filter = input.state ?? null;
     const owner = lifecycleHash({ scope: authority.scope, filter }), cursor = inboxCursor(input.before, owner);
-    const rows = await query<LifecycleInboxRow>("SELECT * FROM fp_lifecycle_inbox WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 AND role=$4 AND ($5::text IS NULL OR read_state=$5) AND ($6::timestamptz IS NULL OR (created_at,id)<($6::timestamptz,$7::text)) ORDER BY created_at DESC,id DESC LIMIT $8", [...ownerValues(authority), filter, cursor?.at ?? null, cursor?.id ?? null, C.LIFECYCLE_PAGE_SIZE + 1], tx);
+    const rows = await query<LifecycleInboxRow>("SELECT * FROM fp_lifecycle_inbox WHERE tenant_id=$1 AND project_id=$2 AND actor_id=$3 AND role=$4 AND (($5::text IS NULL AND read_state<>'archived') OR read_state=$5) AND ($6::timestamptz IS NULL OR (created_at,id)<($6::timestamptz,$7::text)) ORDER BY created_at DESC,id DESC LIMIT $8", [...ownerValues(authority), filter, cursor?.at ?? null, cursor?.id ?? null, C.LIFECYCLE_PAGE_SIZE + 1], tx);
     const page = rows.slice(0, C.LIFECYCLE_PAGE_SIZE), items: C.LifecycleInboxItem[] = [];
     for (const row of page) items.push((await presentInbox(tx, authority, row)).item);
     const counts = { unread: 0, read: 0, archived: 0 };
