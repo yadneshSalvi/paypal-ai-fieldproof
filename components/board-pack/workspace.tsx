@@ -7,7 +7,8 @@ import type { BoardPackCaptureInput, BoardPackDesk, BoardPackReport, BoardPackSo
 import { BoardPackDocument } from "./document";
 import { BoardPackDialog, BoardPackEntry, BoardPackNotice, BoardPackRequestError, BoardPackShell, boardPackDate, boardPackFetch, boardPackLabel, boardPackRequest, loadBoardPackReviewedImage, type BoardPackImageView } from "./shared";
 
-type Busy = "capture" | "refresh" | "read" | "history" | "print" | "export" | null;
+type Busy = "capture" | "refresh" | "read" | "history" | "print" | "preview" | "export" | null;
+type PrintPreparation = { phase: "decode" | "ready"; action: "print" | "preview"; reportId: string; contentHash: string; scope: string; paper: "A4" | "Letter"; packageId: string | null; checkedAt: string };
 type Blocked = "expired" | "changed" | "access" | null;
 type RequestBoundary = { signal: AbortSignal; current: () => boolean; finish: () => void; cancel: () => void };
 type GalleryCache = { key: string; images: Record<string, BoardPackImageView>; pending: Map<string, { promise: Promise<BoardPackImageView>; active: () => boolean }> };
@@ -21,7 +22,7 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
   const [view, setView] = useState<BoardPackView | null>(initial.selected), [busy, setBusy] = useState<Busy>(null), [blocked, setBlocked] = useState<Blocked>(null);
   const [message, setMessage] = useState<string | null>(null), [error, setError] = useState(false), [paused, setPaused] = useState(false), [needsRefresh, setNeedsRefresh] = useState(false);
   const [label, setLabel] = useState("Project Board Pack"), [uncertainCapture, setUncertainCapture] = useState(false);
-  const [packageId, setPackageId] = useState<string | null>(null), [paper, setPaper] = useState<"A4" | "Letter">("A4"), [printReady, setPrintReady] = useState(false);
+  const [packageId, setPackageId] = useState<string | null>(null), [paper, setPaper] = useState<"A4" | "Letter">("A4"), [printPreparation, setPrintPreparation] = useState<PrintPreparation | null>(null);
   const [sourceTrail, setSourceTrail] = useState<string[]>([]), [detail, setDetail] = useState<BoardPackSourceDetail | null>(null), [detailError, setDetailError] = useState<string | null>(null), [detailLoading, setDetailLoading] = useState(false), [sourceReload, setSourceReload] = useState(0);
   const [preview, setPreview] = useState<string | null>(null), [previewBusy, setPreviewBusy] = useState(false), [previewError, setPreviewError] = useState<string | null>(null);
   const [images, setImages] = useState<Record<string, BoardPackImageView>>({}), [galleryRevision, setGalleryRevision] = useState(0);
@@ -29,6 +30,9 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
   const epoch = useRef(0), controllers = useRef(new Set<AbortController>()), reviewSequence = useRef(0), mutationEpoch = useRef(0), sourceSequence = useRef(0), imageSequence = useRef(0);
   const busyRef = useRef<Busy>(busy), blockedRef = useRef<Blocked>(blocked), selectedRef = useRef<BoardPackView | null>(view), requestedReport = useRef<string | null>(initial.selected?.summary.id ?? null), previewUrl = useRef<string | null>(null);
   const captureAttempt = useRef<BoardPackCaptureInput | null>(null);
+  const printPreparationRef = useRef<PrintPreparation | null>(printPreparation), previewHeading = useRef<HTMLHeadingElement>(null), prepareButton = useRef<HTMLButtonElement>(null);
+  printPreparationRef.current = printPreparation;
+  const printReady = printPreparation?.phase === "ready" && printPreparation.scope === initial.scope && printPreparation.reportId === view?.summary.id && printPreparation.contentHash === view?.summary.contentHash && printPreparation.paper === paper && printPreparation.packageId === packageId && !!view?.report && !!view.canPrint && view.status !== "withdrawn" && !paused && !blocked;
   busyRef.current = busy; blockedRef.current = blocked; selectedRef.current = view;
   const setBusyNow = useCallback((value: Busy) => { busyRef.current = value; setBusy(value); }, []);
 
@@ -38,7 +42,7 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
   const clearPreview = useCallback(() => { imageSequence.current++; if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; setPreview(null); setPreviewBusy(false); setPreviewError(null); }, []);
   const closeSource = useCallback(() => { sourceSequence.current++; setSourceTrail([]); setDetail(null); setDetailError(null); setDetailLoading(false); clearPreview(); }, [clearPreview]);
   const stopAccess = useCallback((reason: Exclude<Blocked, null>) => {
-    invalidate(); mutationEpoch.current++; captureAttempt.current = null; requestedReport.current = null; setUncertainCapture(false); closeSource(); clearGallery(); setView(null); setDesk(null); setBlocked(reason); blockedRef.current = reason; setBusyNow(null); setPrintReady(false); setPaused(false); setMessage(null);
+    invalidate(); mutationEpoch.current++; captureAttempt.current = null; requestedReport.current = null; setUncertainCapture(false); closeSource(); clearGallery(); setView(null); setDesk(null); setBlocked(reason); blockedRef.current = reason; setBusyNow(null); setPrintPreparation(null); setPaused(false); setMessage(null);
   }, [clearGallery, closeSource, invalidate, setBusyNow]);
   const requireLivePage = useCallback(() => {
     if (blockedRef.current) return false;
@@ -74,7 +78,7 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
       }).catch(caught => {
         if (active() && !abortError(caught)) {
           if (accessChanged(caught)) stopAccess("access");
-          else if (caught instanceof BoardPackRequestError && caught.status === 410) { clearGallery(); closeSource(); setView(null); setPaused(true); setPrintReady(false); setMessage(messageFor(caught)); setError(true); }
+          else if (caught instanceof BoardPackRequestError && caught.status === 410) { clearGallery(); closeSource(); setView(null); setPaused(true); setPrintPreparation(null); setMessage(messageFor(caught)); setError(true); }
           else { cache.images[image.sourceId] = { state: "error", contentHash: image.contentHash, url: null, error: messageFor(caught) }; setImages({ ...cache.images }); }
         }
         throw caught;
@@ -88,12 +92,13 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
     const cache = gallery.current, image = cache?.images[id]; if (!cache || !image) return;
     if (image.url) URL.revokeObjectURL(image.url);
     cache.images[id] = { state: "error", contentHash: image.contentHash, url: null, error: "The reviewed image could not be displayed. Check its source again." }; setImages({ ...cache.images });
-    setPrintReady(false); if (busyRef.current === "print") setBusyNow(null); setMessage("A reviewed image could not be displayed. Check the images before printing this edition."); setError(true);
+    setPrintPreparation(null); if (busyRef.current === "print" || busyRef.current === "preview") setBusyNow(null); setMessage("A reviewed image could not be displayed. Check the images before printing this edition."); setError(true);
   }, [setBusyNow]);
 
   const refresh = useCallback(async (quiet = false) => {
     if (!requireLivePage() || (quiet && busyRef.current)) return;
     const request = start(), sequence = ++reviewSequence.current, mutation = mutationEpoch.current, id = requestedReport.current;
+    const hadPreparedPreview = printPreparationRef.current?.phase === "ready";
     if (!quiet) { setBusyNow("refresh"); setMessage(null); }
     try {
       const [nextDesk, selected] = await Promise.all([
@@ -107,14 +112,15 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
         if (!quiet || !current) return { ...nextDesk.desk, selected: null };
         return { ...nextDesk.desk, selected: null, history: [...nextDesk.desk.history, ...current.history.filter(item => !nextDesk.desk.history.some(saved => saved.id === item.id))], nextCursor: current.history.length ? current.nextCursor : nextDesk.desk.nextCursor };
       });
-      setView(nextView); requestedReport.current = nextView?.summary.id ?? null; setPaused(false); setNeedsRefresh(false); setPrintReady(false);
+      setView(nextView); requestedReport.current = nextView?.summary.id ?? null; setPaused(false); setNeedsRefresh(false); setPrintPreparation(null);
       if (nextView?.status === "withdrawn") { closeSource(); clearGallery(); }
       if (!quiet) { setMessage("Report access and saved history checked."); setError(false); }
+      else if (hadPreparedPreview) { setMessage("Access was checked again. Prepare the print preview again before printing this edition."); setError(false); }
     } catch (caught) {
       if (!request.current() || sequence !== reviewSequence.current || mutation !== mutationEpoch.current || abortError(caught)) return;
       if (accessChanged(caught)) { stopAccess("access"); return; }
       // A failed current-access check pauses disclosure until a successful retry.
-      setView(null); setPaused(true); setPrintReady(false); closeSource(); clearGallery(); setMessage(messageFor(caught)); setError(true);
+      setView(null); setPaused(true); setPrintPreparation(null); closeSource(); clearGallery(); setMessage(messageFor(caught)); setError(true);
     } finally { if (request.current() && sequence === reviewSequence.current && !quiet) setBusyNow(null); request.finish(); }
   }, [checkDesk, checkView, clearGallery, closeSource, initial.scope, requireLivePage, setBusyNow, start, stopAccess]);
 
@@ -146,9 +152,16 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
     window.addEventListener("focus", check); document.addEventListener("visibilitychange", check);
     return () => { window.clearInterval(interval); window.removeEventListener("focus", check); document.removeEventListener("visibilitychange", check); };
   }, [refresh]);
-  useEffect(() => { setPrintReady(false); }, [packageId, paper, view?.summary.id]);
   useEffect(() => {
-    const after = () => { setPrintReady(false); setBusyNow(null); setMessage("The print dialog has closed. Your saved edition remains at its cutoff."); setError(false); };
+    const prepared = printPreparationRef.current;
+    if (prepared && (prepared.scope !== initial.scope || prepared.packageId !== packageId || prepared.paper !== paper || prepared.reportId !== view?.summary.id || prepared.contentHash !== view?.summary.contentHash)) {
+      setPrintPreparation(null);
+      if (prepared.phase === "ready") { setMessage("The print selection changed. Prepare this edition again before printing."); setError(false); }
+    }
+  }, [initial.scope, packageId, paper, view?.summary.contentHash, view?.summary.id]);
+  useEffect(() => { if (printReady && printPreparation?.action === "preview") previewHeading.current?.focus({ preventScroll: true }); }, [printReady, printPreparation?.action]);
+  useEffect(() => {
+    const after = () => { setPrintPreparation(null); setBusyNow(null); setMessage("The browser print view has closed. Your saved edition remains at its cutoff."); setError(false); };
     window.addEventListener("afterprint", after);
     return () => window.removeEventListener("afterprint", after);
   }, [setBusyNow]);
@@ -156,7 +169,7 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
   async function selectReport(summary: BoardPackSummary) {
     if (!requireLivePage() || busyRef.current) return;
     invalidate(); mutationEpoch.current++; reviewSequence.current++; const request = start();
-    requestedReport.current = summary.id; closeSource(); clearGallery(); setView(null); setBusyNow("read"); setPrintReady(false); setMessage(null); setPaused(false); setPackageId(null);
+    requestedReport.current = summary.id; closeSource(); clearGallery(); setView(null); setBusyNow("read"); setPrintPreparation(null); setMessage(null); setPaused(false); setPackageId(null);
     try {
       const next = await boardPackRequest<{ view: BoardPackView }>(`/${encodeURIComponent(summary.id)}`, { scope: initial.scope, signal: request.signal });
       if (!request.current() || !requireLivePage()) return;
@@ -172,7 +185,7 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
     if (!desk?.canCapture || !requireLivePage() || busyRef.current || needsRefresh) return;
     invalidate(); mutationEpoch.current++; reviewSequence.current++; closeSource(); const request = start();
     const attempt = captureAttempt.current ?? { intentId: crypto.randomUUID(), label: label.trim(), expectedProjectionVersion: desk.projectionVersion };
-    captureAttempt.current = attempt; setBusyNow("capture"); setMessage(null); setPrintReady(false);
+    captureAttempt.current = attempt; setBusyNow("capture"); setMessage(null); setPrintPreparation(null);
     try {
       const next = await boardPackRequest<{ view: BoardPackView }>("/capture", { scope: initial.scope, signal: request.signal, body: attempt });
       if (!request.current() || !requireLivePage()) return;
@@ -200,29 +213,30 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
     } catch (caught) { if (!request.current() || abortError(caught)) return; if (accessChanged(caught)) stopAccess("access"); else { setMessage(messageFor(caught)); setError(true); } }
     finally { if (request.current()) setBusyNow(null); request.finish(); }
   }
-  const printOrExport = useCallback(async (kind: "print" | "export") => {
+  const printOrExport = useCallback(async (kind: "print" | "preview" | "export") => {
     const current = selectedRef.current;
     if (!current || !requireLivePage() || busyRef.current || paused) return;
-    const id = current.summary.id; mutationEpoch.current++; reviewSequence.current++; const request = start(); let queuedPrint = false;
-    closeSource(); setBusyNow(kind); setMessage(null); setPrintReady(false);
+    const id = current.summary.id, contentHash = current.summary.contentHash; mutationEpoch.current++; reviewSequence.current++; const request = start(); let queuedPreparation = false;
+    closeSource(); setBusyNow(kind); setMessage(null); setPrintPreparation(null);
     try {
       const checked = await boardPackRequest<{ view: BoardPackView }>(`/${encodeURIComponent(id)}`, { scope: initial.scope, signal: request.signal });
       if (!request.current() || !requireLivePage()) return;
-      const next = checkView(checked.view, id); setView(next);
-      if (!next.report || next.status === "withdrawn" || !(kind === "print" ? next.canPrint : next.canExport)) { setMessage("This edition is no longer available for that action. Create a fresh report after reviewing its current sources."); setError(true); return; }
-      if (kind === "print") {
+      const next = checkView(checked.view, id);
+      if (next.summary.contentHash !== contentHash) throw new BoardPackRequestError("This response does not match the selected immutable edition. Reopen it from saved history.", "BOARD_PACK_EDITION_CHANGED", 409);
+      setView(next);
+      if (!next.report || next.status === "withdrawn" || !(kind === "export" ? next.canExport : next.canPrint)) { setMessage("This edition is no longer available for that action. Create a fresh report after reviewing its current sources."); setError(true); return; }
+      if (kind !== "export") {
         const selectedImages = new Set(next.report.reviewedImages.filter(image => { const source = next.report!.sources.find(item => item.id === image.sourceId); return source && (!packageId || !source.packageIds.length || source.packageIds.includes(packageId)); }).map(image => image.sourceId));
         if (selectedImages.size) { setMessage(`Preparing ${selectedImages.size} reviewed ${selectedImages.size === 1 ? "image" : "images"} for printing…`); setError(false); }
         const loaded = await ensureImages(next.report, request, selectedImages);
         if (!request.current() || !requireLivePage()) return;
         const failed = loaded.find((result): result is PromiseRejectedResult => result.status === "rejected"); if (failed) throw failed.reason;
         await document.fonts.ready;
-        const final = await boardPackRequest<{ view: BoardPackView }>(`/${encodeURIComponent(id)}`, { scope: initial.scope, signal: request.signal });
         if (!request.current() || !requireLivePage()) return;
-        const finalView = checkView(final.view, id); setView(finalView);
-        if (!finalView.report || finalView.status === "withdrawn" || !finalView.canPrint) { clearGallery(); setMessage("This edition changed access while print was being prepared. Review its current state before printing."); setError(true); return; }
-        queuedPrint = true; setPrintReady(true);
-        // Printing opens only after this checked edition and its images reach the DOM.
+        queuedPreparation = true;
+        setPrintPreparation({ phase: "decode", action: kind, reportId: id, contentHash, scope: initial.scope, paper, packageId, checkedAt: next.checkedAt });
+        // The rendered image decode and final current-access check happen before
+        // either path can expose the printable state. Preview never opens OS print.
       } else {
         const response = await boardPackFetch(`/${encodeURIComponent(id)}/export`, { scope: initial.scope, signal: request.signal }), blob = await response.blob();
         if (!request.current() || !requireLivePage()) return;
@@ -233,18 +247,53 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
       if (!request.current() || abortError(caught)) return;
       if (accessChanged(caught)) { stopAccess("access"); return; }
       setView(null); setPaused(true); setMessage(messageFor(caught)); setError(true); closeSource(); clearGallery();
-    } finally { if (request.current() && !queuedPrint) setBusyNow(null); request.finish(); }
-  }, [checkView, clearGallery, closeSource, ensureImages, initial.scope, packageId, paused, requireLivePage, setBusyNow, start, stopAccess]);
+    } finally { if (request.current() && !queuedPreparation) setBusyNow(null); request.finish(); }
+  }, [checkView, clearGallery, closeSource, ensureImages, initial.scope, packageId, paper, paused, requireLivePage, setBusyNow, start, stopAccess]);
   useEffect(() => {
-    if (!printReady || !view?.canPrint || !view.report || view.status === "withdrawn" || blocked) return;
-    let cancelled = false, frame: number | null = null;
+    const pending = printPreparation;
+    if (pending?.phase !== "decode" || !view?.canPrint || !view.report || view.status === "withdrawn" || blocked) return;
+    const request = start(); let stage: "images" | "access" = "images", ready = false;
     const nodes = Array.from(document.querySelectorAll<HTMLImageElement>(".bp-report img[data-bp-reviewed-image]"));
-    void Promise.all(nodes.map(image => image.decode())).then(() => {
-      if (cancelled || !requireLivePage()) return;
-      frame = requestAnimationFrame(() => { if (!cancelled && requireLivePage()) { try { window.print(); } finally { setPrintReady(false); setBusyNow(null); } } });
-    }).catch(() => { if (!cancelled) { for (const image of nodes) if (!image.complete || !image.naturalWidth) { const sourceId = image.dataset.bpReviewedImage; if (sourceId) reviewedImageFailed(sourceId); } setPrintReady(false); setBusyNow(null); setMessage("A reviewed image could not be decoded for printing. Check the images and try again."); setError(true); } });
-    return () => { cancelled = true; if (frame !== null) cancelAnimationFrame(frame); };
-  }, [blocked, printReady, requireLivePage, reviewedImageFailed, setBusyNow, view]);
+    void (async () => {
+      try {
+        const expected = view.report!.reviewedImages.filter(image => { const source = view.report!.sources.find(item => item.id === image.sourceId); return source && (!pending.packageId || !source.packageIds.length || source.packageIds.includes(pending.packageId)); });
+        if (nodes.length !== expected.length || nodes.some(node => !expected.some(image => image.sourceId === node.dataset.bpReviewedImage))) throw new Error("The rendered image set changed.");
+        await Promise.all(nodes.map(image => image.decode()));
+        await document.fonts.ready;
+        if (!request.current() || !requireLivePage()) return;
+        stage = "access";
+        const final = await boardPackRequest<{ view: BoardPackView }>(`/${encodeURIComponent(pending.reportId)}`, { scope: initial.scope, signal: request.signal });
+        if (!request.current() || !requireLivePage()) return;
+        const finalView = checkView(final.view, pending.reportId);
+        if (finalView.summary.contentHash !== pending.contentHash) throw new BoardPackRequestError("This response does not match the selected immutable edition. Reopen it from saved history.", "BOARD_PACK_EDITION_CHANGED", 409);
+        setView(finalView);
+        if (!finalView.report || finalView.status === "withdrawn" || !finalView.canPrint) { setPrintPreparation(null); clearGallery(); setMessage("This edition changed access while print was being prepared. Review its current state before printing."); setError(true); return; }
+        if (nodes.some(image => !image.isConnected) || pending.scope !== initial.scope || pending.paper !== paper || pending.packageId !== packageId || selectedRef.current?.summary.id !== pending.reportId || selectedRef.current?.summary.contentHash !== pending.contentHash) {
+          setPrintPreparation(null); setMessage("The report view changed while printing was being prepared. Prepare this edition again."); setError(false); return;
+        }
+        ready = true; setPrintPreparation({ ...pending, phase: "ready", checkedAt: finalView.checkedAt }); setError(false);
+        if (pending.action === "preview") { setBusyNow(null); setMessage(null); }
+      } catch (caught) {
+        if (!request.current() || abortError(caught)) return;
+        setPrintPreparation(null);
+        if (stage === "images") {
+          for (const image of nodes) if (!image.complete || !image.naturalWidth) { const sourceId = image.dataset.bpReviewedImage; if (sourceId) reviewedImageFailed(sourceId); }
+          setMessage("A reviewed image could not be decoded for printing. Check the images and try again."); setError(true);
+        } else if (accessChanged(caught)) stopAccess("access");
+        else { setView(null); setPaused(true); setMessage(messageFor(caught)); setError(true); closeSource(); clearGallery(); }
+      } finally { if (request.current() && !ready) setBusyNow(null); request.finish(); }
+    })();
+    return () => request.cancel();
+  }, [blocked, checkView, clearGallery, closeSource, initial.scope, packageId, paper, printPreparation, requireLivePage, reviewedImageFailed, setBusyNow, start, stopAccess, view]);
+  useEffect(() => {
+    if (!printReady || printPreparation?.action !== "print") return;
+    const prepared = printPreparation;
+    const frame = requestAnimationFrame(() => {
+      if (printPreparationRef.current !== prepared || !requireLivePage()) return;
+      try { window.print(); } finally { setPrintPreparation(null); setBusyNow(null); }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [printPreparation, printReady, requireLivePage, setBusyNow]);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p" && !event.altKey) { event.preventDefault(); void printOrExport("print"); } };
     window.addEventListener("keydown", shortcut); return () => window.removeEventListener("keydown", shortcut);
@@ -298,8 +347,8 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
   const hasReport = Boolean(view?.report && view.status !== "withdrawn" && !paused), source = view?.report?.sources.find(item => item.id === sourceId);
   return <BoardPackShell projectTitle={desk.projectTitle} audience={desk.audience.label}>
     <style>{`@media print { @page { size: ${paper}; margin: 13mm; } }`}</style>
-    <div className="bp-print-container" data-print-ready={printReady && hasReport ? "true" : "false"}>
-      <div className="bp-print-warning"><h1>Recheck this edition before printing.</h1><p>Use the Board Pack’s “Print / save PDF” action to check current access and prepare the selected paper size. Private report content is omitted from an unchecked print.</p></div>
+    <div className={`bp-print-container${printReady && printPreparation?.action === "preview" ? " is-prepared-preview" : ""}`} data-paper={paper} data-print-ready={printReady && hasReport ? "true" : "false"}>
+      <div className="bp-print-warning"><h1>Recheck this edition before printing.</h1><p>Use “Prepare print preview” or “Print / save PDF” to check current access, reviewed images and the selected paper size. Private report content is omitted from an unchecked print.</p></div>
       <div className="bp-workspace-heading"><div><p className="bp-kicker">A SHARED PICTURE. A CLEAR RECORD.</p><h1>The Board Pack<span>.</span></h1><p>One dated account of support, expenses and the evidence behind the work.</p></div><div className="bp-heading-seal" aria-hidden="true"><FilePlus2 size={30} strokeWidth={1.1}/><span>PREPARED<br/>WITH CARE</span></div></div>
       <div className="bp-workspace-layout"><aside className="bp-controls" aria-label="Report editions and actions">
         {desk.canCapture && <form className="bp-capture" onSubmit={event => void capture(event)}><div className="bp-control-heading"><FilePlus2 size={20}/><h2>Make a dated edition.</h2></div><p>Save the facts available to your current role. Later changes leave this cutoff intact.</p><label htmlFor="bp-capture-label">Edition name<input id="bp-capture-label" value={label} maxLength={100} required readOnly={uncertainCapture} disabled={Boolean(busy)} onChange={event => { setLabel(event.target.value); captureAttempt.current = null; }}/></label><button type="submit" className="bp-button bp-primary" disabled={Boolean(busy) || needsRefresh || !label.trim()}>{busy === "capture" ? <RefreshCw className="bp-spin" size={16}/> : <FilePlus2 size={16}/>}{busy === "capture" ? "Saving the cutoff…" : uncertainCapture ? "Retry same capture" : "Capture current report"}</button>{uncertainCapture && <p className="bp-control-note">The response was interrupted. Retry keeps the original request and cutoff attempt.</p>}{needsRefresh && <p className="bp-control-note">The project changed. Refresh its current version before starting another edition.</p>}<span className="bp-control-version">Current project v{desk.projectionVersion} · event {desk.eventCursor}</span></form>}
@@ -307,11 +356,12 @@ export function BoardPackWorkspace({ initial }: { initial: BoardPackDesk }) {
         <div className="bp-session-note"><LockKeyhole size={15}/><p>Private access ends {boardPackDate(desk.sessionExpiresAt)}. Returning here does not extend that deadline.</p></div>
       </aside>
       <div className="bp-report-column">
-        <div className="bp-toolbar"><button type="button" className="bp-button bp-secondary" disabled={Boolean(busy)} onClick={() => void refresh()}><RefreshCw size={16} className={busy === "refresh" ? "bp-spin" : undefined}/>{busy === "refresh" ? "Checking access…" : "Refresh access"}</button><label>Paper size<select value={paper} onChange={event => setPaper(event.target.value as "A4" | "Letter")} disabled={Boolean(busy)}><option value="A4">A4</option><option value="Letter">Letter</option></select></label><button type="button" className="bp-button bp-secondary" disabled={Boolean(busy) || !hasReport || !view?.canExport} onClick={() => void printOrExport("export")}><Download size={16}/>{busy === "export" ? "Preparing CSV…" : "Full scoped CSV"}</button><button type="button" className="bp-button bp-primary" disabled={Boolean(busy) || !hasReport || !view?.canPrint} onClick={() => void printOrExport("print")}><Printer size={16}/>{busy === "print" ? "Checking edition…" : "Print / save PDF"}</button></div>
+        <div className="bp-toolbar"><button type="button" className="bp-button bp-secondary" disabled={Boolean(busy)} onClick={() => void refresh()}><RefreshCw size={16} className={busy === "refresh" ? "bp-spin" : undefined}/>{busy === "refresh" ? "Checking access…" : "Refresh access"}</button><label>Paper size<select value={paper} onChange={event => setPaper(event.target.value as "A4" | "Letter")} disabled={Boolean(busy)}><option value="A4">A4</option><option value="Letter">Letter</option></select></label><button type="button" className="bp-button bp-secondary" disabled={Boolean(busy) || !hasReport || !view?.canExport} onClick={() => void printOrExport("export")}><Download size={16}/>{busy === "export" ? "Preparing CSV…" : "Full scoped CSV"}</button><button ref={prepareButton} type="button" className="bp-button bp-secondary" disabled={(Boolean(busy) && busy !== "preview") || !hasReport || !view?.canPrint} aria-disabled={Boolean(busy) || !hasReport || !view?.canPrint} aria-busy={busy === "preview"} onClick={() => void printOrExport("preview")}><Eye size={16}/>{busy === "preview" ? "Preparing preview…" : "Prepare print preview"}</button><button type="button" className="bp-button bp-primary" disabled={(Boolean(busy) && busy !== "print") || !hasReport || !view?.canPrint} aria-disabled={Boolean(busy) || !hasReport || !view?.canPrint} aria-busy={busy === "print"} onClick={() => void printOrExport("print")}><Printer size={16}/>{busy === "print" ? "Checking edition…" : "Print / save PDF"}</button></div>
+        {printReady && printPreparation?.action === "preview" && <section className="bp-print-preview" aria-label="Prepared print preview"><p className="bp-kicker">THE SAME SAVED EDITION · READY FOR PRINT</p><h2 ref={previewHeading} tabIndex={-1}>Your {paper} print preview is ready.</h2><p>Current access and reviewed images have been checked. This preview uses the saved edition below and your selected paper size.</p><dl><div><dt>Edition</dt><dd><code>{printPreparation.reportId}</code></dd></div><div><dt>Detail selection</dt><dd>{packageId ? view?.report?.packages.find(item => item.packageId === packageId)?.title ?? "Selected purpose" : "All permitted purposes"}</dd></div><div><dt>Content SHA-256</dt><dd><code>{printPreparation.contentHash}</code></dd></div><div><dt>Access checked</dt><dd>{boardPackDate(printPreparation.checkedAt)}</dd></div></dl><p className="bp-control-note">Changing the edition, paper or purpose selection requires another check. A later access check also clears this prepared state.</p><button type="button" className="bp-button bp-secondary" onClick={() => { setPrintPreparation(null); setMessage("Print preview closed. Prepare this edition again before printing."); setError(false); prepareButton.current?.focus({ preventScroll: true }); }}><ArrowLeft size={16}/>Return to Board Pack</button></section>}
         {message && <div className={`bp-action-message${error ? " is-error" : ""}`} role={error ? "alert" : "status"}><p>{message}</p></div>}
         {busy === "read" && <div className="bp-report-loading" role="status"><RefreshCw size={24} className="bp-spin"/><h2>Opening the selected edition.</h2><p>Checking your current role and its bound sources.</p></div>}
         {paused && <BoardPackNotice title="Private content is paused until access can be checked." error><p>Refresh access to reopen this edition. Its saved identity remains in your history.</p></BoardPackNotice>}
-        {view && !paused && busy !== "read" && <BoardPackDocument view={view} packageId={packageId} onPackageChange={busy ? undefined : id => { setPackageId(id); setPrintReady(false); }} onSource={busy ? undefined : id => navigateSource(id, "root")} images={images} onImageError={reviewedImageFailed} onRetryImages={busy ? undefined : () => setGalleryRevision(current => current + 1)}/>}
+        {view && !paused && busy !== "read" && <BoardPackDocument view={view} packageId={packageId} onPackageChange={busy ? undefined : id => { setPackageId(id); setPrintPreparation(null); if (printPreparationRef.current?.phase === "ready") { setMessage("The print selection changed. Prepare this edition again before printing."); setError(false); } }} onSource={busy ? undefined : id => navigateSource(id, "root")} images={images} onImageError={reviewedImageFailed} onRetryImages={busy ? undefined : () => setGalleryRevision(current => current + 1)}/>}
         {!view && !paused && busy !== "read" && <section className="bp-no-report"><FilePlus2 size={44} strokeWidth={1}/><p className="bp-kicker">YOUR PROJECT, ON THE RECORD</p><h2>A place for the whole picture.</h2><p>{desk.canCapture ? "Capture a dated report to bring together the plan, current funding, repayments and reviewed evidence available to your role." : "A current project role is needed to prepare a private report. Open an existing edition if one is available to this role."}</p><div><span>01 · A declared cutoff</span><span>02 · Source-linked facts</span><span>03 · A4 or Letter</span></div></section>}
       </div></div>
     </div>
@@ -323,5 +373,5 @@ export function SourcePanel({ detail, loading, error, preview, previewBusy, prev
   detail: BoardPackSourceDetail | null; loading: boolean; error: string | null; preview: string | null; previewBusy: boolean; previewError: string | null;
   onPreview: () => void; onImageError: () => void; onRelated: (id: string) => void; onBack?: () => void; onRetry?: () => void; close: () => void;
 }) {
-  return <><div className="bp-source-navigation">{onBack && <button type="button" className="bp-text-button" onClick={onBack}><ArrowLeft size={15}/>Previous source</button>}<button type="button" className="bp-text-button" onClick={close}><ArrowLeft size={15}/>Go back to report</button></div>{loading && <p className="bp-source-loading" role="status"><RefreshCw size={19} className="bp-spin"/>Checking this source against current access…</p>}{error && <BoardPackNotice title="This source is not available." error><p>{error}</p>{onRetry && <button type="button" className="bp-button bp-secondary" onClick={onRetry}><RefreshCw size={15}/>Check source again</button>}</BoardPackNotice>}{detail && !error && !loading && <><div className="bp-source-cutoff"><LockKeyhole size={16}/><p>Bound to the report captured {boardPackDate(detail.asOf)}.<br/><span>{boardPackLabel(detail.source.provenance)} · {detail.source.scope}</span></p></div><dl className="bp-detail-fields">{detail.fields.map((field, index) => <div key={`${field.label}-${index}`}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>{detail.image && <div className="bp-source-image"><button type="button" className="bp-button bp-secondary" disabled={previewBusy} onClick={onPreview}><Eye size={16}/>{previewBusy ? "Checking image access…" : preview ? "Close source image" : "Inspect source image"}</button>{preview && <figure><img src={preview} width={detail.image.width} height={detail.image.height} alt={detail.image.alt} onError={onImageError}/><figcaption>{detail.image.alt}<code>Image SHA-256 {detail.image.contentHash}</code></figcaption></figure>}{previewError && <p className="bp-image-error" role="alert"><ImageOff size={18}/>{previewError}</p>}</div>}{detail.limitations.length > 0 && <ul className="bp-source-limitations">{detail.limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}</ul>}{detail.relatedSourceIds.length > 0 && <div className="bp-related-sources"><h3>Follow the source links</h3>{detail.relatedSourceIds.map(id => <button type="button" className="bp-text-button" key={id} onClick={() => onRelated(id)}>{id}<ArrowUpRight size={14}/></button>)}</div>}<div className="bp-source-hash"><span>Report content hash</span><code>{detail.contentHash}</code></div></>}</>;
+  return <><div className="bp-source-navigation">{onBack && <button type="button" className="bp-text-button" onClick={onBack}><ArrowLeft size={15}/>Previous source</button>}<button type="button" className="bp-text-button" onClick={close}><ArrowLeft size={15}/>Go back to report</button></div>{loading && <p className="bp-source-loading" role="status"><RefreshCw size={19} className="bp-spin"/>Checking this source against current access…</p>}{error && <BoardPackNotice title="This source is not available." error><p>{error}</p>{onRetry && <button type="button" className="bp-button bp-secondary" onClick={onRetry}><RefreshCw size={15}/>Check source again</button>}</BoardPackNotice>}{detail && !error && !loading && <><div className="bp-source-cutoff"><LockKeyhole size={16}/><p>Bound to the report captured {boardPackDate(detail.asOf)}.<br/><span>{boardPackLabel(detail.source.provenance)} · {detail.source.scope}</span></p></div><dl className="bp-detail-fields">{detail.fields.map((field, index) => <div key={`${field.label}-${index}`}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>{detail.image && <div className="bp-source-image"><button type="button" className="bp-button bp-secondary" aria-disabled={previewBusy} aria-busy={previewBusy} onClick={() => { if (!previewBusy) onPreview(); }}><Eye size={16}/>{previewBusy ? "Checking image access…" : preview ? "Close source image" : "Inspect source image"}</button>{preview && <figure><img src={preview} width={detail.image.width} height={detail.image.height} alt={detail.image.alt} onError={onImageError}/><figcaption>{detail.image.alt}<code>Image SHA-256 {detail.image.contentHash}</code></figcaption></figure>}{previewError && <p className="bp-image-error" role="alert"><ImageOff size={18}/>{previewError}</p>}</div>}{detail.limitations.length > 0 && <ul className="bp-source-limitations">{detail.limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}</ul>}{detail.relatedSourceIds.length > 0 && <div className="bp-related-sources"><h3>Follow the source links</h3>{detail.relatedSourceIds.map(id => <button type="button" className="bp-text-button" key={id} onClick={() => onRelated(id)}>{id}<ArrowUpRight size={14}/></button>)}</div>}<div className="bp-source-hash"><span>Report content hash</span><code>{detail.contentHash}</code></div></>}</>;
 }

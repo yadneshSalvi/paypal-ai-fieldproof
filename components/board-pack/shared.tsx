@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, BookOpen, HeartHandshake, LockKeyhole, X } from "lucide-react";
 import { workspaceFetch } from "@/lib/community/workspace-fetch";
 import type { BoardPackReport, BoardPackSourceDetail } from "@/lib/reports/board-pack-contracts";
@@ -64,11 +64,44 @@ export function BoardPackNotice({ title, children, error = false }: { title: str
 }
 export function BoardPackDialog({ title, children, close, focusKey }: { title: string; children: ReactNode; close: () => void; focusKey?: string }) {
   const dialog = useRef<HTMLDialogElement>(null), heading = useRef<HTMLHeadingElement>(null), titleId = useId();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null, element = dialog.current;
-    element?.showModal(); heading.current?.focus();
-    return () => { element?.close(); if (opener?.isConnected && (document.activeElement === document.body || element?.contains(document.activeElement))) opener.focus(); };
+    if (!element) return;
+    let lastInside: HTMLElement | null = heading.current, recovering = false;
+    const visible = (node: HTMLElement) => {
+      if (!node.isConnected || node.matches(":disabled,input[type=hidden]") || node.closest("[hidden],[inert]")) return false;
+      for (let current: HTMLElement | null = node; current; current = current.parentElement) {
+        const style = window.getComputedStyle(current);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+        if (current === element) break;
+      }
+      return true;
+    };
+    const keepFocus = (event: FocusEvent) => {
+      if (!element.open || recovering) return;
+      if (event.target instanceof HTMLElement && element.contains(event.target)) { lastInside = event.target; return; }
+      const target = lastInside && visible(lastInside) ? lastInside : heading.current;
+      recovering = true; target?.focus({ preventScroll: true }); recovering = false;
+    };
+    const containTab = (event: KeyboardEvent) => {
+      if (!element.open || event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+      const controls = Array.from(element.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[tabindex],[contenteditable=true]"))
+        .filter(node => node.tabIndex >= 0 && visible(node));
+      const active = document.activeElement, first = controls[0], last = controls.at(-1);
+      if (!first) { event.preventDefault(); heading.current?.focus({ preventScroll: true }); }
+      else if (!controls.includes(active as HTMLElement) || (event.shiftKey ? active === first : active === last)) {
+        event.preventDefault(); (event.shiftKey ? last : first)?.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener("focusin", keepFocus, true); document.addEventListener("keydown", containTab, true);
+    if (!element.open) element.showModal();
+    heading.current?.focus({ preventScroll: true });
+    return () => {
+      document.removeEventListener("focusin", keepFocus, true); document.removeEventListener("keydown", containTab, true);
+      element.close();
+      if (opener?.isConnected && (document.activeElement === document.body || element.contains(document.activeElement))) opener.focus({ preventScroll: true });
+    };
   }, []);
-  useEffect(() => { heading.current?.focus(); }, [title, focusKey]);
-  return <dialog ref={dialog} className="bp-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === event.currentTarget) close(); }}><div className="bp-dialog-body"><header><div><p className="bp-kicker">REPORT SOURCE</p><h2 id={titleId} ref={heading} tabIndex={-1}>{title}</h2></div><button type="button" className="bp-icon-button" aria-label="Close source details" onClick={close}><X size={22}/></button></header>{children}</div></dialog>;
+  useLayoutEffect(() => { heading.current?.focus({ preventScroll: true }); }, [focusKey]);
+  return <dialog ref={dialog} className="bp-dialog" aria-modal="true" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === event.currentTarget) close(); }}><div className="bp-dialog-body"><header><div><p className="bp-kicker">REPORT SOURCE</p><h2 id={titleId} ref={heading} tabIndex={-1}>{title}</h2></div><button type="button" className="bp-icon-button" aria-label="Close source details" onClick={close}><X size={22}/></button></header>{children}</div></dialog>;
 }
