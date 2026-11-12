@@ -10,6 +10,8 @@ export interface OrganizationPlanningScope { tenantId: string; projectId: string
 export interface OrganizationPlanningDependencies {
   documents: PlanSourceBinding[];
   publication: null | { publicationId: string; planId: string; contentHash: string };
+  alignments: { id: string; contentHash: string }[];
+  signoffs: { id: string; contentHash: string; qualificationId: string; qualificationVersion: number }[];
   qualifications: { id: string; version: number; validUntil: string; actorId: string; membershipVersion: number; issuerId: string; issuerMembershipVersion: number }[];
   validThrough: string | null;
 }
@@ -63,7 +65,7 @@ async function currentQualification(tx: SqlConnection, scope: OrganizationPlanni
 export async function loadOrganizationPlanningAggregate(tx: SqlConnection, requested: OrganizationPlanningScope, asOf: string, canonicalRequirements: readonly { packageId: string; requiredCount: number }[]): Promise<OrganizationPlanningAggregate> {
   const scope: OrganizationPlanningScope = { tenantId: requested.tenantId, projectId: requested.projectId };
   const at = Date.parse(asOf); if (!Number.isFinite(at)) throw new DomainError("ORG_PROJECT_SOURCE_CHANGED", "Planning evidence needs the original coherent portfolio cutoff.");
-  const empty: OrganizationPlanningDependencies = { documents: [], publication: null, qualifications: [], validThrough: null };
+  const empty: OrganizationPlanningDependencies = { documents: [], publication: null, alignments: [], signoffs: [], qualifications: [], validThrough: null };
   const requiredCount = safeSum(canonicalRequirements.map(row => row.requiredCount));
   const publication = await publishedPlan(scope, tx);
   if (!publication) return { available: true, planRevision: null, planHash: null, acceptedReviewItems: 0, requiredReviewItems: requiredCount, acceptedPackages: 0, packageCount: canonicalRequirements.length, currentScopedSignoffs: 0, reviewedIllustrations: 0, sourceVersionHash: digest({ scope, publication: null, requirements: canonicalRequirements }), limitations: ["No current published plan exists. Canonical package requirements remain unsatisfied; legacy recorded evidence is retained as history and supplies no current qualified physical acceptance."], dependencies: empty };
@@ -103,7 +105,12 @@ export async function loadOrganizationPlanningAggregate(tx: SqlConnection, reque
   const physical = signoffViews.filter(row => row.current && row.decision === "accepted" && publication.payload.plan.packages.some(pkg => pkg.packageId === row.packageId && pkg.requirements.some(requirement => requirement.id === row.requirementId && requirement.kind !== "photo_association" && requirement.scope === row.scope)));
   const images = alignmentViews.filter(row => row.state === "reviewed" && publication.payload.plan.packages.some(pkg => pkg.packageId === row.packageId && pkg.requirements.some(requirement => requirement.kind === "photo_association")));
   const qualifications = [...countedQualifications.values()].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0), validThrough = qualifications.map(row => row.validUntil).sort()[0] ?? null;
-  const dependencies: OrganizationPlanningDependencies = { publication: { publicationId: publication.view.publicationId, planId: publication.row.id, contentHash: publication.row.content_hash }, documents: documents([...publication.payload.sources, ...images.flatMap(image => alignmentSources.get(image.id) ? [alignmentSources.get(image.id)!] : []), ...countedSources]), qualifications, validThrough };
+  const dependencies: OrganizationPlanningDependencies = {
+    publication: { publicationId: publication.view.publicationId, planId: publication.row.id, contentHash: publication.row.content_hash },
+    alignments: images.map(row => ({ id: row.id, contentHash: row.contentHash })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    signoffs: signoffs.filter(row => physical.some(view => view.id === row.id)).map(row => ({ id: row.id, contentHash: row.content_hash, qualificationId: row.qualification_id, qualificationVersion: row.qualification_version })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    documents: documents([...publication.payload.sources, ...images.flatMap(image => alignmentSources.get(image.id) ? [alignmentSources.get(image.id)!] : []), ...countedSources]), qualifications, validThrough,
+  };
   return { available: true, planRevision: publication.row.revision, planHash: publication.row.content_hash,
     acceptedReviewItems: safeSum(readiness.map(row => row.acceptedCount)), requiredReviewItems: safeSum(readiness.map(row => row.requiredCount)),
     acceptedPackages: readiness.filter(row => row.accepted && row.prerequisitesMet).length, packageCount: readiness.length,

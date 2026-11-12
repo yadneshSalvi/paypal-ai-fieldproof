@@ -49,6 +49,7 @@ describe("organization evidence projection uses current independently qualified 
     assert.equal(evidence.acceptedReviewItems, 1); assert.equal(evidence.requiredReviewItems, 14); assert.equal(evidence.acceptedPackages, 0); assert.equal(evidence.currentScopedSignoffs, 0); assert.equal(evidence.reviewedIllustrations, 1); assert.match(evidence.limitations.join(" "), /not physical acceptance/);
     assert.equal(aggregate.lineage!.planHash, f.publication.row.content_hash); assert.equal(evidence.planRevision, f.publication.row.revision);
     const dependencies = await organizationAggregateRead(input, collectOrganizationProjectAggregateDependencies); assert.equal(dependencies.planning!.publication!.publicationId, f.publication.view.publicationId); assert.ok(dependencies.planning!.documents.some(row => row.documentId === f.planning.photo.id)); assert.deepEqual(dependencies.planning!.qualifications, []);
+    assert.deepEqual(dependencies.planning!.alignments, [{ id: image.id, contentHash: image.contentHash }]); assert.deepEqual(dependencies.planning!.signoffs, []);
     for (const id of [f.planning.photo.id, f.planning.sketch.id, f.planning.quote.id, image.id, f.publication.row.id, f.publication.view.publicationId]) assert.equal(JSON.stringify(aggregate).includes(id), false);
   });
   it("uses exact current scoped competence and source bindings, and never revives an earlier accepted decision after a later negative review", async () => {
@@ -56,9 +57,12 @@ describe("organization evidence projection uses current independently qualified 
     const qualification = await qualificationFixture(f.planning, f.planning.session, "equipment_setup", true), first = await signoff(f.planning, f.planning.session, qualification), input = organizationAggregateInput(f.story);
     const accepted = await organizationAggregateRead(input, loadOrganizationProjectAggregate); assert.equal(accepted.evidence[0].values.acceptedReviewItems, 2); assert.equal(accepted.evidence[0].values.acceptedPackages, 1); assert.equal(accepted.evidence[0].values.currentScopedSignoffs, 1);
     const bound = await organizationAggregateRead(input, collectOrganizationProjectAggregateDependencies); assert.equal(bound.planning!.qualifications[0].id, qualification.id); assert.equal(bound.planning!.validThrough, qualification.validUntil);
+    const [stored] = await query<{ content_hash: string }>("SELECT content_hash FROM fp_work_signoffs WHERE id=$1 AND tenant_id=$2 AND project_id=$3", [first.id, f.story.tenantId, f.story.projectId]);
+    assert.deepEqual(bound.planning!.signoffs, [{ id: first.id, contentHash: stored.content_hash, qualificationId: qualification.id, qualificationVersion: qualification.version }]);
     await signoff(f.planning, f.planning.session, qualification, "printing", "needs_information");
     const later = await organizationAggregateRead(input, loadOrganizationProjectAggregate); assert.equal(later.evidence[0].values.acceptedReviewItems, 1); assert.equal(later.evidence[0].values.acceptedPackages, 0); assert.equal(later.evidence[0].values.currentScopedSignoffs, 0); assert.notEqual(later.lineage!.aggregateHash, accepted.lineage!.aggregateHash);
     const [old] = await query<{ decision: string }>("SELECT decision FROM fp_work_signoffs WHERE id=$1", [first.id]); assert.equal(old.decision, "accepted", "Original physical-review history remains untouched");
+    assert.deepEqual((await organizationAggregateRead(input, collectOrganizationProjectAggregateDependencies)).planning!.signoffs, [], "A later negative decision leaves no positively counted signoff dependency");
   });
   it("removes a revoked competence from current coverage and retains only the independent reviewed image", async () => {
     const f = await fixture(), image = await alignedFixture(f.planning, "printing"); await image.review();
